@@ -1,11 +1,9 @@
 /*
   FUSE: Filesystem in Userspace
   Copyright (C) 2001-2007  Miklos Szeredi <miklos@szeredi.hu>
+  Copyright (C) 2011       Sebastian Pipping <sebastian@pipping.org>
 
   Minor modifications and note by Andy Sayler (2012) <www.andysayler.com>
-
-  Source: fuse-2.8.7.tar.gz examples directory
-  http://sourceforge.net/projects/fuse/files/fuse-2.X/
 
   This program can be distributed under the terms of the GNU GPL.
   See the file COPYING.
@@ -22,7 +20,7 @@
 
 */
 
-#define FUSE_USE_VERSION 28
+#define FUSE_USE_VERSION 29
 #define HAVE_SETXATTR
 
 #ifdef HAVE_CONFIG_H
@@ -30,8 +28,8 @@
 #endif
 
 #ifdef linux
-/* For pread()/pwrite() */
-#define _XOPEN_SOURCE 500
+/* For pread()/pwrite()/utimensat() */
+#define _XOPEN_SOURCE 700
 #endif
 
 #include <fuse.h>
@@ -39,6 +37,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <sys/stat.h>
 #include <dirent.h>
 #include <errno.h>
 #include <sys/time.h>
