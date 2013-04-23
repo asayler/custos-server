@@ -7,6 +7,8 @@
 *.o
 
 #Executable Files#
+fuseenc
+fuseenc_fh
 fusehello
 fusexmp
 fusexmp_fh
