@@ -35,6 +35,51 @@
 #endif
 #include <sys/file.h> /* flock(2) */
 
+typedef struct fsState{
+    char* basePath;
+} fsState_t;
+
+typedef struct fuse_args fuse_args_t;
+
+#define RETURN_FAILURE -1
+#define RETURN_SUCCESS 0
+#define PATHBUFSIZE 1024
+
+static int buildPath(const char* path, char* buf, size_t bufSize){
+
+    size_t size = 0;
+    fsState_t* state = NULL;
+
+    /* Input Checks */
+    if(path == NULL){
+	fprintf(stderr, "ERROR buildPath: path must not be NULL\n");
+	return RETURN_FAILURE;
+    }
+    if(buf == NULL){
+	fprintf(stderr, "ERROR buildPath: buf must not be NULL\n");
+	return RETURN_FAILURE;
+    }
+
+    /* Get State */
+    state = (fsState_t*)(fuse_get_context()->private_data);
+    if(state == NULL){
+	fprintf(stderr, "ERROR buildPath: state must not be NULL\n");
+	return RETURN_FAILURE;
+    }
+
+    /* Concatenate in Buffer */
+    size = snprintf(buf, bufSize, "%s%s", state->basePath, path);
+    if(size > (bufSize - 1)){
+	fprintf(stderr, "ERROR buildPath: length too large for buffer\n");
+	return RETURN_FAILURE;
+    }
+
+    fprintf(stderr, "INFO buildPath: path = %s\n", buf);
+
+    return RETURN_SUCCESS;
+    
+}
+
 static int enc_getattr(const char *path, struct stat *stbuf)
 {
     int res;
@@ -564,6 +609,26 @@ static struct fuse_operations enc_oper = {
 
 int main(int argc, char *argv[])
 {
-    umask(0);
-    return fuse_main(argc, argv, &enc_oper, NULL);
+
+    fuse_args_t args = FUSE_ARGS_INIT(0, NULL);
+    fsState_t state;
+    int i;
+
+    if(argc < 3){
+	fprintf(stderr,
+		"Usage:\n %s <Mount Point> <Mirrored Directory>\n",
+		argv[0]);
+	exit(EXIT_FAILURE);
+    }
+
+    for(i = 0; i < argc; i++) {
+	if (i == 2)
+	    state.basePath = realpath(argv[i], NULL);
+	else
+	    fuse_opt_add_arg(&args, argv[i]);
+    }
+
+    umask(0);     
+    return fuse_main(args.argc, args.argv, &enc_oper, &state);
+
 }
