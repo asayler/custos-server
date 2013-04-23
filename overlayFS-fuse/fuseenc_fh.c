@@ -7,7 +7,7 @@
   This program can be distributed under the terms of the GNU GPL.
   See the file COPYING.
 
-  gcc -Wall fusexmp_fh.c `pkg-config fuse --cflags --libs` -lulockmgr -o fusexmp_fh
+  gcc -Wall fuseenc_fh.c `pkg-config fuse --cflags --libs` -lulockmgr -o fuseenc_fh
 */
 
 #define FUSE_USE_VERSION 29
@@ -35,7 +35,7 @@
 #endif
 #include <sys/file.h> /* flock(2) */
 
-static int xmp_getattr(const char *path, struct stat *stbuf)
+static int enc_getattr(const char *path, struct stat *stbuf)
 {
     int res;
 
@@ -46,7 +46,7 @@ static int xmp_getattr(const char *path, struct stat *stbuf)
     return 0;
 }
 
-static int xmp_fgetattr(const char *path, struct stat *stbuf,
+static int enc_fgetattr(const char *path, struct stat *stbuf,
 			struct fuse_file_info *fi)
 {
     int res;
@@ -60,7 +60,7 @@ static int xmp_fgetattr(const char *path, struct stat *stbuf,
     return 0;
 }
 
-static int xmp_access(const char *path, int mask)
+static int enc_access(const char *path, int mask)
 {
     int res;
 
@@ -71,7 +71,7 @@ static int xmp_access(const char *path, int mask)
     return 0;
 }
 
-static int xmp_readlink(const char *path, char *buf, size_t size)
+static int enc_readlink(const char *path, char *buf, size_t size)
 {
     int res;
 
@@ -83,16 +83,16 @@ static int xmp_readlink(const char *path, char *buf, size_t size)
     return 0;
 }
 
-struct xmp_dirp {
+struct enc_dirp {
     DIR *dp;
     struct dirent *entry;
     off_t offset;
 };
 
-static int xmp_opendir(const char *path, struct fuse_file_info *fi)
+static int enc_opendir(const char *path, struct fuse_file_info *fi)
 {
     int res;
-    struct xmp_dirp *d = malloc(sizeof(struct xmp_dirp));
+    struct enc_dirp *d = malloc(sizeof(struct enc_dirp));
     if (d == NULL)
 	return -ENOMEM;
 
@@ -109,15 +109,15 @@ static int xmp_opendir(const char *path, struct fuse_file_info *fi)
     return 0;
 }
 
-static inline struct xmp_dirp *get_dirp(struct fuse_file_info *fi)
+static inline struct enc_dirp *get_dirp(struct fuse_file_info *fi)
 {
-    return (struct xmp_dirp *) (uintptr_t) fi->fh;
+    return (struct enc_dirp *) (uintptr_t) fi->fh;
 }
 
-static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
+static int enc_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 		       off_t offset, struct fuse_file_info *fi)
 {
-    struct xmp_dirp *d = get_dirp(fi);
+    struct enc_dirp *d = get_dirp(fi);
 
     (void) path;
     if (offset != d->offset) {
@@ -149,16 +149,16 @@ static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
     return 0;
 }
 
-static int xmp_releasedir(const char *path, struct fuse_file_info *fi)
+static int enc_releasedir(const char *path, struct fuse_file_info *fi)
 {
-    struct xmp_dirp *d = get_dirp(fi);
+    struct enc_dirp *d = get_dirp(fi);
     (void) path;
     closedir(d->dp);
     free(d);
     return 0;
 }
 
-static int xmp_mknod(const char *path, mode_t mode, dev_t rdev)
+static int enc_mknod(const char *path, mode_t mode, dev_t rdev)
 {
     int res;
 
@@ -172,7 +172,7 @@ static int xmp_mknod(const char *path, mode_t mode, dev_t rdev)
     return 0;
 }
 
-static int xmp_mkdir(const char *path, mode_t mode)
+static int enc_mkdir(const char *path, mode_t mode)
 {
     int res;
 
@@ -183,7 +183,7 @@ static int xmp_mkdir(const char *path, mode_t mode)
     return 0;
 }
 
-static int xmp_unlink(const char *path)
+static int enc_unlink(const char *path)
 {
     int res;
 
@@ -194,7 +194,7 @@ static int xmp_unlink(const char *path)
     return 0;
 }
 
-static int xmp_rmdir(const char *path)
+static int enc_rmdir(const char *path)
 {
     int res;
 
@@ -205,7 +205,7 @@ static int xmp_rmdir(const char *path)
     return 0;
 }
 
-static int xmp_symlink(const char *from, const char *to)
+static int enc_symlink(const char *from, const char *to)
 {
     int res;
 
@@ -216,7 +216,7 @@ static int xmp_symlink(const char *from, const char *to)
     return 0;
 }
 
-static int xmp_rename(const char *from, const char *to)
+static int enc_rename(const char *from, const char *to)
 {
     int res;
 
@@ -227,7 +227,7 @@ static int xmp_rename(const char *from, const char *to)
     return 0;
 }
 
-static int xmp_link(const char *from, const char *to)
+static int enc_link(const char *from, const char *to)
 {
     int res;
 
@@ -238,7 +238,7 @@ static int xmp_link(const char *from, const char *to)
     return 0;
 }
 
-static int xmp_chmod(const char *path, mode_t mode)
+static int enc_chmod(const char *path, mode_t mode)
 {
     int res;
 
@@ -249,7 +249,7 @@ static int xmp_chmod(const char *path, mode_t mode)
     return 0;
 }
 
-static int xmp_chown(const char *path, uid_t uid, gid_t gid)
+static int enc_chown(const char *path, uid_t uid, gid_t gid)
 {
     int res;
 
@@ -260,7 +260,7 @@ static int xmp_chown(const char *path, uid_t uid, gid_t gid)
     return 0;
 }
 
-static int xmp_truncate(const char *path, off_t size)
+static int enc_truncate(const char *path, off_t size)
 {
     int res;
 
@@ -271,7 +271,7 @@ static int xmp_truncate(const char *path, off_t size)
     return 0;
 }
 
-static int xmp_ftruncate(const char *path, off_t size,
+static int enc_ftruncate(const char *path, off_t size,
 			 struct fuse_file_info *fi)
 {
     int res;
@@ -286,7 +286,7 @@ static int xmp_ftruncate(const char *path, off_t size,
 }
 
 #ifdef HAVE_UTIMENSAT
-static int xmp_utimens(const char *path, const struct timespec ts[2])
+static int enc_utimens(const char *path, const struct timespec ts[2])
 {
     int res;
 
@@ -299,7 +299,7 @@ static int xmp_utimens(const char *path, const struct timespec ts[2])
 }
 #endif
 
-static int xmp_create(const char *path, mode_t mode, struct fuse_file_info *fi)
+static int enc_create(const char *path, mode_t mode, struct fuse_file_info *fi)
 {
     int fd;
 
@@ -311,7 +311,7 @@ static int xmp_create(const char *path, mode_t mode, struct fuse_file_info *fi)
     return 0;
 }
 
-static int xmp_open(const char *path, struct fuse_file_info *fi)
+static int enc_open(const char *path, struct fuse_file_info *fi)
 {
     int fd;
 
@@ -323,7 +323,7 @@ static int xmp_open(const char *path, struct fuse_file_info *fi)
     return 0;
 }
 
-static int xmp_read(const char *path, char *buf, size_t size, off_t offset,
+static int enc_read(const char *path, char *buf, size_t size, off_t offset,
 		    struct fuse_file_info *fi)
 {
     int res;
@@ -336,7 +336,7 @@ static int xmp_read(const char *path, char *buf, size_t size, off_t offset,
     return res;
 }
 
-static int xmp_read_buf(const char *path, struct fuse_bufvec **bufp,
+static int enc_read_buf(const char *path, struct fuse_bufvec **bufp,
 			size_t size, off_t offset, struct fuse_file_info *fi)
 {
     struct fuse_bufvec *src;
@@ -358,7 +358,7 @@ static int xmp_read_buf(const char *path, struct fuse_bufvec **bufp,
     return 0;
 }
 
-static int xmp_write(const char *path, const char *buf, size_t size,
+static int enc_write(const char *path, const char *buf, size_t size,
 		     off_t offset, struct fuse_file_info *fi)
 {
     int res;
@@ -371,7 +371,7 @@ static int xmp_write(const char *path, const char *buf, size_t size,
     return res;
 }
 
-static int xmp_write_buf(const char *path, struct fuse_bufvec *buf,
+static int enc_write_buf(const char *path, struct fuse_bufvec *buf,
 			 off_t offset, struct fuse_file_info *fi)
 {
     struct fuse_bufvec dst = FUSE_BUFVEC_INIT(fuse_buf_size(buf));
@@ -385,7 +385,7 @@ static int xmp_write_buf(const char *path, struct fuse_bufvec *buf,
     return fuse_buf_copy(&dst, buf, FUSE_BUF_SPLICE_NONBLOCK);
 }
 
-static int xmp_statfs(const char *path, struct statvfs *stbuf)
+static int enc_statfs(const char *path, struct statvfs *stbuf)
 {
     int res;
 
@@ -396,7 +396,7 @@ static int xmp_statfs(const char *path, struct statvfs *stbuf)
     return 0;
 }
 
-static int xmp_flush(const char *path, struct fuse_file_info *fi)
+static int enc_flush(const char *path, struct fuse_file_info *fi)
 {
     int res;
 
@@ -413,7 +413,7 @@ static int xmp_flush(const char *path, struct fuse_file_info *fi)
     return 0;
 }
 
-static int xmp_release(const char *path, struct fuse_file_info *fi)
+static int enc_release(const char *path, struct fuse_file_info *fi)
 {
     (void) path;
     close(fi->fh);
@@ -421,7 +421,7 @@ static int xmp_release(const char *path, struct fuse_file_info *fi)
     return 0;
 }
 
-static int xmp_fsync(const char *path, int isdatasync,
+static int enc_fsync(const char *path, int isdatasync,
 		     struct fuse_file_info *fi)
 {
     int res;
@@ -442,7 +442,7 @@ static int xmp_fsync(const char *path, int isdatasync,
 }
 
 #ifdef HAVE_POSIX_FALLOCATE
-static int xmp_fallocate(const char *path, int mode,
+static int enc_fallocate(const char *path, int mode,
 			 off_t offset, off_t length, struct fuse_file_info *fi)
 {
     (void) path;
@@ -456,7 +456,7 @@ static int xmp_fallocate(const char *path, int mode,
 
 #ifdef HAVE_SETXATTR
 /* xattr operations are optional and can safely be left unimplemented */
-static int xmp_setxattr(const char *path, const char *name, const char *value,
+static int enc_setxattr(const char *path, const char *name, const char *value,
 			size_t size, int flags)
 {
     int res = lsetxattr(path, name, value, size, flags);
@@ -465,7 +465,7 @@ static int xmp_setxattr(const char *path, const char *name, const char *value,
     return 0;
 }
 
-static int xmp_getxattr(const char *path, const char *name, char *value,
+static int enc_getxattr(const char *path, const char *name, char *value,
 			size_t size)
 {
     int res = lgetxattr(path, name, value, size);
@@ -474,7 +474,7 @@ static int xmp_getxattr(const char *path, const char *name, char *value,
     return res;
 }
 
-static int xmp_listxattr(const char *path, char *list, size_t size)
+static int enc_listxattr(const char *path, char *list, size_t size)
 {
     int res = llistxattr(path, list, size);
     if (res == -1)
@@ -482,7 +482,7 @@ static int xmp_listxattr(const char *path, char *list, size_t size)
     return res;
 }
 
-static int xmp_removexattr(const char *path, const char *name)
+static int enc_removexattr(const char *path, const char *name)
 {
     int res = lremovexattr(path, name);
     if (res == -1)
@@ -491,7 +491,7 @@ static int xmp_removexattr(const char *path, const char *name)
 }
 #endif /* HAVE_SETXATTR */
 
-static int xmp_lock(const char *path, struct fuse_file_info *fi, int cmd,
+static int enc_lock(const char *path, struct fuse_file_info *fi, int cmd,
 		    struct flock *lock)
 {
     (void) path;
@@ -500,7 +500,7 @@ static int xmp_lock(const char *path, struct fuse_file_info *fi, int cmd,
 		       sizeof(fi->lock_owner));
 }
 
-static int xmp_flock(const char *path, struct fuse_file_info *fi, int op)
+static int enc_flock(const char *path, struct fuse_file_info *fi, int op)
 {
     int res;
     (void) path;
@@ -512,49 +512,49 @@ static int xmp_flock(const char *path, struct fuse_file_info *fi, int op)
     return 0;
 }
 
-static struct fuse_operations xmp_oper = {
-    .getattr= xmp_getattr,
-    .fgetattr= xmp_fgetattr,
-    .access= xmp_access,
-    .readlink= xmp_readlink,
-    .opendir= xmp_opendir,
-    .readdir= xmp_readdir,
-    .releasedir= xmp_releasedir,
-    .mknod= xmp_mknod,
-    .mkdir= xmp_mkdir,
-    .symlink= xmp_symlink,
-    .unlink= xmp_unlink,
-    .rmdir= xmp_rmdir,
-    .rename= xmp_rename,
-    .link= xmp_link,
-    .chmod= xmp_chmod,
-    .chown= xmp_chown,
-    .truncate= xmp_truncate,
-    .ftruncate= xmp_ftruncate,
+static struct fuse_operations enc_oper = {
+    .getattr= enc_getattr,
+    .fgetattr= enc_fgetattr,
+    .access= enc_access,
+    .readlink= enc_readlink,
+    .opendir= enc_opendir,
+    .readdir= enc_readdir,
+    .releasedir= enc_releasedir,
+    .mknod= enc_mknod,
+    .mkdir= enc_mkdir,
+    .symlink= enc_symlink,
+    .unlink= enc_unlink,
+    .rmdir= enc_rmdir,
+    .rename= enc_rename,
+    .link= enc_link,
+    .chmod= enc_chmod,
+    .chown= enc_chown,
+    .truncate= enc_truncate,
+    .ftruncate= enc_ftruncate,
 #ifdef HAVE_UTIMENSAT
-    .utimens= xmp_utimens,
+    .utimens= enc_utimens,
 #endif
-    .create= xmp_create,
-    .open= xmp_open,
-    .read= xmp_read,
-    .read_buf= xmp_read_buf,
-    .write= xmp_write,
-    .write_buf= xmp_write_buf,
-    .statfs= xmp_statfs,
-    .flush= xmp_flush,
-    .release= xmp_release,
-    .fsync= xmp_fsync,
+    .create= enc_create,
+    .open= enc_open,
+    .read= enc_read,
+    .read_buf= enc_read_buf,
+    .write= enc_write,
+    .write_buf= enc_write_buf,
+    .statfs= enc_statfs,
+    .flush= enc_flush,
+    .release= enc_release,
+    .fsync= enc_fsync,
 #ifdef HAVE_POSIX_FALLOCATE
-    .fallocate= xmp_fallocate,
+    .fallocate= enc_fallocate,
 #endif
 #ifdef HAVE_SETXATTR
-    .setxattr= xmp_setxattr,
-    .getxattr= xmp_getxattr,
-    .listxattr= xmp_listxattr,
-    .removexattr= xmp_removexattr,
+    .setxattr= enc_setxattr,
+    .getxattr= enc_getxattr,
+    .listxattr= enc_listxattr,
+    .removexattr= enc_removexattr,
 #endif
-    .lock= xmp_lock,
-    .flock= xmp_flock,
+    .lock= enc_lock,
+    .flock= enc_flock,
 
     .flag_nullpath_ok = 1,
 #if HAVE_UTIMENSAT
@@ -565,5 +565,5 @@ static struct fuse_operations xmp_oper = {
 int main(int argc, char *argv[])
 {
     umask(0);
-    return fuse_main(argc, argv, &xmp_oper, NULL);
+    return fuse_main(argc, argv, &enc_oper, NULL);
 }
