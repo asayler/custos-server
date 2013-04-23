@@ -25,3 +25,6 @@ aes-crypt-util
 handout/*.log
 handout/*.out
 handout/*.aux
+
+
+test/*
