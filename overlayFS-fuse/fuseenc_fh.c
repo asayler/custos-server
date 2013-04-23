@@ -83,12 +83,19 @@ static int buildPath(const char* path, char* buf, size_t bufSize){
 static int enc_getattr(const char *path, struct stat *stbuf)
 {
     int res;
+    char fullPath[PATHBUFSIZE];
 
-    res = lstat(path, stbuf);
+    if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
+	fprintf(stderr, "ERROR enc_getattr: buildPath failed\n");
+	return RETURN_FAILURE;
+    }
+    path = NULL;
+
+    res = lstat(fullPath, stbuf);
     if (res == -1)
 	return -errno;
 
-    return 0;
+    return RETURN_SUCCESS;
 }
 
 static int enc_fgetattr(const char *path, struct stat *stbuf,
