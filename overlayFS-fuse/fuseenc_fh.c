@@ -109,46 +109,67 @@ static int enc_fgetattr(const char *path, struct stat *stbuf,
     if (res == -1)
 	return -errno;
 
-    return 0;
+    return RETURN_SUCCESS;
 }
 
 static int enc_access(const char *path, int mask)
 {
     int res;
+    char fullPath[PATHBUFSIZE];
 
-    res = access(path, mask);
+    if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
+	fprintf(stderr, "ERROR enc_access: buildPath failed\n");
+	return RETURN_FAILURE;
+    }
+    path = NULL;
+
+    res = access(fullPath, mask);
     if (res == -1)
 	return -errno;
 
-    return 0;
+    return RETURN_SUCCESS;
 }
 
 static int enc_readlink(const char *path, char *buf, size_t size)
 {
     int res;
+    char fullPath[PATHBUFSIZE];
 
-    res = readlink(path, buf, size - 1);
+    if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
+	fprintf(stderr, "ERROR enc_readlink: buildPath failed\n");
+	return RETURN_FAILURE;
+    }
+    path = NULL;
+
+    res = readlink(fullPath, buf, size - 1);
     if (res == -1)
 	return -errno;
 
     buf[res] = '\0';
-    return 0;
+    return RETURN_SUCCESS;
 }
 
-struct enc_dirp {
+typedef struct enc_dirp {
     DIR *dp;
     struct dirent *entry;
     off_t offset;
-};
+} enc_dirp_t;
 
 static int enc_opendir(const char *path, struct fuse_file_info *fi)
 {
     int res;
-    struct enc_dirp *d = malloc(sizeof(struct enc_dirp));
+    enc_dirp_t* d = malloc(sizeof(*d));
     if (d == NULL)
 	return -ENOMEM;
 
-    d->dp = opendir(path);
+    char fullPath[PATHBUFSIZE];
+    if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
+	fprintf(stderr, "ERROR enc_opendir: buildPath failed\n");
+	return RETURN_FAILURE;
+    }
+    path = NULL;
+
+    d->dp = opendir(fullPath);
     if (d->dp == NULL) {
 	res = -errno;
 	free(d);
@@ -158,7 +179,7 @@ static int enc_opendir(const char *path, struct fuse_file_info *fi)
     d->entry = NULL;
 
     fi->fh = (unsigned long) d;
-    return 0;
+    return RETURN_SUCCESS;
 }
 
 static inline struct enc_dirp *get_dirp(struct fuse_file_info *fi)
@@ -198,7 +219,7 @@ static int enc_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	d->offset = nextoff;
     }
 
-    return 0;
+    return RETURN_SUCCESS;
 }
 
 static int enc_releasedir(const char *path, struct fuse_file_info *fi)
@@ -207,120 +228,211 @@ static int enc_releasedir(const char *path, struct fuse_file_info *fi)
     (void) path;
     closedir(d->dp);
     free(d);
-    return 0;
+    return RETURN_SUCCESS;
 }
 
 static int enc_mknod(const char *path, mode_t mode, dev_t rdev)
 {
     int res;
+    char fullPath[PATHBUFSIZE];
+
+    if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
+	fprintf(stderr, "ERROR enc_mknod: buildPath failed\n");
+	return RETURN_FAILURE;
+    }
+    path = NULL;
 
     if (S_ISFIFO(mode))
-	res = mkfifo(path, mode);
+	res = mkfifo(fullPath, mode);
     else
-	res = mknod(path, mode, rdev);
+	res = mknod(fullPath, mode, rdev);
     if (res == -1)
 	return -errno;
 
-    return 0;
+    return RETURN_SUCCESS;
 }
 
 static int enc_mkdir(const char *path, mode_t mode)
 {
     int res;
+    char fullPath[PATHBUFSIZE];
 
-    res = mkdir(path, mode);
+    if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
+	fprintf(stderr, "ERROR enc_mkdir: buildPath failed\n");
+	return RETURN_FAILURE;
+    }
+    path = NULL;
+
+    res = mkdir(fullPath, mode);
     if (res == -1)
 	return -errno;
 
-    return 0;
+    return RETURN_SUCCESS;
 }
 
 static int enc_unlink(const char *path)
 {
     int res;
+    char fullPath[PATHBUFSIZE];
 
-    res = unlink(path);
+    if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
+	fprintf(stderr, "ERROR enc_unlink: buildPath failed\n");
+	return RETURN_FAILURE;
+    }
+    path = NULL;
+
+    res = unlink(fullPath);
     if (res == -1)
 	return -errno;
 
-    return 0;
+    return RETURN_SUCCESS;
 }
 
 static int enc_rmdir(const char *path)
 {
     int res;
+    char fullPath[PATHBUFSIZE];
 
-    res = rmdir(path);
+    if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
+	fprintf(stderr, "ERROR enc_rmdir: buildPath failed\n");
+	return RETURN_FAILURE;
+    }
+    path = NULL;
+
+    res = rmdir(fullPath);
     if (res == -1)
 	return -errno;
 
-    return 0;
+    return RETURN_SUCCESS;
 }
 
 static int enc_symlink(const char *from, const char *to)
 {
     int res;
+    char fullFrom[PATHBUFSIZE];
+    char fullTo[PATHBUFSIZE];
 
-    res = symlink(from, to);
+    if(buildPath(from, fullFrom, sizeof(fullFrom)) < 0){
+	fprintf(stderr, "ERROR enc_symlink: buildPath failed on from\n");
+	return RETURN_FAILURE;
+    }
+    from = NULL;
+
+    if(buildPath(to, fullTo, sizeof(fullTo)) < 0){
+	fprintf(stderr, "ERROR enc_symlink: buildPath failed on to\n");
+	return RETURN_FAILURE;
+    }
+    to = NULL;
+
+    res = symlink(fullFrom, fullTo);
     if (res == -1)
 	return -errno;
 
-    return 0;
+    return RETURN_SUCCESS;
 }
 
 static int enc_rename(const char *from, const char *to)
 {
     int res;
+    char fullFrom[PATHBUFSIZE];
+    char fullTo[PATHBUFSIZE];
 
-    res = rename(from, to);
+    if(buildPath(from, fullFrom, sizeof(fullFrom)) < 0){
+	fprintf(stderr, "ERROR enc_rename: buildPath failed on from\n");
+	return RETURN_FAILURE;
+    }
+    from = NULL;
+
+    if(buildPath(to, fullTo, sizeof(fullTo)) < 0){
+	fprintf(stderr, "ERROR enc_rename: buildPath failed on to\n");
+	return RETURN_FAILURE;
+    }
+    to = NULL;
+
+    res = rename(fullFrom, fullTo);
     if (res == -1)
 	return -errno;
 
-    return 0;
+    return RETURN_SUCCESS;
 }
 
 static int enc_link(const char *from, const char *to)
 {
     int res;
+    char fullFrom[PATHBUFSIZE];
+    char fullTo[PATHBUFSIZE];
 
-    res = link(from, to);
+    if(buildPath(from, fullFrom, sizeof(fullFrom)) < 0){
+	fprintf(stderr, "ERROR enc_link: buildPath failed on from\n");
+	return RETURN_FAILURE;
+    }
+    from = NULL;
+
+    if(buildPath(to, fullTo, sizeof(fullTo)) < 0){
+	fprintf(stderr, "ERROR enc_link: buildPath failed on to\n");
+	return RETURN_FAILURE;
+    }
+    to = NULL;
+
+    res = link(fullFrom, fullTo);
     if (res == -1)
 	return -errno;
 
-    return 0;
+    return RETURN_SUCCESS;
 }
 
 static int enc_chmod(const char *path, mode_t mode)
 {
     int res;
+    char fullPath[PATHBUFSIZE];
 
-    res = chmod(path, mode);
+    if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
+	fprintf(stderr, "ERROR enc_chmod: buildPath failed\n");
+	return RETURN_FAILURE;
+    }
+    path = NULL;
+
+    res = chmod(fullPath, mode);
     if (res == -1)
 	return -errno;
 
-    return 0;
+    return RETURN_SUCCESS;
 }
 
 static int enc_chown(const char *path, uid_t uid, gid_t gid)
 {
     int res;
+    char fullPath[PATHBUFSIZE];
 
-    res = lchown(path, uid, gid);
+    if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
+	fprintf(stderr, "ERROR enc_chown: buildPath failed\n");
+	return RETURN_FAILURE;
+    }
+    path = NULL;
+
+    res = lchown(fullPath, uid, gid);
     if (res == -1)
 	return -errno;
 
-    return 0;
+    return RETURN_SUCCESS;
 }
 
 static int enc_truncate(const char *path, off_t size)
 {
     int res;
+    char fullPath[PATHBUFSIZE];
 
-    res = truncate(path, size);
+    if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
+	fprintf(stderr, "ERROR enc_rmdir: buildPath failed\n");
+	return RETURN_FAILURE;
+    }
+    path = NULL;
+
+    res = truncate(fullPath, size);
     if (res == -1)
 	return -errno;
 
-    return 0;
+    return RETURN_SUCCESS;
 }
 
 static int enc_ftruncate(const char *path, off_t size,
@@ -334,45 +446,66 @@ static int enc_ftruncate(const char *path, off_t size,
     if (res == -1)
 	return -errno;
 
-    return 0;
+    return RETURN_SUCCESS;
 }
 
 #ifdef HAVE_UTIMENSAT
 static int enc_utimens(const char *path, const struct timespec ts[2])
 {
     int res;
+    char fullPath[PATHBUFSIZE];
+
+    if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
+	fprintf(stderr, "ERROR enc_utimens: buildPath failed\n");
+	return RETURN_FAILURE;
+    }
+    path = NULL;
 
     /* don't use utime/utimes since they follow symlinks */
-    res = utimensat(0, path, ts, AT_SYMLINK_NOFOLLOW);
+    res = utimensat(0, fullPath, ts, AT_SYMLINK_NOFOLLOW);
     if (res == -1)
 	return -errno;
 
-    return 0;
+    return RETURN_SUCCESS;
 }
 #endif
 
 static int enc_create(const char *path, mode_t mode, struct fuse_file_info *fi)
 {
     int fd;
+    char fullPath[PATHBUFSIZE];
 
-    fd = open(path, fi->flags, mode);
+    if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
+	fprintf(stderr, "ERROR enc_create: buildPath failed\n");
+	return RETURN_FAILURE;
+    }
+    path = NULL;
+
+    fd = open(fullPath, fi->flags, mode);
     if (fd == -1)
 	return -errno;
 
     fi->fh = fd;
-    return 0;
+    return RETURN_SUCCESS;
 }
 
 static int enc_open(const char *path, struct fuse_file_info *fi)
 {
     int fd;
+    char fullPath[PATHBUFSIZE];
 
-    fd = open(path, fi->flags);
+    if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
+	fprintf(stderr, "ERROR enc_open: buildPath failed\n");
+	return RETURN_FAILURE;
+    }
+    path = NULL;
+
+    fd = open(fullPath, fi->flags);
     if (fd == -1)
 	return -errno;
 
     fi->fh = fd;
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 static int enc_read(const char *path, char *buf, size_t size, off_t offset,
@@ -407,7 +540,7 @@ static int enc_read_buf(const char *path, struct fuse_bufvec **bufp,
 
     *bufp = src;
 
-    return 0;
+    return RETURN_SUCCESS;
 }
 
 static int enc_write(const char *path, const char *buf, size_t size,
@@ -440,12 +573,19 @@ static int enc_write_buf(const char *path, struct fuse_bufvec *buf,
 static int enc_statfs(const char *path, struct statvfs *stbuf)
 {
     int res;
+    char fullPath[PATHBUFSIZE];
 
-    res = statvfs(path, stbuf);
+    if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
+	fprintf(stderr, "ERROR enc_statfs: buildPath failed\n");
+	return RETURN_FAILURE;
+    }
+    path = NULL;
+
+    res = statvfs(fullPath, stbuf);
     if (res == -1)
 	return -errno;
 
-    return 0;
+    return RETURN_SUCCESS;
 }
 
 static int enc_flush(const char *path, struct fuse_file_info *fi)
@@ -454,15 +594,15 @@ static int enc_flush(const char *path, struct fuse_file_info *fi)
 
     (void) path;
     /* This is called from every close on an open file, so call the
-       close on the underlying filesystem.But since flush may be
-          called multiple times for an open file, this must not really
-	     close the file.  This is important if used on a network
-	     filesystem like NFS which flush the data/metadata on close() */
+       close on the underlying filesystem. But since flush may be
+       called multiple times for an open file, this must not really
+       close the file.  This is important if used on a network
+       filesystem like NFS which flush the data/metadata on close() */
     res = close(dup(fi->fh));
     if (res == -1)
 	return -errno;
 
-    return 0;
+    return RETURN_SUCCESS;
 }
 
 static int enc_release(const char *path, struct fuse_file_info *fi)
@@ -470,7 +610,7 @@ static int enc_release(const char *path, struct fuse_file_info *fi)
     (void) path;
     close(fi->fh);
 
-    return 0;
+    return RETURN_SUCCESS;
 }
 
 static int enc_fsync(const char *path, int isdatasync,
@@ -490,7 +630,7 @@ static int enc_fsync(const char *path, int isdatasync,
     if (res == -1)
 	return -errno;
 
-    return 0;
+    return RETURN_SUCCESS;
 }
 
 #ifdef HAVE_POSIX_FALLOCATE
@@ -511,16 +651,32 @@ static int enc_fallocate(const char *path, int mode,
 static int enc_setxattr(const char *path, const char *name, const char *value,
 			size_t size, int flags)
 {
-    int res = lsetxattr(path, name, value, size, flags);
+    char fullPath[PATHBUFSIZE];
+
+    if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
+	fprintf(stderr, "ERROR enc_setxattr: buildPath failed\n");
+	return RETURN_FAILURE;
+    }
+    path = NULL;
+
+    int res = lsetxattr(fullPath, name, value, size, flags);
     if (res == -1)
 	return -errno;
-    return 0;
+    return RETURN_SUCCESS;
 }
 
 static int enc_getxattr(const char *path, const char *name, char *value,
 			size_t size)
 {
-    int res = lgetxattr(path, name, value, size);
+    char fullPath[PATHBUFSIZE];
+
+    if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
+	fprintf(stderr, "ERROR enc_getxattr: buildPath failed\n");
+	return RETURN_FAILURE;
+    }
+    path = NULL;
+
+    int res = lgetxattr(fullPath, name, value, size);
     if (res == -1)
 	return -errno;
     return res;
@@ -528,7 +684,15 @@ static int enc_getxattr(const char *path, const char *name, char *value,
 
 static int enc_listxattr(const char *path, char *list, size_t size)
 {
-    int res = llistxattr(path, list, size);
+    char fullPath[PATHBUFSIZE];
+
+    if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
+	fprintf(stderr, "ERROR enc_listxattr: buildPath failed\n");
+	return RETURN_FAILURE;
+    }
+    path = NULL;
+
+    int res = llistxattr(fullPath, list, size);
     if (res == -1)
 	return -errno;
     return res;
@@ -536,10 +700,18 @@ static int enc_listxattr(const char *path, char *list, size_t size)
 
 static int enc_removexattr(const char *path, const char *name)
 {
-    int res = lremovexattr(path, name);
+    char fullPath[PATHBUFSIZE];
+
+    if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
+	fprintf(stderr, "ERROR enc_removexattr: buildPath failed\n");
+	return RETURN_FAILURE;
+    }
+    path = NULL;
+
+    int res = lremovexattr(fullPath, name);
     if (res == -1)
 	return -errno;
-    return 0;
+    return RETURN_SUCCESS;
 }
 #endif /* HAVE_SETXATTR */
 
@@ -561,7 +733,7 @@ static int enc_flock(const char *path, struct fuse_file_info *fi, int op)
     if (res == -1)
 	return -errno;
 
-    return 0;
+    return RETURN_SUCCESS;
 }
 
 static struct fuse_operations enc_oper = {
