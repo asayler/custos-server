@@ -9,6 +9,7 @@
 #Executable Files#
 fusehello
 fusexmp
+fusexmp_fh
 xattr-util
 aes-crypt-util
 
