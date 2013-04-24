@@ -11,7 +11,6 @@
 */
 
 #define FUSE_USE_VERSION 29
-#define HAVE_SETXATTR
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -35,86 +34,99 @@
 #endif
 #include <sys/file.h> /* flock(2) */
 
-typedef struct fsState{
+typedef struct fuse_args fuse_args_t;
+typedef struct fuse_bufvec fuse_bufvec_t;
+typedef struct fuse_file_info fuse_file_info_t;
+
+typedef struct flock flock_t;
+typedef struct stat stat_t;
+typedef struct statvfs statvfs_t;
+typedef struct timespec timespec_t;
+
+typedef struct enc_dirp {
+    DIR *dp;
+    struct dirent *entry;
+    off_t offset;
+} enc_dirp_t;
+
+static inline enc_dirp_t* get_dirp(fuse_file_info_t* fi) {
+    return (enc_dirp_t*) (uintptr_t) fi->fh;
+}
+
+typedef struct fsState {
     char* basePath;
 } fsState_t;
-
-typedef struct fuse_args fuse_args_t;
 
 #define RETURN_FAILURE -1
 #define RETURN_SUCCESS 0
 #define PATHBUFSIZE 1024
 
-static int buildPath(const char* path, char* buf, size_t bufSize){
+static int buildPath(const char* path, char* buf, size_t bufSize) {
 
     size_t size = 0;
     fsState_t* state = NULL;
 
     /* Input Checks */
-    if(path == NULL){
+    if(path == NULL) {
 	fprintf(stderr, "ERROR buildPath: path must not be NULL\n");
 	return RETURN_FAILURE;
     }
-    if(buf == NULL){
+    if(buf == NULL) {
 	fprintf(stderr, "ERROR buildPath: buf must not be NULL\n");
 	return RETURN_FAILURE;
     }
 
     /* Get State */
     state = (fsState_t*)(fuse_get_context()->private_data);
-    if(state == NULL){
+    if(state == NULL) {
 	fprintf(stderr, "ERROR buildPath: state must not be NULL\n");
 	return RETURN_FAILURE;
     }
 
     /* Concatenate in Buffer */
     size = snprintf(buf, bufSize, "%s%s", state->basePath, path);
-    if(size > (bufSize - 1)){
+    if(size > (bufSize - 1)) {
 	fprintf(stderr, "ERROR buildPath: length too large for buffer\n");
 	return RETURN_FAILURE;
     }
-
-    fprintf(stderr, "INFO buildPath: path = %s\n", buf);
 
     return RETURN_SUCCESS;
     
 }
 
-static int enc_getattr(const char *path, struct stat *stbuf)
-{
-    int res;
+static int enc_getattr(const char* path, stat_t* stbuf) {
+    
     char fullPath[PATHBUFSIZE];
 
-    if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
+    if(buildPath(path, fullPath, sizeof(fullPath)) < 0) {
 	fprintf(stderr, "ERROR enc_getattr: buildPath failed\n");
 	return RETURN_FAILURE;
     }
     path = NULL;
 
-    res = lstat(fullPath, stbuf);
-    if (res == -1)
+    if(lstat(fullPath, stbuf) < 0) {
 	return -errno;
+    }
 
     return RETURN_SUCCESS;
+
 }
 
-static int enc_fgetattr(const char *path, struct stat *stbuf,
-			struct fuse_file_info *fi)
-{
-    int res;
+static int enc_fgetattr(const char* path, stat_t* stbuf,
+			fuse_file_info_t* fi) {
 
     (void) path;
 
-    res = fstat(fi->fh, stbuf);
-    if (res == -1)
+    if(fstat(fi->fh, stbuf) < 0) {
 	return -errno;
+    }
 
     return RETURN_SUCCESS;
+
 }
 
-static int enc_access(const char *path, int mask)
-{
-    int res;
+static int enc_access(const char* path, int mask) {
+
     char fullPath[PATHBUFSIZE];
 
     if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
@@ -123,15 +135,16 @@ static int enc_access(const char *path, int mask)
     }
     path = NULL;
 
-    res = access(fullPath, mask);
-    if (res == -1)
+    if(access(fullPath, mask) < 0) {
 	return -errno;
+    }
 
     return RETURN_SUCCESS;
+
 }
 
-static int enc_readlink(const char *path, char *buf, size_t size)
-{
+static int enc_readlink(const char* path, char* buf, size_t size) {
+
     int res;
     char fullPath[PATHBUFSIZE];
 
@@ -141,28 +154,28 @@ static int enc_readlink(const char *path, char *buf, size_t size)
     }
     path = NULL;
 
-    res = readlink(fullPath, buf, size - 1);
-    if (res == -1)
+    res = readlink(fullPath, buf, (size-1));
+    if(res < 0) {
 	return -errno;
+    }
 
     buf[res] = '\0';
+
     return RETURN_SUCCESS;
+
 }
 
-typedef struct enc_dirp {
-    DIR *dp;
-    struct dirent *entry;
-    off_t offset;
-} enc_dirp_t;
+static int enc_opendir(const char* path, fuse_file_info_t* fi) {
 
-static int enc_opendir(const char *path, struct fuse_file_info *fi)
-{
     int res;
-    enc_dirp_t* d = malloc(sizeof(*d));
-    if (d == NULL)
-	return -ENOMEM;
-
+    enc_dirp_t* d = NULL;
     char fullPath[PATHBUFSIZE];
+
+    d = malloc(sizeof(*d));
+    if(d == NULL) {
+	return -ENOMEM;
+    }
+    
     if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
 	fprintf(stderr, "ERROR enc_opendir: buildPath failed\n");
 	return RETURN_FAILURE;
@@ -170,7 +183,7 @@ static int enc_opendir(const char *path, struct fuse_file_info *fi)
     path = NULL;
 
     d->dp = opendir(fullPath);
-    if (d->dp == NULL) {
+    if(d->dp == NULL) {
 	res = -errno;
 	free(d);
 	return res;
@@ -179,27 +192,27 @@ static int enc_opendir(const char *path, struct fuse_file_info *fi)
     d->entry = NULL;
 
     fi->fh = (unsigned long) d;
+
     return RETURN_SUCCESS;
+
 }
 
-static inline struct enc_dirp *get_dirp(struct fuse_file_info *fi)
-{
-    return (struct enc_dirp *) (uintptr_t) fi->fh;
-}
+static int enc_readdir(const char* path, void* buf, fuse_fill_dir_t filler,
+		       off_t offset, fuse_file_info_t* fi) {
 
-static int enc_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
-		       off_t offset, struct fuse_file_info *fi)
-{
-    struct enc_dirp *d = get_dirp(fi);
+    enc_dirp_t* d = NULL;
 
     (void) path;
+
+    d = get_dirp(fi);
+
     if (offset != d->offset) {
 	seekdir(d->dp, offset);
 	d->entry = NULL;
 	d->offset = offset;
     }
     while (1) {
-	struct stat st;
+	stat_t st;
 	off_t nextoff;
 
 	if (!d->entry) {
@@ -220,19 +233,25 @@ static int enc_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
     }
 
     return RETURN_SUCCESS;
+
 }
 
-static int enc_releasedir(const char *path, struct fuse_file_info *fi)
-{
-    struct enc_dirp *d = get_dirp(fi);
+static int enc_releasedir(const char* path, fuse_file_info_t* fi) {
+
+    enc_dirp_t* d = NULL;
+
     (void) path;
+
+    d = get_dirp(fi);
     closedir(d->dp);
     free(d);
+
     return RETURN_SUCCESS;
+
 }
 
-static int enc_mknod(const char *path, mode_t mode, dev_t rdev)
-{
+static int enc_mknod(const char* path, mode_t mode, dev_t rdev) {
+
     int res;
     char fullPath[PATHBUFSIZE];
 
@@ -242,19 +261,22 @@ static int enc_mknod(const char *path, mode_t mode, dev_t rdev)
     }
     path = NULL;
 
-    if (S_ISFIFO(mode))
+    if(S_ISFIFO(mode)) {
 	res = mkfifo(fullPath, mode);
-    else
+    }
+    else {
 	res = mknod(fullPath, mode, rdev);
-    if (res == -1)
+    }
+    if(res < 0) {
 	return -errno;
-
+    }
+    
     return RETURN_SUCCESS;
+
 }
 
-static int enc_mkdir(const char *path, mode_t mode)
-{
-    int res;
+static int enc_mkdir(const char* path, mode_t mode) {
+
     char fullPath[PATHBUFSIZE];
 
     if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
@@ -263,16 +285,16 @@ static int enc_mkdir(const char *path, mode_t mode)
     }
     path = NULL;
 
-    res = mkdir(fullPath, mode);
-    if (res == -1)
+    if(mkdir(fullPath, mode) < 0) {
 	return -errno;
+    }
 
     return RETURN_SUCCESS;
+
 }
 
-static int enc_unlink(const char *path)
-{
-    int res;
+static int enc_unlink(const char* path) {
+
     char fullPath[PATHBUFSIZE];
 
     if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
@@ -281,16 +303,16 @@ static int enc_unlink(const char *path)
     }
     path = NULL;
 
-    res = unlink(fullPath);
-    if (res == -1)
+    if(unlink(fullPath) < 0){
 	return -errno;
+    }
 
     return RETURN_SUCCESS;
+
 }
 
-static int enc_rmdir(const char *path)
-{
-    int res;
+static int enc_rmdir(const char* path) {
+
     char fullPath[PATHBUFSIZE];
 
     if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
@@ -299,16 +321,16 @@ static int enc_rmdir(const char *path)
     }
     path = NULL;
 
-    res = rmdir(fullPath);
-    if (res == -1)
+    if(rmdir(fullPath)) {
 	return -errno;
+    }
 
     return RETURN_SUCCESS;
+
 }
 
-static int enc_symlink(const char *from, const char *to)
-{
-    int res;
+static int enc_symlink(const char* from, const char* to) {
+
     char fullFrom[PATHBUFSIZE];
     char fullTo[PATHBUFSIZE];
 
@@ -324,16 +346,16 @@ static int enc_symlink(const char *from, const char *to)
     }
     to = NULL;
 
-    res = symlink(fullFrom, fullTo);
-    if (res == -1)
+    if(symlink(fullFrom, fullTo)) {
 	return -errno;
+    }
 
     return RETURN_SUCCESS;
+
 }
 
-static int enc_rename(const char *from, const char *to)
-{
-    int res;
+static int enc_rename(const char* from, const char* to) {
+
     char fullFrom[PATHBUFSIZE];
     char fullTo[PATHBUFSIZE];
 
@@ -349,16 +371,16 @@ static int enc_rename(const char *from, const char *to)
     }
     to = NULL;
 
-    res = rename(fullFrom, fullTo);
-    if (res == -1)
+    if(rename(fullFrom, fullTo) < 0) {
 	return -errno;
+    }
 
     return RETURN_SUCCESS;
+
 }
 
-static int enc_link(const char *from, const char *to)
-{
-    int res;
+static int enc_link(const char* from, const char* to) {
+
     char fullFrom[PATHBUFSIZE];
     char fullTo[PATHBUFSIZE];
 
@@ -374,16 +396,16 @@ static int enc_link(const char *from, const char *to)
     }
     to = NULL;
 
-    res = link(fullFrom, fullTo);
-    if (res == -1)
+    if(link(fullFrom, fullTo) < 0) {
 	return -errno;
+    }
 
     return RETURN_SUCCESS;
+
 }
 
-static int enc_chmod(const char *path, mode_t mode)
-{
-    int res;
+static int enc_chmod(const char* path, mode_t mode) {
+
     char fullPath[PATHBUFSIZE];
 
     if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
@@ -392,16 +414,16 @@ static int enc_chmod(const char *path, mode_t mode)
     }
     path = NULL;
 
-    res = chmod(fullPath, mode);
-    if (res == -1)
+    if(chmod(fullPath, mode) < 0) {
 	return -errno;
+    }
 
     return RETURN_SUCCESS;
+
 }
 
-static int enc_chown(const char *path, uid_t uid, gid_t gid)
-{
-    int res;
+static int enc_chown(const char* path, uid_t uid, gid_t gid) {
+
     char fullPath[PATHBUFSIZE];
 
     if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
@@ -410,16 +432,16 @@ static int enc_chown(const char *path, uid_t uid, gid_t gid)
     }
     path = NULL;
 
-    res = lchown(fullPath, uid, gid);
-    if (res == -1)
+    if(lchown(fullPath, uid, gid) < 0) {
 	return -errno;
+    }
 
     return RETURN_SUCCESS;
+
 }
 
-static int enc_truncate(const char *path, off_t size)
-{
-    int res;
+static int enc_truncate(const char* path, off_t size) {
+
     char fullPath[PATHBUFSIZE];
 
     if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
@@ -428,31 +450,30 @@ static int enc_truncate(const char *path, off_t size)
     }
     path = NULL;
 
-    res = truncate(fullPath, size);
-    if (res == -1)
+    if(truncate(fullPath, size)) {
 	return -errno;
+    }
 
     return RETURN_SUCCESS;
+
 }
 
-static int enc_ftruncate(const char *path, off_t size,
-			 struct fuse_file_info *fi)
-{
-    int res;
+static int enc_ftruncate(const char* path, off_t size,
+			 fuse_file_info_t* fi) {
 
     (void) path;
 
-    res = ftruncate(fi->fh, size);
-    if (res == -1)
+    if(ftruncate(fi->fh, size) < 0) {
 	return -errno;
+    }
 
     return RETURN_SUCCESS;
+
 }
 
 #ifdef HAVE_UTIMENSAT
-static int enc_utimens(const char *path, const struct timespec ts[2])
-{
-    int res;
+static int enc_utimens(const char* path, const timespec_t ts[2]) {
+
     char fullPath[PATHBUFSIZE];
 
     if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
@@ -462,16 +483,17 @@ static int enc_utimens(const char *path, const struct timespec ts[2])
     path = NULL;
 
     /* don't use utime/utimes since they follow symlinks */
-    res = utimensat(0, fullPath, ts, AT_SYMLINK_NOFOLLOW);
-    if (res == -1)
+    if(utimensat(0, fullPath, ts, AT_SYMLINK_NOFOLLOW) < 0) {
 	return -errno;
+    }
 
     return RETURN_SUCCESS;
+
 }
 #endif
 
-static int enc_create(const char *path, mode_t mode, struct fuse_file_info *fi)
-{
+static int enc_create(const char* path, mode_t mode, fuse_file_info_t* fi) {
+
     int fd;
     char fullPath[PATHBUFSIZE];
 
@@ -482,15 +504,18 @@ static int enc_create(const char *path, mode_t mode, struct fuse_file_info *fi)
     path = NULL;
 
     fd = open(fullPath, fi->flags, mode);
-    if (fd == -1)
+    if(fd < 0) {
 	return -errno;
+    }
 
     fi->fh = fd;
+
     return RETURN_SUCCESS;
+
 }
 
-static int enc_open(const char *path, struct fuse_file_info *fi)
-{
+static int enc_open(const char* path, fuse_file_info_t* fi) {
+
     int fd;
     char fullPath[PATHBUFSIZE];
 
@@ -501,36 +526,43 @@ static int enc_open(const char *path, struct fuse_file_info *fi)
     path = NULL;
 
     fd = open(fullPath, fi->flags);
-    if (fd == -1)
+    if(fd < 0) {
 	return -errno;
+    }
 
     fi->fh = fd;
+
     return EXIT_SUCCESS;
+
 }
 
-static int enc_read(const char *path, char *buf, size_t size, off_t offset,
-		    struct fuse_file_info *fi)
-{
+static int enc_read(const char* path, char* buf, size_t size, off_t offset,
+		    fuse_file_info_t* fi) {
+
     int res;
 
     (void) path;
+
     res = pread(fi->fh, buf, size, offset);
-    if (res == -1)
+    if(res < 0) {
 	res = -errno;
+    }
 
     return res;
+
 }
 
-static int enc_read_buf(const char *path, struct fuse_bufvec **bufp,
-			size_t size, off_t offset, struct fuse_file_info *fi)
-{
-    struct fuse_bufvec *src;
+static int enc_read_buf(const char* path, fuse_bufvec_t** bufp,
+			size_t size, off_t offset, fuse_file_info_t* fi) {
+
+    fuse_bufvec_t* src;
 
     (void) path;
 
     src = malloc(sizeof(struct fuse_bufvec));
-    if (src == NULL)
+    if(src == NULL) {
 	return -ENOMEM;
+    }
 
     *src = FUSE_BUFVEC_INIT(size);
 
@@ -541,25 +573,29 @@ static int enc_read_buf(const char *path, struct fuse_bufvec **bufp,
     *bufp = src;
 
     return RETURN_SUCCESS;
+
 }
 
-static int enc_write(const char *path, const char *buf, size_t size,
-		     off_t offset, struct fuse_file_info *fi)
-{
+static int enc_write(const char* path, const char* buf, size_t size,
+		     off_t offset, fuse_file_info_t* fi) {
+
     int res;
 
     (void) path;
+
     res = pwrite(fi->fh, buf, size, offset);
-    if (res == -1)
+    if(res < 0) {
 	res = -errno;
+    }
 
     return res;
+
 }
 
-static int enc_write_buf(const char *path, struct fuse_bufvec *buf,
-			 off_t offset, struct fuse_file_info *fi)
-{
-    struct fuse_bufvec dst = FUSE_BUFVEC_INIT(fuse_buf_size(buf));
+static int enc_write_buf(const char* path, fuse_bufvec_t* buf,
+			 off_t offset, fuse_file_info_t* fi) {
+
+    fuse_bufvec_t dst = FUSE_BUFVEC_INIT(fuse_buf_size(buf));
 
     (void) path;
 
@@ -568,11 +604,11 @@ static int enc_write_buf(const char *path, struct fuse_bufvec *buf,
     dst.buf[0].pos = offset;
 
     return fuse_buf_copy(&dst, buf, FUSE_BUF_SPLICE_NONBLOCK);
+
 }
 
-static int enc_statfs(const char *path, struct statvfs *stbuf)
-{
-    int res;
+static int enc_statfs(const char* path, statvfs_t* stbuf) {
+
     char fullPath[PATHBUFSIZE];
 
     if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
@@ -581,76 +617,91 @@ static int enc_statfs(const char *path, struct statvfs *stbuf)
     }
     path = NULL;
 
-    res = statvfs(fullPath, stbuf);
-    if (res == -1)
+    if(statvfs(fullPath, stbuf) < 0) {
 	return -errno;
+    }
 
     return RETURN_SUCCESS;
+
 }
 
-static int enc_flush(const char *path, struct fuse_file_info *fi)
-{
-    int res;
+static int enc_flush(const char* path, fuse_file_info_t* fi) {
 
     (void) path;
+
     /* This is called from every close on an open file, so call the
        close on the underlying filesystem. But since flush may be
        called multiple times for an open file, this must not really
        close the file.  This is important if used on a network
        filesystem like NFS which flush the data/metadata on close() */
-    res = close(dup(fi->fh));
-    if (res == -1)
+
+    if(close(dup(fi->fh)) < 0) {
 	return -errno;
+    }
 
     return RETURN_SUCCESS;
+
 }
 
-static int enc_release(const char *path, struct fuse_file_info *fi)
-{
+static int enc_release(const char* path, fuse_file_info_t* fi) {
+
     (void) path;
+
     close(fi->fh);
 
     return RETURN_SUCCESS;
+
 }
 
-static int enc_fsync(const char *path, int isdatasync,
-		     struct fuse_file_info *fi)
-{
-    int res;
-    (void) path;
+static int enc_fsync(const char* path, int isdatasync,
+		     fuse_file_info_t* fi) {
 
+    int res;
+
+    (void) path;
 #ifndef HAVE_FDATASYNC
     (void) isdatasync;
-#else
-    if (isdatasync)
-	res = fdatasync(fi->fh);
-    else
 #endif
+
+#ifdef HAVE_FDATASYNC
+    if(isdatasync) {
+	res = fdatasync(fi->fh);
+    }
+    else {
 	res = fsync(fi->fh);
-    if (res == -1)
+    }
+#else
+    res = fsync(fi->fh);
+#endif
+
+    if(res < 0) {
 	return -errno;
-
+    }
+    
     return RETURN_SUCCESS;
+    
 }
-
+    
 #ifdef HAVE_POSIX_FALLOCATE
-static int enc_fallocate(const char *path, int mode,
-			 off_t offset, off_t length, struct fuse_file_info *fi)
-{
+static int enc_fallocate(const char* path, int mode,
+	                 off_t offset, off_t length, fuse_file_info_t* fi) {
+    
     (void) path;
 
-    if (mode)
-	return -EOPNOTSUPP;
-
+    if(mode) {
+        return -EOPNOTSUPP;
+    }
+    
     return -posix_fallocate(fi->fh, offset, length);
+
 }
 #endif
 
 #ifdef HAVE_SETXATTR
 /* xattr operations are optional and can safely be left unimplemented */
-static int enc_setxattr(const char *path, const char *name, const char *value,
-			size_t size, int flags)
-{
+static int enc_setxattr(const char* path, const char* name, const char* value,
+			size_t size, int flags) {
+
     char fullPath[PATHBUFSIZE];
 
     if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
@@ -659,15 +710,18 @@ static int enc_setxattr(const char *path, const char *name, const char *value,
     }
     path = NULL;
 
-    int res = lsetxattr(fullPath, name, value, size, flags);
-    if (res == -1)
-	return -errno;
+    if(lsetxattr(fullPath, name, value, size, flags) < 0) {
+        return -errno;
+    }
+
     return RETURN_SUCCESS;
+
 }
 
-static int enc_getxattr(const char *path, const char *name, char *value,
-			size_t size)
-{
+static int enc_getxattr(const char* path, const char* name, char* value,
+			size_t size) {
+
+    int res;
     char fullPath[PATHBUFSIZE];
 
     if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
@@ -676,14 +730,17 @@ static int enc_getxattr(const char *path, const char *name, char *value,
     }
     path = NULL;
 
-    int res = lgetxattr(fullPath, name, value, size);
-    if (res == -1)
-	return -errno;
+    res = lgetxattr(fullPath, name, value, size);
+    if(res < 0) {
+        return -errno;
+    }
+
     return res;
+
 }
 
-static int enc_listxattr(const char *path, char *list, size_t size)
-{
+static int enc_listxattr(const char* path, char* list, size_t size) {
+
     char fullPath[PATHBUFSIZE];
 
     if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
@@ -693,13 +750,16 @@ static int enc_listxattr(const char *path, char *list, size_t size)
     path = NULL;
 
     int res = llistxattr(fullPath, list, size);
-    if (res == -1)
-	return -errno;
+    if(res < 0) {
+        return -errno;
+    }
+
     return res;
+
 }
 
-static int enc_removexattr(const char *path, const char *name)
-{
+static int enc_removexattr(const char* path, const char* name) {
+
     char fullPath[PATHBUFSIZE];
 
     if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
@@ -708,32 +768,35 @@ static int enc_removexattr(const char *path, const char *name)
     }
     path = NULL;
 
-    int res = lremovexattr(fullPath, name);
-    if (res == -1)
-	return -errno;
+    if(lremovexattr(fullPath, name) < 0) {
+        return -errno;
+    }
+
     return RETURN_SUCCESS;
+
 }
 #endif /* HAVE_SETXATTR */
 
-static int enc_lock(const char *path, struct fuse_file_info *fi, int cmd,
-		    struct flock *lock)
-{
+static int enc_lock(const char* path, fuse_file_info_t* fi, int cmd,
+		    flock_t* lock) {
+
     (void) path;
 
     return ulockmgr_op(fi->fh, cmd, lock, &fi->lock_owner,
-		       sizeof(fi->lock_owner));
+	sizeof(fi->lock_owner));
+
 }
 
-static int enc_flock(const char *path, struct fuse_file_info *fi, int op)
-{
-    int res;
+static int enc_flock(const char* path, fuse_file_info_t* fi, int op) {
+
     (void) path;
 
-    res = flock(fi->fh, op);
-    if (res == -1)
-	return -errno;
+    if(flock(fi->fh, op) < 0) {
+        return -errno;
+    }
 
     return RETURN_SUCCESS;
+
 }
 
 static struct fuse_operations enc_oper = {
@@ -808,6 +871,7 @@ int main(int argc, char *argv[])
     }
 
     umask(0);     
+
     return fuse_main(args.argc, args.argv, &enc_oper, &state);
 
 }
