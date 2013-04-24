@@ -650,20 +650,6 @@ static int enc_release(const char* path, fuse_file_info_t* fi) {
 
 }
 
-
-static int enc_fsyncdir(const char* path, int isdatasync, fuse_file_info_t* fi) {
-
-    (void) path;
-    (void) isdatasync;
-    (void) fi;
-
-    /* TODO: Implement This... */
-
-    return RETURN_FAILURE;
-
-}
-
-
 static int enc_fsync(const char* path, int isdatasync,
 		     fuse_file_info_t* fi) {
 
@@ -770,18 +756,18 @@ static int enc_lock(const char* path, fuse_file_info_t* fi, int cmd,
     (void) path;
 
     return ulockmgr_op(fi->fh, cmd, lock, &fi->lock_owner,
-	sizeof(fi->lock_owner));
+		       sizeof(fi->lock_owner));
 
 }
 
 static int enc_flock(const char* path, fuse_file_info_t* fi, int op) {
-
+    
     (void) path;
-
+    
     if(flock(fi->fh, op) < 0) {
         return -errno;
     }
-
+    
     return RETURN_SUCCESS;
 
 }
@@ -832,7 +818,6 @@ static struct fuse_operations enc_oper = {
     /* Buffering */
     .flush       = enc_flush,       /* Flush Cached Data */
     .fsync       = enc_fsync,       /* Synch Open File Contents */
-    .fsyncdir    = enc_fsyncdir,    /* Synch Open Directory Contents */
     
     /* Extended Attributes */
     .setxattr    = enc_setxattr,    /* Set XATTR */
@@ -846,8 +831,7 @@ static struct fuse_operations enc_oper = {
 
 };
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
 
     fuse_args_t args = FUSE_ARGS_INIT(0, NULL);
     fsState_t state;
