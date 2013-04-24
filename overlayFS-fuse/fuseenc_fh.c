@@ -29,13 +29,12 @@
 #include <dirent.h>
 #include <errno.h>
 #include <sys/time.h>
-#ifdef HAVE_SETXATTR
 #include <sys/xattr.h>
-#endif
-#include <sys/file.h> /* flock(2) */
+#include <sys/file.h>
 
 typedef struct fuse_args fuse_args_t;
 typedef struct fuse_bufvec fuse_bufvec_t;
+typedef struct fuse_conn_info fuse_conn_info_t;
 typedef struct fuse_file_info fuse_file_info_t;
 
 typedef struct flock flock_t;
@@ -471,7 +470,6 @@ static int enc_ftruncate(const char* path, off_t size,
 
 }
 
-#ifdef HAVE_UTIMENSAT
 static int enc_utimens(const char* path, const timespec_t ts[2]) {
 
     char fullPath[PATHBUFSIZE];
@@ -490,7 +488,6 @@ static int enc_utimens(const char* path, const timespec_t ts[2]) {
     return RETURN_SUCCESS;
 
 }
-#endif
 
 static int enc_create(const char* path, mode_t mode, fuse_file_info_t* fi) {
 
@@ -653,26 +650,33 @@ static int enc_release(const char* path, fuse_file_info_t* fi) {
 
 }
 
+
+static int enc_fsyncdir(const char* path, int isdatasync, fuse_file_info_t* fi) {
+
+    (void) path;
+    (void) isdatasync;
+    (void) fi;
+
+    /* TODO: Implement This... */
+
+    return RETURN_FAILURE;
+
+}
+
+
 static int enc_fsync(const char* path, int isdatasync,
 		     fuse_file_info_t* fi) {
 
     int res;
 
     (void) path;
-#ifndef HAVE_FDATASYNC
-    (void) isdatasync;
-#endif
 
-#ifdef HAVE_FDATASYNC
     if(isdatasync) {
 	res = fdatasync(fi->fh);
     }
     else {
 	res = fsync(fi->fh);
     }
-#else
-    res = fsync(fi->fh);
-#endif
 
     if(res < 0) {
 	return -errno;
@@ -682,22 +686,6 @@ static int enc_fsync(const char* path, int isdatasync,
     
 }
     
-#ifdef HAVE_POSIX_FALLOCATE
-static int enc_fallocate(const char* path, int mode,
-	                 off_t offset, off_t length, fuse_file_info_t* fi) {
-    
-    (void) path;
-
-    if(mode) {
-        return -EOPNOTSUPP;
-    }
-    
-    return -posix_fallocate(fi->fh, offset, length);
-
-}
-#endif
-
-#ifdef HAVE_SETXATTR
 /* xattr operations are optional and can safely be left unimplemented */
 static int enc_setxattr(const char* path, const char* name, const char* value,
 			size_t size, int flags) {
@@ -775,7 +763,6 @@ static int enc_removexattr(const char* path, const char* name) {
     return RETURN_SUCCESS;
 
 }
-#endif /* HAVE_SETXATTR */
 
 static int enc_lock(const char* path, fuse_file_info_t* fi, int cmd,
 		    flock_t* lock) {
@@ -800,53 +787,63 @@ static int enc_flock(const char* path, fuse_file_info_t* fi, int op) {
 }
 
 static struct fuse_operations enc_oper = {
-    .getattr= enc_getattr,
-    .fgetattr= enc_fgetattr,
-    .access= enc_access,
-    .readlink= enc_readlink,
-    .opendir= enc_opendir,
-    .readdir= enc_readdir,
-    .releasedir= enc_releasedir,
-    .mknod= enc_mknod,
-    .mkdir= enc_mkdir,
-    .symlink= enc_symlink,
-    .unlink= enc_unlink,
-    .rmdir= enc_rmdir,
-    .rename= enc_rename,
-    .link= enc_link,
-    .chmod= enc_chmod,
-    .chown= enc_chown,
-    .truncate= enc_truncate,
-    .ftruncate= enc_ftruncate,
-#ifdef HAVE_UTIMENSAT
-    .utimens= enc_utimens,
-#endif
-    .create= enc_create,
-    .open= enc_open,
-    .read= enc_read,
-    .read_buf= enc_read_buf,
-    .write= enc_write,
-    .write_buf= enc_write_buf,
-    .statfs= enc_statfs,
-    .flush= enc_flush,
-    .release= enc_release,
-    .fsync= enc_fsync,
-#ifdef HAVE_POSIX_FALLOCATE
-    .fallocate= enc_fallocate,
-#endif
-#ifdef HAVE_SETXATTR
-    .setxattr= enc_setxattr,
-    .getxattr= enc_getxattr,
-    .listxattr= enc_listxattr,
-    .removexattr= enc_removexattr,
-#endif
-    .lock= enc_lock,
-    .flock= enc_flock,
 
-    .flag_nullpath_ok = 1,
-#if HAVE_UTIMENSAT
+    /* Access Control */
+    .access     = enc_access,       /* Check File Permissions */
+    .lock       = enc_lock,         /* Lock File */    
+    .flock      = enc_flock,        /* Lock Open File */
+
+    /* Metadata */
+    .chmod      = enc_chmod,        /* Change File Permissions */
+    .chown      = enc_chown,        /* Change File Owner */
+    .getattr    = enc_getattr,      /* Get File Attributes */
+    .fgetattr   = enc_fgetattr,     /* Get Open File Attributes  */
+    .statfs     = enc_statfs,       /* Get File System Statistics */
+    .utimens    = enc_utimens,      /* Change the Times of a File*/
+
+    /* Create and Delete */
+    .create     = enc_create,       /* Create and Open a Regular File */
+    .mkdir      = enc_mkdir,        /* Create a Directory */
+    .mknod      = enc_mknod,        /* Create a Non-Regular File Node */
+    .link       = enc_link,         /* Create a Hard Link */    
+    .symlink    = enc_symlink,      /* Create a Symbolic Link */	
+    .rmdir      = enc_rmdir,        /* Remove a Directory */
+    .unlink     = enc_unlink,       /* Remove a File */
+
+    /* Open and Close */
+    .open       = enc_open,         /* Open a File */
+    .opendir    = enc_opendir,      /* Open a Directory */
+    .release    = enc_release,      /* Release an Open File */
+    .releasedir = enc_releasedir,   /* Release an Open Directory */    
+
+    /* Read and Write */
+    .read        = enc_read,        /* Read a File */
+    .read_buf    = enc_read_buf,    /* Read a File to a Buffer */
+    .readdir     = enc_readdir,     /* Read a Directory */
+    .readlink    = enc_readlink,    /* Read the Target of a Symbolic Link */
+    .write       = enc_write,       /* Write a File*/
+    .write_buf   = enc_write_buf,   /* Write a File from a Buffer */
+
+    /* Modify */
+    .rename      = enc_rename,      /* Rename a File */
+    .truncate    = enc_truncate,    /* Change the Size of a File */
+    .ftruncate   = enc_ftruncate,   /* Change the Size of an Open File*/    
+
+    /* Buffering */
+    .flush       = enc_flush,       /* Flush Cached Data */
+    .fsync       = enc_fsync,       /* Synch Open File Contents */
+    .fsyncdir    = enc_fsyncdir,    /* Synch Open Directory Contents */
+    
+    /* Extended Attributes */
+    .setxattr    = enc_setxattr,    /* Set XATTR */
+    .getxattr    = enc_getxattr,    /* Get XATTR */
+    .listxattr   = enc_listxattr,   /* List XATTR */
+    .removexattr = enc_removexattr, /* Remove XATTR */
+
+    /* Flags */
+    .flag_nullpath_ok   = 1,
     .flag_utime_omit_ok = 1,
-#endif
+
 };
 
 int main(int argc, char *argv[])
