@@ -17,12 +17,25 @@
 
 #include "aes-crypt.h"
 
-#define BLOCKSIZE 1024
-#define FAILURE 0
-#define SUCCESS 1
+extern int crypt_copy(FILE* in, FILE* out){
 
-extern int do_crypt(FILE* in, FILE* out, int action, char* key_str){
-    /* Local Vars */
+    return do_crypt(in, out, ACT_COPY, NULL);
+
+}
+
+extern int crypt_decrypt(FILE* in, FILE* out, char* key_str){
+
+    return do_crypt(in, out, ACT_DECRYPT, key_str);
+
+}
+
+extern int crypt_encrypt(FILE* in, FILE* out, char* key_str){
+
+    return do_crypt(in, out, ACT_ENCRYPT, key_str);
+
+}
+
+extern int do_crypt(FILE* in, FILE* out, cryptAction_t action, char* key_str){
 
     /* Buffers */
     unsigned char inbuf[BLOCKSIZE];
@@ -40,6 +53,10 @@ extern int do_crypt(FILE* in, FILE* out, int action, char* key_str){
     
     /* tmp vars */
     int i;
+
+    /* Rewind Files */
+    rewind(in);
+    rewind(out);
 
     /* Setup Encryption Key and Cipher Engine if in cipher mode */
     if(action >= 0){
@@ -79,7 +96,7 @@ extern int do_crypt(FILE* in, FILE* out, int action, char* key_str){
 		    return 0;
 		}
 	}
-	/* If in pass-through mode. copy block as is */
+	/* If in pass-through mode, copy block as is */
 	else{
 	    memcpy(outbuf, inbuf, inlen);
 	    outlen = inlen;
@@ -108,6 +125,10 @@ extern int do_crypt(FILE* in, FILE* out, int action, char* key_str){
 	fwrite(outbuf, sizeof(*inbuf), outlen, out);
 	EVP_CIPHER_CTX_cleanup(&ctx);
     }
+
+    /* Rewind Files */
+    rewind(in);
+    rewind(out);    
     
     /* Success */
     return 1;
