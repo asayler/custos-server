@@ -153,6 +153,15 @@ static int buildTempPath(const char* fullPath, char* tempPath, size_t bufSize) {
 
 }
 
+static int decryptToTemp(const char* fullPath, int flags, mode_t mode) {
+    
+    (void) fullPath;
+    (void) flags;
+    (void) mode;
+
+    return RETURN_FAILURE;
+
+}
 
 static int enc_getattr(const char* path, stat_t* stbuf) {
     
