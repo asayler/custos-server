@@ -32,6 +32,8 @@
 #include <sys/xattr.h>
 #include <sys/file.h>
 
+#include "aes-crypt.h"
+
 typedef struct fuse_args fuse_args_t;
 typedef struct fuse_bufvec fuse_bufvec_t;
 typedef struct fuse_conn_info fuse_conn_info_t;
@@ -56,9 +58,16 @@ typedef struct fsState {
     char* basePath;
 } fsState_t;
 
+
+#define DEBUG
+
 #define RETURN_FAILURE -1
 #define RETURN_SUCCESS 0
 #define PATHBUFSIZE 1024
+#define PATHDELIMINATOR '/'
+#define NULLTERM '\0'
+#define TEMPNAME_PRE  "."
+#define TEMPNAME_POST ".decrypt"
 
 static int buildPath(const char* path, char* buf, size_t bufSize) {
 
@@ -89,9 +98,61 @@ static int buildPath(const char* path, char* buf, size_t bufSize) {
 	return RETURN_FAILURE;
     }
 
+#ifdef DEBUG
+    fprintf(stderr, "INFO buildPath: buf = %s\n", buf);
+#endif
+
     return RETURN_SUCCESS;
     
 }
+
+static int buildTempPath(const char* fullPath, char* tempPath, size_t bufSize) {
+
+    char* pFileName = NULL;
+    char buf[PATHBUFSIZE];
+    size_t length;
+
+    /* Input Checks */
+    if(fullPath == NULL) {
+	fprintf(stderr, "ERROR buildTempPath: fullPath must not be NULL\n");
+	return RETURN_FAILURE;
+    }
+    if(tempPath == NULL) {
+	fprintf(stderr, "ERROR buildTempPath: tempPath must not be NULL\n");
+	return RETURN_FAILURE;
+    }
+    
+    /* Copy input path to buf */
+    length = snprintf(buf, sizeof(buf), "%s", fullPath);
+    if(length > (sizeof(buf) - 1)) {
+	fprintf(stderr, "ERROR buildTempPath: Overflowed buf\n");
+	return RETURN_FAILURE;
+    }
+    
+    /* Find start of file name */
+    pFileName = strrchr(buf, PATHDELIMINATOR);
+    if(pFileName == NULL) {
+	fprintf(stderr, "ERROR buildTempPath: Could not find deliminator in path\n");
+	return RETURN_FAILURE;
+    }
+    *pFileName = NULLTERM;
+		      
+    /* Build Temp Path */
+    length = snprintf(tempPath, bufSize, "%s%c%s%s%s",
+		      buf, PATHDELIMINATOR, TEMPNAME_PRE, (pFileName + 1), TEMPNAME_POST);
+    if(length > (bufSize - 1)) {
+	fprintf(stderr, "ERROR buildTempPath: Overflowed tempPath\n");
+	return RETURN_FAILURE;
+    }
+
+#ifdef DEBUG
+    fprintf(stderr, "INFO buildTempPath: tempPath = %s\n", tempPath);
+#endif
+
+    return RETURN_SUCCESS;
+
+}
+
 
 static int enc_getattr(const char* path, stat_t* stbuf) {
     
@@ -493,12 +554,18 @@ static int enc_create(const char* path, mode_t mode, fuse_file_info_t* fi) {
 
     int fd;
     char fullPath[PATHBUFSIZE];
+    char tempPath[PATHBUFSIZE];
 
     if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
 	fprintf(stderr, "ERROR enc_create: buildPath failed\n");
 	return RETURN_FAILURE;
     }
     path = NULL;
+
+    if(buildTempPath(fullPath, tempPath, sizeof(tempPath)) < 0){
+	fprintf(stderr, "ERROR enc_create: buildTempPath failed\n");
+	return RETURN_FAILURE;
+    }
 
     fd = open(fullPath, fi->flags, mode);
     if(fd < 0) {
