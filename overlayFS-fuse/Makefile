@@ -41,11 +41,11 @@ fusexmp: fusexmp.o
 fusexmp_fh: fusexmp_fh.o
 	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSFUSE) $(LLIBSULOCK)
 
-fuseenc: fuseenc.o
-	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSFUSE)
+fuseenc: fuseenc.o aes-crypt.o
+	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSFUSE) $(LLIBSOPENSSL)
 
-fuseenc_fh: fuseenc_fh.o
-	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSFUSE) $(LLIBSULOCK)
+fuseenc_fh: fuseenc_fh.o aes-crypt.o
+	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSFUSE) $(LLIBSULOCK) $(LLIBSOPENSSL)
 
 xattr-util: xattr-util.o
 	$(CC) $(LFLAGS) $^ -o $@

@@ -68,34 +68,37 @@ typedef struct fsState {
 #define NULLTERM '\0'
 #define TEMPNAME_PRE  "."
 #define TEMPNAME_POST ".decrypt"
+#define KEYBUFSIZE 1024
+
+#define TESTKEY "test"
 
 static int buildPath(const char* path, char* buf, size_t bufSize) {
-
+    
     size_t size = 0;
     fsState_t* state = NULL;
 
     /* Input Checks */
     if(path == NULL) {
 	fprintf(stderr, "ERROR buildPath: path must not be NULL\n");
-	return RETURN_FAILURE;
+	return -EINVAL;
     }
     if(buf == NULL) {
 	fprintf(stderr, "ERROR buildPath: buf must not be NULL\n");
-	return RETURN_FAILURE;
+	return -EINVAL;
     }
 
     /* Get State */
     state = (fsState_t*)(fuse_get_context()->private_data);
     if(state == NULL) {
 	fprintf(stderr, "ERROR buildPath: state must not be NULL\n");
-	return RETURN_FAILURE;
+	return -EINVAL;
     }
 
     /* Concatenate in Buffer */
     size = snprintf(buf, bufSize, "%s%s", state->basePath, path);
     if(size > (bufSize - 1)) {
 	fprintf(stderr, "ERROR buildPath: length too large for buffer\n");
-	return RETURN_FAILURE;
+	return -ENAMETOOLONG;
     }
 
 #ifdef DEBUG
@@ -153,12 +156,126 @@ static int buildTempPath(const char* fullPath, char* tempPath, size_t bufSize) {
 
 }
 
-static int decryptToTemp(const char* fullPath, int flags, mode_t mode) {
+static int decryptToTemp(const char* fullPath, int flags) {
     
-    (void) fullPath;
-    (void) flags;
-    (void) mode;
+    int fd;
+    FILE* inputFP = NULL;
+    FILE* outputFP = NULL;
+    char tempPath[PATHBUFSIZE];
+    char key[KEYBUFSIZE] = TESTKEY;
 
+    if(buildTempPath(fullPath, tempPath, sizeof(tempPath)) < 0) {
+	fprintf(stderr, "ERROR decryptToTemp: buildTempPath failed\n");
+	goto ERROR_0;
+    }
+    
+    inputFP = fopen(fullPath, "r");
+    if(!inputFP) {
+	fprintf(stderr, "ERROR decryptToTemp: fopen(fullPath) failed\n");
+	goto ERROR_0;
+    }
+    
+    outputFP = fopen(tempPath, "w");
+    if(!inputFP) {
+	fprintf(stderr, "ERROR decryptToTemp: fopen(tempPath) failed\n");
+	goto ERROR_1;
+    }
+    
+    if(crypt_decrypt(inputFP, outputFP, key) < 0) {
+	fprintf(stderr, "ERROR decryptToTemp: crypt_decrypt() failed\n");
+	goto ERROR_2;
+    }
+
+    if(fclose(outputFP)) {
+	fprintf(stderr, "ERROR decryptToTemp: fclose(outputFP) failed\n");
+	goto ERROR_1;
+    }
+
+    if(fclose(inputFP)) {
+	fprintf(stderr, "ERROR decryptToTemp: fclose(inputFP) failed\n");
+	goto ERROR_0;
+    }
+
+    fd = open(tempPath, flags);
+    if(fd < 0) {
+	return -errno;
+    }
+
+    return fd;
+
+ ERROR_2:
+
+    if(fclose(outputFP)) {
+	fprintf(stderr, "ERROR decryptToTemp: fclose(outputFP) failed\n");
+    }
+
+ ERROR_1:
+
+    if(fclose(inputFP)) {
+	fprintf(stderr, "ERROR decryptToTemp: fclose(inputFP) failed\n");
+    }
+
+ ERROR_0:
+    
+    return RETURN_FAILURE;
+
+}
+
+static int encryptFromTemp(const char* fullPath) {
+    
+    FILE* inputFP = NULL;
+    FILE* outputFP = NULL;
+    char tempPath[PATHBUFSIZE];
+    char key[KEYBUFSIZE] = TESTKEY;
+
+    if(buildTempPath(fullPath, tempPath, sizeof(tempPath)) < 0) {
+	fprintf(stderr, "ERROR encryptFromTemp: buildTempPath failed\n");
+	goto ERROR_0;
+    }
+    
+    inputFP = fopen(tempPath, "r");
+    if(!inputFP) {
+	fprintf(stderr, "ERROR encryptFromTemp: fopen(tempPath) failed\n");
+	goto ERROR_0;
+    }
+    
+    outputFP = fopen(fullPath, "w");
+    if(!inputFP) {
+	fprintf(stderr, "ERROR encryptFromTemp: fopen(fullPath) failed\n");
+	goto ERROR_1;
+    }
+    
+    if(crypt_encrypt(inputFP, outputFP, key) < 0) {
+	fprintf(stderr, "ERROR encryptFromTemp: crypt_encrypt() failed\n");
+	goto ERROR_2;
+    }
+
+    if(fclose(outputFP)) {
+	fprintf(stderr, "ERROR encryptFromTemp: fclose(outputFP) failed\n");
+	goto ERROR_1;
+    }
+
+    if(fclose(inputFP)) {
+	fprintf(stderr, "ERROR encryptFromTemp: fclose(inputFP) failed\n");
+	goto ERROR_0;
+    }
+
+    return RETURN_SUCCESS;
+
+ ERROR_2:
+
+    if(fclose(outputFP)) {
+	fprintf(stderr, "ERROR encryptFromTemp: fclose(outputFP) failed\n");
+    }
+
+ ERROR_1:
+
+    if(fclose(inputFP)) {
+	fprintf(stderr, "ERROR encryptFromTemp: fclose(inputFP) failed\n");
+    }
+
+ ERROR_0:
+    
     return RETURN_FAILURE;
 
 }
@@ -576,7 +693,7 @@ static int enc_create(const char* path, mode_t mode, fuse_file_info_t* fi) {
 	return RETURN_FAILURE;
     }
 
-    fd = open(fullPath, fi->flags, mode);
+    fd = open(tempPath, fi->flags, mode);
     if(fd < 0) {
 	return -errno;
     }
@@ -598,11 +715,12 @@ static int enc_open(const char* path, fuse_file_info_t* fi) {
     }
     path = NULL;
 
-    fd = open(fullPath, fi->flags);
+    fd = decryptToTemp(fullPath, fi->flags);
     if(fd < 0) {
-	return -errno;
+	fprintf(stderr, "ERROR enc_open: decryptToTemp failed\n");
+	return fd;
     }
-
+    
     fi->fh = fd;
 
     return EXIT_SUCCESS;
@@ -679,9 +797,35 @@ static int enc_flush(const char* path, fuse_file_info_t* fi) {
 
 static int enc_release(const char* path, fuse_file_info_t* fi) {
 
-    (void) path;
+    int ret;
+    char fullPath[PATHBUFSIZE];
 
-    close(fi->fh);
+    if(!path) {
+	fprintf(stderr, "ERROR enc_release: path is NULL");
+	return -EINVAL;
+    }
+
+    if(!fi) {
+	fprintf(stderr, "ERROR enc_release: fi is NULL");
+	return -EINVAL;
+    }
+
+    ret = buildPath(path, fullPath, sizeof(fullPath));
+    if(ret < 0) {
+	fprintf(stderr, "ERROR enc_release: buildPath failed\n");
+	return ret;
+    }
+    path = NULL;
+
+    if(close(fi->fh) < 0) {
+	return -errno;
+    }
+
+    ret = encryptFromTemp(fullPath);
+    if(ret < 0) {
+	fprintf(stderr, "ERROR enc_release: encryptFromTemp failed\n");
+	return ret;
+    }
 
     return RETURN_SUCCESS;
 
