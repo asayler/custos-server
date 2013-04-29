@@ -12,6 +12,7 @@ fuseenc_fh
 fusehello
 fusexmp
 fusexmp_fh
+fusemir_fh
 xattr-util
 aes-crypt-util
 
