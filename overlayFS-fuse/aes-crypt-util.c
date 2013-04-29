@@ -93,8 +93,8 @@ int main(int argc, char **argv)
 	return EXIT_FAILURE;
     }
 
-    /* Perform do_crpt action (encrypt, decrypt, copy) */
-    if(!do_crypt(inFile, outFile, action, key_str)){
+    /* Perform do_crypt action (encrypt, decrypt, copy) */
+    if(do_crypt(inFile, outFile, action, key_str) < 0){
 	fprintf(stderr, "do_crypt failed\n");
     }
 

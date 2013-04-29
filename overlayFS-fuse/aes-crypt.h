@@ -26,8 +26,6 @@
 #include <openssl/aes.h>
 
 #define BLOCKSIZE 1024
-#define FAILURE 0
-#define SUCCESS 1
 
 typedef enum {
     ACT_COPY    = -1,
@@ -50,7 +48,7 @@ extern int crypt_encrypt(FILE* in, FILE* out, char* key_str);
  *       int action    : Cipher action (1=encrypt, 0=decrypt, -1=pass-through (copy))
  *	 char* key_str : C-string containing passpharse from which key is derived
  *
- * Return: FAILURE on error, SUCCESS on success
+ * Return: -1 on error, 0 on success
  */
 extern int do_crypt(FILE* in, FILE* out, cryptAction_t action, char* key_str);
 

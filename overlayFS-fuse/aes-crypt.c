@@ -17,6 +17,10 @@
 
 #include "aes-crypt.h"
 
+#define RETURN_FAILURE -1
+#define RETURN_SUCCESS 0
+
+
 extern int crypt_copy(FILE* in, FILE* out){
 
     return do_crypt(in, out, ACT_COPY, NULL);
@@ -63,7 +67,7 @@ extern int do_crypt(FILE* in, FILE* out, cryptAction_t action, char* key_str){
 	if(!key_str){
 	    /* Error */
 	    fprintf(stderr, "Key_str must not be NULL\n");
-	    return 0;
+	    return RETURN_FAILURE;
 	}
 	/* Build Key from String */
 	i = EVP_BytesToKey(EVP_aes_256_cbc(), EVP_sha1(), NULL,
@@ -71,7 +75,7 @@ extern int do_crypt(FILE* in, FILE* out, cryptAction_t action, char* key_str){
 	if (i != 32) {
 	    /* Error */
 	    fprintf(stderr, "Key size is %d bits - should be 256 bits\n", i*8);
-	    return 0;
+	    return RETURN_FAILURE;
 	}
 	/* Init Engine */
 	EVP_CIPHER_CTX_init(&ctx);
@@ -93,7 +97,7 @@ extern int do_crypt(FILE* in, FILE* out, cryptAction_t action, char* key_str){
 		{
 		    /* Error */
 		    EVP_CIPHER_CTX_cleanup(&ctx);
-		    return 0;
+		    return RETURN_FAILURE;
 		}
 	}
 	/* If in pass-through mode, copy block as is */
@@ -108,7 +112,7 @@ extern int do_crypt(FILE* in, FILE* out, cryptAction_t action, char* key_str){
 	    /* Error */
 	    perror("fwrite error");
 	    EVP_CIPHER_CTX_cleanup(&ctx);
-	    return 0;
+	    return RETURN_FAILURE;
 	}
     }
     
@@ -119,7 +123,7 @@ extern int do_crypt(FILE* in, FILE* out, cryptAction_t action, char* key_str){
 	    {
 		/* Error */
 		EVP_CIPHER_CTX_cleanup(&ctx);
-		return 0;
+		return RETURN_FAILURE;
 	    }
 	/* Write remainign cipher block + padding*/
 	fwrite(outbuf, sizeof(*inbuf), outlen, out);
@@ -131,5 +135,5 @@ extern int do_crypt(FILE* in, FILE* out, cryptAction_t action, char* key_str){
     rewind(out);    
     
     /* Success */
-    return 1;
+    return RETURN_SUCCESS;
 }
