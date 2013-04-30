@@ -501,7 +501,7 @@ static int enc_fgetattr(const char* path, stat_t* stbuf,
 	return -errno;
     }
 
-    ret = fstat(fhs->clearFH, stTemp);
+    ret = fstat(fhs->clearFH, &stTemp);
     if(ret < 0) {
 	fprintf(stderr, "ERROR enc_fgetattr: fstat(clearFH) failed");
 	perror("ERROR enc_fgetattr");
@@ -1182,32 +1182,72 @@ static int enc_statfs(const char* path, statvfs_t* stbuf) {
 
 static int enc_flush(const char* path, fuse_file_info_t* fi) {
 
-    (void) path;
-
-    int ret;
-    enc_fhs_t* fhs;
-
-    fhs = get_fhs(fi->fh);
-
     /* This is called from every close on an open file, so call the
        close on the underlying filesystem. But since flush may be
        called multiple times for an open file, this must not really
        close the file.  This is important if used on a network
        filesystem like NFS which flush the data/metadata on close() */
 
+    int ret;
+    enc_fhs_t* fhs;
+    char fullPath[PATHBUFSIZE];
+    char tempPath[PATHBUFSIZE];
+
+    if(!path) {
+	fprintf(stderr, "ERROR enc_flush: path is NULL");
+	return -EINVAL;
+    }
+
+    if(!fi) {
+	fprintf(stderr, "ERROR enc_flush: fi is NULL");
+	return -EINVAL;
+    }
+
+    ret = buildPath(path, fullPath, sizeof(fullPath));
+    if(ret < 0) {
+	fprintf(stderr, "ERROR enc_flush: buildPath failed\n");
+	return ret;
+    }
+    path = NULL;
+
+    ret = buildTempPath(fullPath, tempPath, sizeof(tempPath));
+    if(ret < 0) {
+	fprintf(stderr, "ERROR enc_flush: buildTempPath failed\n");
+	return ret;
+    }
+
+    fhs = get_fhs(fi->fh);
+
     ret = dup(fhs->clearFH);
     if(ret < 0) {
-	fprintf(stderr, "ERROR enc_flush: dup failed\n");
+	fprintf(stderr, "ERROR enc_flush: dup(clearFH) failed\n");
 	perror("ERROR enc_flush");
 	return -errno;
     }
-    
-
     ret = close(ret);
     if(ret < 0) {
-	fprintf(stderr, "ERROR enc_flush: close failed\n");
+	fprintf(stderr, "ERROR enc_flush: close(dup(clearFH)) failed\n");
 	perror("ERROR enc_flush");
 	return -errno;
+    }
+
+    ret = dup(fhs->encFH);
+    if(ret < 0) {
+	fprintf(stderr, "ERROR enc_flush: dup(encFH) failed\n");
+	perror("ERROR enc_flush");
+	return -errno;
+    }
+    ret = close(ret);
+    if(ret < 0) {
+	fprintf(stderr, "ERROR enc_flush: close(dup(encFH)) failed\n");
+	perror("ERROR enc_flush");
+	return -errno;
+    }
+
+    ret = encryptFile(tempPath, fullPath);
+    if(ret < 0) {
+	fprintf(stderr, "ERROR enc_flush: encryptFile failed\n");
+	return ret;
     }
 
     return RETURN_SUCCESS;
