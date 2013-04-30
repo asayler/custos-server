@@ -169,26 +169,106 @@ static int buildTempPath(const char* fullPath, char* tempPath, size_t bufSize) {
 
 }
 
-static int createFreshTemp(const char* fullPath, int flags, mode_t mode) {
+static enc_fhs_t* createFilePair(const char* fullPath, int flags, mode_t mode) {
 
     int ret;
     char tempPath[PATHBUFSIZE];
+    enc_fhs_t* fhs = NULL;
+    
+    fhs = malloc(sizeof(*fhs));
+    if(!fhs) {
+	fprintf(stderr, "ERROR createFilePair: malloc failed\n");
+	perror("ERROR createFilePair");
+	return NULL;
+    }
 
     ret = buildTempPath(fullPath, tempPath, sizeof(tempPath));
     if(ret < 0){
-	fprintf(stderr, "ERROR createFreshTemp: buildTempPath failed\n");
-	return ret;
+	fprintf(stderr, "ERROR createFilePair: buildTempPath failed\n");
+	return NULL;
     }
-    fullPath = NULL;
+
+    ret = open(fullPath, flags, mode);
+    if(ret < 0) {
+	fprintf(stderr, "ERROR createFilePair: open(fullPath) failed\n");
+	perror("ERROR createFilePair");
+	return NULL;
+    }
+    fhs->baseFH = ret;
 
     ret = open(tempPath, flags, mode);
     if(ret < 0) {
-	fprintf(stderr, "ERROR createFreshTemp: open(tempPath) failed\n");
-	perror("ERROR createFreshTemp");
+	fprintf(stderr, "ERROR createFilePair: open(tempPath) failed\n");
+	perror("ERROR createFilePair");
+	return NULL;
+    }
+    fhs->tempFH = ret;
+
+    return fhs;
+
+}
+
+static enc_fhs_t* openFilePair(const char* fullPath, int flags) {
+
+    int ret;
+    char tempPath[PATHBUFSIZE];
+    enc_fhs_t* fhs = NULL;
+    
+    fhs = malloc(sizeof(*fhs));
+    if(!fhs) {
+	fprintf(stderr, "ERROR openFilePair: malloc failed\n");
+	perror("ERROR openFilePair");
+	return NULL;
+    }
+
+    ret = buildTempPath(fullPath, tempPath, sizeof(tempPath));
+    if(ret < 0){
+	fprintf(stderr, "ERROR openFilePair: buildTempPath failed\n");
+	return NULL;
+    }
+
+    ret = open(fullPath, flags);
+    if(ret < 0) {
+	fprintf(stderr, "ERROR openFilePair: open(fullPath) failed\n");
+	perror("ERROR openFilePair");
+	return NULL;
+    }
+    fhs->baseFH = ret;
+
+    ret = open(tempPath, flags);
+    if(ret < 0) {
+	fprintf(stderr, "ERROR openFilePair: open(tempPath) failed\n");
+	perror("ERROR openFilePair");
+	return NULL;
+    }
+    fhs->tempFH = ret;
+
+    return fhs;
+
+}
+
+static int closeFilePair(enc_fhs_t* fhs) {
+
+    if(!fhs) {
+	fprintf(stderr, "ERROR closeFilePair: fhs must not be NULL\n");
+   	return -EINVAL;
+    }
+
+    if(close(fhs->baseFH) < 0) {
+	fprintf(stderr, "ERROR closeFilePair: close(baseFH) failed\n");
+	perror("ERROR enc_release");
 	return -errno;
     }
 
-    return ret;
+    if(close(fhs->tempFH) < 0) {
+	fprintf(stderr, "ERROR closeFilePair: close(tempFH) failed\n");
+	perror("ERROR enc_release");
+	return -errno;
+    }
+
+    free(fhs);
+
+    return RETURN_SUCCESS;
 
 }
 
@@ -215,7 +295,7 @@ static int removeTemp(const char* fullPath) {
 
 }
 
-static int decryptToTemp(const char* fullPath, int flags) {
+static int decryptToTemp(const char* fullPath) {
     
     int ret;
     FILE* inputFP = NULL;
@@ -265,15 +345,7 @@ static int decryptToTemp(const char* fullPath, int flags) {
 	goto ERROR_0;
     }
 
-    ret = open(tempPath, flags);
-    if(ret < 0) {
-	fprintf(stderr, "ERROR decryptToTemp: open(tempPath) failed\n");
-	perror("ERROR decryptToTemp");
-	ret = -errno;
-	goto ERROR_0;
-    }
-
-    return ret;
+    return RETURN_SUCCESS;
 
  ERROR_2:
 
@@ -395,7 +467,11 @@ static int enc_fgetattr(const char* path, stat_t* stbuf,
 
     (void) path;
 
-    if(fstat(fi->fh, stbuf) < 0) {
+    enc_fhs_t* fhs;
+
+    fhs = get_fhs(fi->fh);
+
+    if(fstat(fhs->tempFH, stbuf) < 0) {
 	return -errno;
     }
 
@@ -741,7 +817,11 @@ static int enc_ftruncate(const char* path, off_t size,
 
     (void) path;
 
-    if(ftruncate(fi->fh, size) < 0) {
+    enc_fhs_t* fhs;
+
+    fhs = get_fhs(fi->fh);
+
+    if(ftruncate(fhs->tempFH, size) < 0) {
 	return -errno;
     }
 
@@ -771,6 +851,7 @@ static int enc_utimens(const char* path, const timespec_t ts[2]) {
 static int enc_create(const char* path, mode_t mode, fuse_file_info_t* fi) {
 
     int ret;
+    enc_fhs_t* fhs;
     char fullPath[PATHBUFSIZE];
 
     ret = buildPath(path, fullPath, sizeof(fullPath));
@@ -780,13 +861,13 @@ static int enc_create(const char* path, mode_t mode, fuse_file_info_t* fi) {
     }
     path = NULL;
 
-    ret = createFreshTemp(fullPath, fi->flags, mode);
-    if(ret < 0) {
-	fprintf(stderr, "ERROR enc_create: createFreshTemp failed\n");
-	return ret;
+    fhs = createFilePair(fullPath, fi->flags, mode);
+    if(!fhs) {
+	fprintf(stderr, "ERROR enc_create: createFilePair failed\n");
+	return RETURN_FAILURE;
     }
 
-    fi->fh = ret;
+    fi->fh = put_fhs(fhs);
 
     return RETURN_SUCCESS;
 
@@ -795,6 +876,7 @@ static int enc_create(const char* path, mode_t mode, fuse_file_info_t* fi) {
 static int enc_open(const char* path, fuse_file_info_t* fi) {
 
     int ret;
+    enc_fhs_t* fhs;
     char fullPath[PATHBUFSIZE];
 
     ret = buildPath(path, fullPath, sizeof(fullPath));
@@ -804,13 +886,19 @@ static int enc_open(const char* path, fuse_file_info_t* fi) {
     }
     path = NULL;
 
-    ret = decryptToTemp(fullPath, fi->flags);
+    ret = decryptToTemp(fullPath);
     if(ret < 0) {
 	fprintf(stderr, "ERROR enc_open: decryptToTemp failed\n");
 	return ret;
     }
+
+    fhs = openFilePair(fullPath, fi->flags);
+    if(!fhs) {
+	fprintf(stderr, "ERROR enc_open: openFilePair failed\n");
+	return RETURN_FAILURE;
+    }    
     
-    fi->fh = ret;
+    fi->fh = put_fhs(fhs);
 
     return RETURN_SUCCESS;
 
@@ -819,11 +907,14 @@ static int enc_open(const char* path, fuse_file_info_t* fi) {
 static int enc_read(const char* path, char* buf, size_t size, off_t offset,
 		    fuse_file_info_t* fi) {
 
-    int res;
-
     (void) path;
 
-    res = pread(fi->fh, buf, size, offset);
+    int res;
+    enc_fhs_t* fhs;
+
+    fhs = get_fhs(fi->fh);
+
+    res = pread(fhs->tempFH, buf, size, offset);
     if(res < 0) {
 	res = -errno;
     }
@@ -835,11 +926,14 @@ static int enc_read(const char* path, char* buf, size_t size, off_t offset,
 static int enc_write(const char* path, const char* buf, size_t size,
 		     off_t offset, fuse_file_info_t* fi) {
 
-    int res;
-
     (void) path;
 
-    res = pwrite(fi->fh, buf, size, offset);
+    int res;
+    enc_fhs_t* fhs;
+
+    fhs = get_fhs(fi->fh);
+
+    res = pwrite(fhs->tempFH, buf, size, offset);
     if(res < 0) {
 	res = -errno;
     }
@@ -870,13 +964,17 @@ static int enc_flush(const char* path, fuse_file_info_t* fi) {
 
     (void) path;
 
+    enc_fhs_t* fhs;
+
+    fhs = get_fhs(fi->fh);
+
     /* This is called from every close on an open file, so call the
        close on the underlying filesystem. But since flush may be
        called multiple times for an open file, this must not really
        close the file.  This is important if used on a network
        filesystem like NFS which flush the data/metadata on close() */
 
-    if(close(dup(fi->fh)) < 0) {
+    if(close(dup(fhs->tempFH)) < 0) {
 	return -errno;
     }
 
@@ -887,6 +985,7 @@ static int enc_flush(const char* path, fuse_file_info_t* fi) {
 static int enc_release(const char* path, fuse_file_info_t* fi) {
 
     int ret;
+    enc_fhs_t* fhs;
     char fullPath[PATHBUFSIZE];
 
     if(!path) {
@@ -906,10 +1005,12 @@ static int enc_release(const char* path, fuse_file_info_t* fi) {
     }
     path = NULL;
 
-    if(close(fi->fh) < 0) {
-	fprintf(stderr, "ERROR enc_release: close failed\n");
-	perror("ERROR enc_release");
-	return -errno;
+    fhs = get_fhs(fi->fh);
+
+    ret = closeFilePair(fhs);
+    if(ret < 0) {
+	fprintf(stderr, "ERROR enc_release: closeFilePair failed\n");
+	return ret;
     }
 
     ret = encryptFromTemp(fullPath);
@@ -931,15 +1032,18 @@ static int enc_release(const char* path, fuse_file_info_t* fi) {
 static int enc_fsync(const char* path, int isdatasync,
 		     fuse_file_info_t* fi) {
 
-    int res;
-
     (void) path;
 
+    int res;
+    enc_fhs_t* fhs;
+
+    fhs = get_fhs(fi->fh);
+
     if(isdatasync) {
-	res = fdatasync(fi->fh);
+	res = fdatasync(fhs->tempFH);
     }
     else {
-	res = fsync(fi->fh);
+	res = fsync(fhs->tempFH);
     }
 
     if(res < 0) {
@@ -1033,7 +1137,11 @@ static int enc_lock(const char* path, fuse_file_info_t* fi, int cmd,
 
     (void) path;
 
-    return ulockmgr_op(fi->fh, cmd, lock, &fi->lock_owner,
+    enc_fhs_t* fhs;
+
+    fhs = get_fhs(fi->fh);
+
+    return ulockmgr_op(fhs->tempFH, cmd, lock, &fi->lock_owner,
 		       sizeof(fi->lock_owner));
 
 }
@@ -1041,8 +1149,12 @@ static int enc_lock(const char* path, fuse_file_info_t* fi, int cmd,
 static int enc_flock(const char* path, fuse_file_info_t* fi, int op) {
     
     (void) path;
-    
-    if(flock(fi->fh, op) < 0) {
+
+    enc_fhs_t* fhs;
+
+    fhs = get_fhs(fi->fh);
+
+    if(flock(fhs->tempFH, op) < 0) {
         return -errno;
     }
     
