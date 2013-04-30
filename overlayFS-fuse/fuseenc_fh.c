@@ -44,6 +44,19 @@ typedef struct stat stat_t;
 typedef struct statvfs statvfs_t;
 typedef struct timespec timespec_t;
 
+typedef struct enc_fhs {
+    uint64_t baseFH;
+    uint64_t tempFH;
+} enc_fhs_t;
+
+static inline enc_fhs_t* get_fhs(uint64_t fh) {
+    return (enc_fhs_t*) fh;
+}
+
+static inline uint64_t put_fhs(enc_fhs_t* fhs) {
+    return (uint64_t) fhs;
+}
+
 typedef struct enc_dirp {
     DIR *dp;
     struct dirent *entry;
@@ -170,7 +183,7 @@ static int createFreshTemp(const char* fullPath, int flags, mode_t mode) {
 
     ret = open(tempPath, flags, mode);
     if(ret < 0) {
-	fprintf(stderr, "ERROR createFreshTemp: open failed\n");
+	fprintf(stderr, "ERROR createFreshTemp: open(tempPath) failed\n");
 	perror("ERROR createFreshTemp");
 	return -errno;
     }
