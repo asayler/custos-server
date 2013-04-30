@@ -964,16 +964,21 @@ static int enc_ftruncate(const char* path, off_t size,
 
 static int enc_utimens(const char* path, const timespec_t ts[2]) {
 
+    int ret;
     char fullPath[PATHBUFSIZE];
 
-    if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
+    ret = buildPath(path, fullPath, sizeof(fullPath));
+    if(ret < 0){
 	fprintf(stderr, "ERROR enc_utimens: buildPath failed\n");
-	return RETURN_FAILURE;
+	return ret;
     }
     path = NULL;
 
     /* don't use utime/utimes since they follow symlinks */
-    if(utimensat(0, fullPath, ts, AT_SYMLINK_NOFOLLOW) < 0) {
+    ret = utimensat(0, fullPath, ts, AT_SYMLINK_NOFOLLOW);
+    if(ret < 0) {
+	fprintf(stderr, "ERROR enc_utimens: utimensat failed\n");
+	perror("ERROR enc_utimens");
 	return -errno;
     }
 
@@ -1094,17 +1099,19 @@ static int enc_read(const char* path, char* buf, size_t size, off_t offset,
 
     (void) path;
 
-    int res;
+    int ret;
     enc_fhs_t* fhs;
 
     fhs = get_fhs(fi->fh);
 
-    res = pread(fhs->clearFH, buf, size, offset);
-    if(res < 0) {
-	res = -errno;
+    ret = pread(fhs->clearFH, buf, size, offset);
+    if(ret < 0) {
+	fprintf(stderr, "ERROR enc_read: pread failed\n");
+	perror("ERROR enc_read");
+	ret = -errno;
     }
 
-    return res;
+    return ret;
 
 }
 
@@ -1113,31 +1120,38 @@ static int enc_write(const char* path, const char* buf, size_t size,
 
     (void) path;
 
-    int res;
+    int ret;
     enc_fhs_t* fhs;
 
     fhs = get_fhs(fi->fh);
 
-    res = pwrite(fhs->clearFH, buf, size, offset);
-    if(res < 0) {
-	res = -errno;
+    ret = pwrite(fhs->clearFH, buf, size, offset);
+    if(ret < 0) {
+	fprintf(stderr, "ERROR enc_write: pwrite failed\n");
+	perror("ERROR enc_write");
+	ret = -errno;
     }
 
-    return res;
+    return ret;
 
 }
 
 static int enc_statfs(const char* path, statvfs_t* stbuf) {
 
+    int ret;
     char fullPath[PATHBUFSIZE];
 
-    if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
+    ret = buildPath(path, fullPath, sizeof(fullPath));
+    if(ret < 0){
 	fprintf(stderr, "ERROR enc_statfs: buildPath failed\n");
-	return RETURN_FAILURE;
+	return ret;
     }
     path = NULL;
 
-    if(statvfs(fullPath, stbuf) < 0) {
+    ret = statvfs(fullPath, stbuf);
+    if(ret < 0) {
+	fprintf(stderr, "ERROR enc_statfs: statvfs failed\n");
+	perror("ERROR enc_statfs");
 	return -errno;
     }
 
@@ -1149,6 +1163,7 @@ static int enc_flush(const char* path, fuse_file_info_t* fi) {
 
     (void) path;
 
+    int ret;
     enc_fhs_t* fhs;
 
     fhs = get_fhs(fi->fh);
@@ -1159,10 +1174,48 @@ static int enc_flush(const char* path, fuse_file_info_t* fi) {
        close the file.  This is important if used on a network
        filesystem like NFS which flush the data/metadata on close() */
 
-    if(close(dup(fhs->clearFH)) < 0) {
+    ret = dup(fhs->clearFH);
+    if(ret < 0) {
+	fprintf(stderr, "ERROR enc_flush: dup failed\n");
+	perror("ERROR enc_flush");
+	return -errno;
+    }
+    
+
+    ret = close(ret);
+    if(ret < 0) {
+	fprintf(stderr, "ERROR enc_flush: close failed\n");
+	perror("ERROR enc_flush");
 	return -errno;
     }
 
+    return RETURN_SUCCESS;
+
+}
+
+static int enc_fsync(const char* path, int isdatasync,
+		     fuse_file_info_t* fi) {
+
+    (void) path;
+
+    int ret;
+    enc_fhs_t* fhs;
+
+    fhs = get_fhs(fi->fh);
+
+    if(isdatasync) {
+	ret = fdatasync(fhs->clearFH);
+    }
+    else {
+	ret = fsync(fhs->clearFH);
+    }
+
+    if(ret < 0) {
+	fprintf(stderr, "ERROR enc_fsync: fdatasync/fsync failed\n");
+	perror("ERROR enc_fsync");
+	return -errno;
+    }
+    
     return RETURN_SUCCESS;
 
 }
@@ -1229,44 +1282,65 @@ static int enc_release(const char* path, fuse_file_info_t* fi) {
 
 }
 
-static int enc_fsync(const char* path, int isdatasync,
-		     fuse_file_info_t* fi) {
+static int enc_lock(const char* path, fuse_file_info_t* fi, int cmd,
+		    flock_t* lock) {
 
     (void) path;
 
-    int res;
+    int ret;
     enc_fhs_t* fhs;
 
     fhs = get_fhs(fi->fh);
 
-    if(isdatasync) {
-	res = fdatasync(fhs->clearFH);
-    }
-    else {
-	res = fsync(fhs->clearFH);
+    ret = ulockmgr_op(fhs->clearFH, cmd, lock, &fi->lock_owner,
+		      sizeof(fi->lock_owner));
+    if(ret < 0) {
+	fprintf(stderr, "ERROR enc_lock: ulockmgr_op failed\n");
+	return ret;
     }
 
-    if(res < 0) {
-	return -errno;
+    return ret;
+
+}
+
+static int enc_flock(const char* path, fuse_file_info_t* fi, int op) {
+    
+    (void) path;
+
+    int ret;
+    enc_fhs_t* fhs;
+
+    fhs = get_fhs(fi->fh);
+
+    ret = flock(fhs->clearFH, op);
+    if(ret < 0) {
+	fprintf(stderr, "ERROR enc_flock: flock failed\n");
+	perror("ERROR enc_flock");
+        return -errno;
     }
     
     return RETURN_SUCCESS;
-    
+
 }
     
 /* xattr operations are optional and can safely be left unimplemented */
 static int enc_setxattr(const char* path, const char* name, const char* value,
 			size_t size, int flags) {
 
+    int ret;
     char fullPath[PATHBUFSIZE];
 
-    if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
+    ret = buildPath(path, fullPath, sizeof(fullPath));
+    if(ret < 0){
 	fprintf(stderr, "ERROR enc_setxattr: buildPath failed\n");
-	return RETURN_FAILURE;
+	return ret;
     }
     path = NULL;
 
-    if(lsetxattr(fullPath, name, value, size, flags) < 0) {
+    ret = lsetxattr(fullPath, name, value, size, flags);
+    if(ret < 0) {
+	fprintf(stderr, "ERROR enc_setxattr: lsetxattr failed\n");
+	perror("ERROR enc_setxattr");
         return -errno;
     }
 
@@ -1277,87 +1351,69 @@ static int enc_setxattr(const char* path, const char* name, const char* value,
 static int enc_getxattr(const char* path, const char* name, char* value,
 			size_t size) {
 
-    int res;
+    int ret;
     char fullPath[PATHBUFSIZE];
 
-    if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
+    ret = buildPath(path, fullPath, sizeof(fullPath));
+    if(ret < 0){
 	fprintf(stderr, "ERROR enc_getxattr: buildPath failed\n");
-	return RETURN_FAILURE;
+	return ret;
     }
     path = NULL;
 
-    res = lgetxattr(fullPath, name, value, size);
-    if(res < 0) {
+    ret = lgetxattr(fullPath, name, value, size);
+    if(ret < 0) {
+	fprintf(stderr, "ERROR enc_getxattr: lgetxattr failed\n");
+	perror("ERROR enc_getxattr");
         return -errno;
     }
 
-    return res;
+    return ret;
 
 }
 
 static int enc_listxattr(const char* path, char* list, size_t size) {
 
+    int ret;
     char fullPath[PATHBUFSIZE];
 
-    if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
+    ret = buildPath(path, fullPath, sizeof(fullPath));
+    if(ret < 0){
 	fprintf(stderr, "ERROR enc_listxattr: buildPath failed\n");
-	return RETURN_FAILURE;
+	return ret;
     }
     path = NULL;
 
-    int res = llistxattr(fullPath, list, size);
-    if(res < 0) {
+    ret = llistxattr(fullPath, list, size);
+    if(ret < 0) {
+	fprintf(stderr, "ERROR enc_listxattr: llistxattr failed\n");
+	perror("ERROR enc_listxattr");
         return -errno;
     }
 
-    return res;
+    return ret;
 
 }
 
 static int enc_removexattr(const char* path, const char* name) {
 
+    int ret;
     char fullPath[PATHBUFSIZE];
 
-    if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
+    ret = buildPath(path, fullPath, sizeof(fullPath));
+    if(ret < 0){
 	fprintf(stderr, "ERROR enc_removexattr: buildPath failed\n");
 	return RETURN_FAILURE;
     }
     path = NULL;
 
-    if(lremovexattr(fullPath, name) < 0) {
+    ret = lremovexattr(fullPath, name);
+    if(ret < 0) {
+	fprintf(stderr, "ERROR enc_removexattr: lremovexattr failed\n");
+	perror("ERROR enc_removexattr");
         return -errno;
     }
 
-    return RETURN_SUCCESS;
-
-}
-
-static int enc_lock(const char* path, fuse_file_info_t* fi, int cmd,
-		    flock_t* lock) {
-
-    (void) path;
-
-    enc_fhs_t* fhs;
-
-    fhs = get_fhs(fi->fh);
-
-    return ulockmgr_op(fhs->clearFH, cmd, lock, &fi->lock_owner,
-		       sizeof(fi->lock_owner));
-
-}
-
-static int enc_flock(const char* path, fuse_file_info_t* fi, int op) {
-    
-    (void) path;
-
-    enc_fhs_t* fhs;
-
-    fhs = get_fhs(fi->fh);
-
-    if(flock(fhs->clearFH, op) < 0) {
-        return -errno;
-    }
-    
     return RETURN_SUCCESS;
 
 }
