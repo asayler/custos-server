@@ -467,11 +467,15 @@ static int enc_fgetattr(const char* path, stat_t* stbuf,
 
     (void) path;
 
+    int ret;
     enc_fhs_t* fhs;
 
     fhs = get_fhs(fi->fh);
 
-    if(fstat(fhs->clearFH, stbuf) < 0) {
+    ret = fstat(fhs->clearFH, stbuf);
+    if(ret < 0) {
+	fprintf(stderr, "ERROR enc_fgetattr: fstat failed");
+	perror("ERROR enc_fgetattr");
 	return -errno;
     }
 
@@ -481,15 +485,23 @@ static int enc_fgetattr(const char* path, stat_t* stbuf,
 
 static int enc_access(const char* path, int mask) {
 
+    int ret;
     char fullPath[PATHBUFSIZE];
 
-    if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
+    ret = buildPath(path, fullPath, sizeof(fullPath));
+    if(ret < 0){
 	fprintf(stderr, "ERROR enc_access: buildPath failed\n");
-	return RETURN_FAILURE;
+	return ret;
     }
     path = NULL;
 
-    if(access(fullPath, mask) < 0) {
+    /* Operating on the encrypted file should be fine here since we
+       are only checking permissions */
+
+    ret = access(fullPath, mask);
+    if(ret < 0) {
+	fprintf(stderr, "ERROR enc_access: access failed\n");
+	perror("ERROR enc_access");
 	return -errno;
     }
 
@@ -499,21 +511,26 @@ static int enc_access(const char* path, int mask) {
 
 static int enc_readlink(const char* path, char* buf, size_t size) {
 
-    int res;
+    int ret;
     char fullPath[PATHBUFSIZE];
 
-    if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
+    ret = buildPath(path, fullPath, sizeof(fullPath));
+    if(ret < 0){
 	fprintf(stderr, "ERROR enc_readlink: buildPath failed\n");
-	return RETURN_FAILURE;
+	return ret;
     }
     path = NULL;
 
-    res = readlink(fullPath, buf, (size-1));
-    if(res < 0) {
+    /* ToDo: Should this operate on the plain or encrypted file? */
+
+    ret = readlink(fullPath, buf, (size-1));
+    if(ret < 0) {
+	fprintf(stderr, "ERROR enc_readlink: readlink failed\n");
+	perror("ERROR enc_readlink");
 	return -errno;
     }
 
-    buf[res] = '\0';
+    buf[ret] = '\0';
 
     return RETURN_SUCCESS;
 
@@ -521,26 +538,31 @@ static int enc_readlink(const char* path, char* buf, size_t size) {
 
 static int enc_opendir(const char* path, fuse_file_info_t* fi) {
 
-    int res;
+    int ret;
     enc_dirp_t* d = NULL;
     char fullPath[PATHBUFSIZE];
 
     d = malloc(sizeof(*d));
     if(d == NULL) {
-	return -ENOMEM;
+	fprintf(stderr, "ERROR enc_opendir: malloc failed\n");
+	perror("ERROR enc_opendir");
+	return -errno;
     }
     
-    if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
+    ret = buildPath(path, fullPath, sizeof(fullPath));
+    if(ret < 0){
 	fprintf(stderr, "ERROR enc_opendir: buildPath failed\n");
-	return RETURN_FAILURE;
+	return ret;
     }
     path = NULL;
 
     d->dp = opendir(fullPath);
     if(d->dp == NULL) {
-	res = -errno;
+	fprintf(stderr, "ERROR enc_opendir: opendir failed\n");
+	perror("ERROR enc_opendir");
+	ret = -errno;
 	free(d);
-	return res;
+	return ret;
     }
     d->offset = 0;
     d->entry = NULL;
@@ -554,9 +576,9 @@ static int enc_opendir(const char* path, fuse_file_info_t* fi) {
 static int enc_readdir(const char* path, void* buf, fuse_fill_dir_t filler,
 		       off_t offset, fuse_file_info_t* fi) {
 
-    enc_dirp_t* d = NULL;
-
     (void) path;
+
+    enc_dirp_t* d = NULL;
 
     d = get_dirp(fi);
 
@@ -592,9 +614,9 @@ static int enc_readdir(const char* path, void* buf, fuse_fill_dir_t filler,
 
 static int enc_releasedir(const char* path, fuse_file_info_t* fi) {
 
-    enc_dirp_t* d = NULL;
-
     (void) path;
+
+    enc_dirp_t* d = NULL;
 
     d = get_dirp(fi);
     closedir(d->dp);
@@ -606,22 +628,25 @@ static int enc_releasedir(const char* path, fuse_file_info_t* fi) {
 
 static int enc_mknod(const char* path, mode_t mode, dev_t rdev) {
 
-    int res;
+    int ret;
     char fullPath[PATHBUFSIZE];
 
-    if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
+    ret = buildPath(path, fullPath, sizeof(fullPath));
+    if(ret < 0){
 	fprintf(stderr, "ERROR enc_mknod: buildPath failed\n");
-	return RETURN_FAILURE;
+	return ret;
     }
     path = NULL;
 
     if(S_ISFIFO(mode)) {
-	res = mkfifo(fullPath, mode);
+	ret = mkfifo(fullPath, mode);
     }
     else {
-	res = mknod(fullPath, mode, rdev);
+	ret = mknod(fullPath, mode, rdev);
     }
-    if(res < 0) {
+    if(ret < 0) {
+	fprintf(stderr, "ERROR enc_mknod: mkfifo/mknode failed\n");
+	perror("ERROR enc_mknod");
 	return -errno;
     }
     
@@ -631,15 +656,20 @@ static int enc_mknod(const char* path, mode_t mode, dev_t rdev) {
 
 static int enc_mkdir(const char* path, mode_t mode) {
 
+    int ret;
     char fullPath[PATHBUFSIZE];
 
-    if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
+    ret = buildPath(path, fullPath, sizeof(fullPath));
+    if(ret < 0){
 	fprintf(stderr, "ERROR enc_mkdir: buildPath failed\n");
-	return RETURN_FAILURE;
+	return ret;
     }
     path = NULL;
 
-    if(mkdir(fullPath, mode) < 0) {
+    ret = mkdir(fullPath, mode);
+    if(ret < 0) {
+	fprintf(stderr, "ERROR enc_mkdir: mkdir failed\n");
+	perror("ERROR enc_mkdir");
 	return -errno;
     }
 
@@ -649,15 +679,20 @@ static int enc_mkdir(const char* path, mode_t mode) {
 
 static int enc_unlink(const char* path) {
 
+    int ret;
     char fullPath[PATHBUFSIZE];
 
-    if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
+    ret = buildPath(path, fullPath, sizeof(fullPath));
+    if(ret < 0){
 	fprintf(stderr, "ERROR enc_unlink: buildPath failed\n");
-	return RETURN_FAILURE;
+	return ret;
     }
     path = NULL;
 
-    if(unlink(fullPath) < 0){
+    ret = unlink(fullPath);
+    if(ret < 0){
+	fprintf(stderr, "ERROR enc_unlink: unlink failed\n");
+	perror("ERROR enc_unlink");
 	return -errno;
     }
 
@@ -667,15 +702,20 @@ static int enc_unlink(const char* path) {
 
 static int enc_rmdir(const char* path) {
 
+    int ret;
     char fullPath[PATHBUFSIZE];
-
-    if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
+    
+    ret = buildPath(path, fullPath, sizeof(fullPath));
+    if(ret < 0){
 	fprintf(stderr, "ERROR enc_rmdir: buildPath failed\n");
-	return RETURN_FAILURE;
+	return ret;
     }
     path = NULL;
 
-    if(rmdir(fullPath)) {
+    ret = rmdir(fullPath);
+    if(ret < 0) {
+	fprintf(stderr, "ERROR enc_rmdir: rmdir failed\n");
+	perror("ERROR enc_rmdir");
 	return -errno;
     }
 
@@ -684,6 +724,8 @@ static int enc_rmdir(const char* path) {
 }
 
 static int enc_symlink(const char* from, const char* to) {
+
+    /* ToDo: Are both from and to in the fuse FS? */
 
     char fullFrom[PATHBUFSIZE];
     char fullTo[PATHBUFSIZE];
