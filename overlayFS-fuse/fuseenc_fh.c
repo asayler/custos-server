@@ -872,6 +872,7 @@ static int enc_chown(const char* path, uid_t uid, gid_t gid) {
 static int enc_truncate(const char* path, off_t size) {
 
     int ret;
+    int exists;
     char fullPath[PATHBUFSIZE];
     char tempPath[PATHBUFSIZE];
 
@@ -891,13 +892,50 @@ static int enc_truncate(const char* path, off_t size) {
 	fprintf(stderr, "ERROR enc_truncate: buildTempPath failed\n");
 	return ret;
     }
+	
+    if(access(tempPath, F_OK) < 0) {
+	exists = 0;
+    }
+    else {
+	exists = 1;
+    }
 
-    ret = truncate(fullPath, size);
+    if(!exists) {
+
+	ret = decryptFile(fullPath, tempPath);
+	if(ret < 0) {
+	    fprintf(stderr, "ERROR enc_getattr: decryptFile failed\n");
+	    return ret;
+	}
+	
+    }
+
+    ret = truncate(tempPath, size);
     if(ret < 0) {
-	fprintf(stderr, "ERROR enc_truncate: truncate(fullPath) failed\n");
+	fprintf(stderr, "ERROR enc_truncate: truncate(tempPath) failed\n");
 	perror("ERROR enc_truncate");
 	return -errno;
     }
+
+    if(!exists) {
+	
+	ret = encryptFile(tempPath, fullPath);
+	if(ret < 0) {
+	    fprintf(stderr, "ERROR enc_truncate: decryptFile failed\n");
+	    return ret;
+	}
+
+	ret = removeFile(tempPath);
+	if(ret < 0) {
+	    fprintf(stderr, "ERROR enc_truncate: removeFile failed\n");
+	    return ret;
+	}
+    
+    }
+
+#ifdef DEBUG
+    fprintf(stderr, "INFO enc_truncate: funcation completed\n");
+#endif
 
     return RETURN_SUCCESS;
 
