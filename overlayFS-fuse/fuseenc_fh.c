@@ -750,32 +750,9 @@ static int enc_symlink(const char* from, const char* to) {
 
 }
 
-static int enc_rename(const char* from, const char* to) {
-
-    char fullFrom[PATHBUFSIZE];
-    char fullTo[PATHBUFSIZE];
-
-    if(buildPath(from, fullFrom, sizeof(fullFrom)) < 0){
-	fprintf(stderr, "ERROR enc_rename: buildPath failed on from\n");
-	return RETURN_FAILURE;
-    }
-    from = NULL;
-
-    if(buildPath(to, fullTo, sizeof(fullTo)) < 0){
-	fprintf(stderr, "ERROR enc_rename: buildPath failed on to\n");
-	return RETURN_FAILURE;
-    }
-    to = NULL;
-
-    if(rename(fullFrom, fullTo) < 0) {
-	return -errno;
-    }
-
-    return RETURN_SUCCESS;
-
-}
-
 static int enc_link(const char* from, const char* to) {
+
+    /* ToDo: Are both from and to in the fuse FS? */
 
     char fullFrom[PATHBUFSIZE];
     char fullTo[PATHBUFSIZE];
@@ -800,17 +777,53 @@ static int enc_link(const char* from, const char* to) {
 
 }
 
+static int enc_rename(const char* from, const char* to) {
+
+    int ret;
+    char fullFrom[PATHBUFSIZE];
+    char fullTo[PATHBUFSIZE];
+
+    ret = buildPath(from, fullFrom, sizeof(fullFrom));
+    if(ret < 0){
+	fprintf(stderr, "ERROR enc_rename: buildPath(from) failed\n");
+	return ret;
+    }
+    from = NULL;
+
+    ret = buildPath(to, fullTo, sizeof(fullTo));
+    if(ret < 0){
+	fprintf(stderr, "ERROR enc_rename: buildPath(to) failed\n");
+	return ret;
+    }
+    to = NULL;
+
+    ret = rename(fullFrom, fullTo);
+    if(ret < 0) {
+	fprintf(stderr, "ERROR enc_rename: rename failed\n");
+	perror("ERROR enc_rename");
+	return -errno;
+    }
+
+    return RETURN_SUCCESS;
+
+}
+
 static int enc_chmod(const char* path, mode_t mode) {
 
+    int ret;
     char fullPath[PATHBUFSIZE];
 
-    if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
+    ret = buildPath(path, fullPath, sizeof(fullPath));
+    if(ret < 0){
 	fprintf(stderr, "ERROR enc_chmod: buildPath failed\n");
-	return RETURN_FAILURE;
+	return ret;
     }
     path = NULL;
 
-    if(chmod(fullPath, mode) < 0) {
+    ret = chmod(fullPath, mode);
+    if(ret < 0) {
+	fprintf(stderr, "ERROR enc_chmod: chmod failed\n");
+	perror("ERROR enc_chmod");
 	return -errno;
     }
 
@@ -820,15 +833,20 @@ static int enc_chmod(const char* path, mode_t mode) {
 
 static int enc_chown(const char* path, uid_t uid, gid_t gid) {
 
+    int ret;
     char fullPath[PATHBUFSIZE];
 
-    if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
+    ret = buildPath(path, fullPath, sizeof(fullPath));
+    if(ret < 0){
 	fprintf(stderr, "ERROR enc_chown: buildPath failed\n");
-	return RETURN_FAILURE;
+	return ret;
     }
     path = NULL;
 
-    if(lchown(fullPath, uid, gid) < 0) {
+    ret = lchown(fullPath, uid, gid);
+    if(ret < 0) {
+	fprintf(stderr, "ERROR enc_chown: lchown failed\n");
+	perror("ERROR enc_chown");
 	return -errno;
     }
 
