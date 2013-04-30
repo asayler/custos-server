@@ -856,15 +856,31 @@ static int enc_chown(const char* path, uid_t uid, gid_t gid) {
 
 static int enc_truncate(const char* path, off_t size) {
 
+    int ret;
     char fullPath[PATHBUFSIZE];
+    char tempPath[PATHBUFSIZE];
 
-    if(buildPath(path, fullPath, sizeof(fullPath)) < 0){
-	fprintf(stderr, "ERROR enc_rmdir: buildPath failed\n");
-	return RETURN_FAILURE;
+#ifdef DEBUG
+    fprintf(stderr, "INFO enc_truncate: funcation called\n");
+#endif
+
+    ret = buildPath(path, fullPath, sizeof(fullPath));
+    if(ret < 0){
+	fprintf(stderr, "ERROR enc_truncate: buildPath failed\n");
+	return ret;
     }
     path = NULL;
 
-    if(truncate(fullPath, size)) {
+    ret = buildTempPath(fullPath, tempPath, sizeof(tempPath));
+    if(ret < 0){
+	fprintf(stderr, "ERROR enc_truncate: buildTempPath failed\n");
+	return ret;
+    }
+
+    ret = truncate(fullPath, size);
+    if(ret < 0) {
+	fprintf(stderr, "ERROR enc_truncate: truncate(fullPath) failed\n");
+	perror("ERROR enc_truncate");
 	return -errno;
     }
 
