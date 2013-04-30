@@ -512,7 +512,7 @@ static int enc_fgetattr(const char* path, stat_t* stbuf,
     stbuf->st_size = stTemp.st_size;
     stbuf->st_blksize = stTemp.st_blksize;
     stbuf->st_blocks = stTemp.st_blocks;
-
+    
     return RETURN_SUCCESS;
 
 }
