@@ -45,8 +45,8 @@ typedef struct statvfs statvfs_t;
 typedef struct timespec timespec_t;
 
 typedef struct enc_fhs {
-    uint64_t baseFH;
-    uint64_t tempFH;
+    uint64_t encFH;
+    uint64_t clearFH;
 } enc_fhs_t;
 
 static inline enc_fhs_t* get_fhs(uint64_t fh) {
@@ -194,7 +194,7 @@ static enc_fhs_t* createFilePair(const char* fullPath, int flags, mode_t mode) {
 	perror("ERROR createFilePair");
 	return NULL;
     }
-    fhs->baseFH = ret;
+    fhs->encFH = ret;
 
     ret = open(tempPath, flags, mode);
     if(ret < 0) {
@@ -202,7 +202,7 @@ static enc_fhs_t* createFilePair(const char* fullPath, int flags, mode_t mode) {
 	perror("ERROR createFilePair");
 	return NULL;
     }
-    fhs->tempFH = ret;
+    fhs->clearFH = ret;
 
     return fhs;
 
@@ -233,7 +233,7 @@ static enc_fhs_t* openFilePair(const char* fullPath, int flags) {
 	perror("ERROR openFilePair");
 	return NULL;
     }
-    fhs->baseFH = ret;
+    fhs->encFH = ret;
 
     ret = open(tempPath, flags);
     if(ret < 0) {
@@ -241,7 +241,7 @@ static enc_fhs_t* openFilePair(const char* fullPath, int flags) {
 	perror("ERROR openFilePair");
 	return NULL;
     }
-    fhs->tempFH = ret;
+    fhs->clearFH = ret;
 
     return fhs;
 
@@ -254,14 +254,14 @@ static int closeFilePair(enc_fhs_t* fhs) {
    	return -EINVAL;
     }
 
-    if(close(fhs->baseFH) < 0) {
-	fprintf(stderr, "ERROR closeFilePair: close(baseFH) failed\n");
+    if(close(fhs->encFH) < 0) {
+	fprintf(stderr, "ERROR closeFilePair: close(encFH) failed\n");
 	perror("ERROR enc_release");
 	return -errno;
     }
 
-    if(close(fhs->tempFH) < 0) {
-	fprintf(stderr, "ERROR closeFilePair: close(tempFH) failed\n");
+    if(close(fhs->clearFH) < 0) {
+	fprintf(stderr, "ERROR closeFilePair: close(clearFH) failed\n");
 	perror("ERROR enc_release");
 	return -errno;
     }
@@ -471,7 +471,7 @@ static int enc_fgetattr(const char* path, stat_t* stbuf,
 
     fhs = get_fhs(fi->fh);
 
-    if(fstat(fhs->tempFH, stbuf) < 0) {
+    if(fstat(fhs->clearFH, stbuf) < 0) {
 	return -errno;
     }
 
@@ -821,7 +821,7 @@ static int enc_ftruncate(const char* path, off_t size,
 
     fhs = get_fhs(fi->fh);
 
-    if(ftruncate(fhs->tempFH, size) < 0) {
+    if(ftruncate(fhs->clearFH, size) < 0) {
 	return -errno;
     }
 
@@ -914,7 +914,7 @@ static int enc_read(const char* path, char* buf, size_t size, off_t offset,
 
     fhs = get_fhs(fi->fh);
 
-    res = pread(fhs->tempFH, buf, size, offset);
+    res = pread(fhs->clearFH, buf, size, offset);
     if(res < 0) {
 	res = -errno;
     }
@@ -933,7 +933,7 @@ static int enc_write(const char* path, const char* buf, size_t size,
 
     fhs = get_fhs(fi->fh);
 
-    res = pwrite(fhs->tempFH, buf, size, offset);
+    res = pwrite(fhs->clearFH, buf, size, offset);
     if(res < 0) {
 	res = -errno;
     }
@@ -974,7 +974,7 @@ static int enc_flush(const char* path, fuse_file_info_t* fi) {
        close the file.  This is important if used on a network
        filesystem like NFS which flush the data/metadata on close() */
 
-    if(close(dup(fhs->tempFH)) < 0) {
+    if(close(dup(fhs->clearFH)) < 0) {
 	return -errno;
     }
 
@@ -1040,10 +1040,10 @@ static int enc_fsync(const char* path, int isdatasync,
     fhs = get_fhs(fi->fh);
 
     if(isdatasync) {
-	res = fdatasync(fhs->tempFH);
+	res = fdatasync(fhs->clearFH);
     }
     else {
-	res = fsync(fhs->tempFH);
+	res = fsync(fhs->clearFH);
     }
 
     if(res < 0) {
@@ -1141,7 +1141,7 @@ static int enc_lock(const char* path, fuse_file_info_t* fi, int cmd,
 
     fhs = get_fhs(fi->fh);
 
-    return ulockmgr_op(fhs->tempFH, cmd, lock, &fi->lock_owner,
+    return ulockmgr_op(fhs->clearFH, cmd, lock, &fi->lock_owner,
 		       sizeof(fi->lock_owner));
 
 }
@@ -1154,7 +1154,7 @@ static int enc_flock(const char* path, fuse_file_info_t* fi, int op) {
 
     fhs = get_fhs(fi->fh);
 
-    if(flock(fhs->tempFH, op) < 0) {
+    if(flock(fhs->clearFH, op) < 0) {
         return -errno;
     }
     
