@@ -419,6 +419,7 @@ static int enc_getattr(const char* path, stat_t* stbuf) {
     int exists;
     char fullPath[PATHBUFSIZE];
     char tempPath[PATHBUFSIZE];
+    stat_t stTemp;
 
     ret = buildPath(path, fullPath, sizeof(fullPath));
     if(ret < 0) {
@@ -457,12 +458,17 @@ static int enc_getattr(const char* path, stat_t* stbuf) {
 	    }
 	}
 
-	ret = lstat(tempPath, stbuf);
+	ret = lstat(tempPath, &stTemp);
 	if(ret < 0) {
 	    fprintf(stderr, "ERROR enc_getattr: lstat(tempPath) failed\n");
 	    perror("ERROR enc_getattr");
 	    return -errno;
 	}
+
+	/* Copy over select fields */
+	stbuf->st_size = stTemp.st_size;
+	stbuf->st_blksize = stTemp.st_blksize;
+	stbuf->st_blocks = stTemp.st_blocks;
 
 	if(!exists) {
 	    ret = removeFile(tempPath);
@@ -484,15 +490,28 @@ static int enc_fgetattr(const char* path, stat_t* stbuf,
 
     int ret;
     enc_fhs_t* fhs;
+    stat_t stTemp;
 
     fhs = get_fhs(fi->fh);
 
-    ret = fstat(fhs->clearFH, stbuf);
+    ret = fstat(fhs->encFH, stbuf);
     if(ret < 0) {
-	fprintf(stderr, "ERROR enc_fgetattr: fstat failed");
+	fprintf(stderr, "ERROR enc_fgetattr: fstat(encFH) failed");
 	perror("ERROR enc_fgetattr");
 	return -errno;
     }
+
+    ret = fstat(fhs->clearFH, stTemp);
+    if(ret < 0) {
+	fprintf(stderr, "ERROR enc_fgetattr: fstat(clearFH) failed");
+	perror("ERROR enc_fgetattr");
+	return -errno;
+    }
+
+    /* Copy over select fields */
+    stbuf->st_size = stTemp.st_size;
+    stbuf->st_blksize = stTemp.st_blksize;
+    stbuf->st_blocks = stTemp.st_blocks;
 
     return RETURN_SUCCESS;
 
