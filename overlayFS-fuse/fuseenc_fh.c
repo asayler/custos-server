@@ -446,16 +446,51 @@ static int encryptFromTemp(const char* fullPath) {
 
 static int enc_getattr(const char* path, stat_t* stbuf) {
     
+    int ret;
     char fullPath[PATHBUFSIZE];
+    char tempPath[PATHBUFSIZE];
 
-    if(buildPath(path, fullPath, sizeof(fullPath)) < 0) {
+    ret = buildPath(path, fullPath, sizeof(fullPath));
+    if(ret < 0) {
 	fprintf(stderr, "ERROR enc_getattr: buildPath failed\n");
-	return RETURN_FAILURE;
+	return ret;
     }
     path = NULL;
 
-    if(lstat(fullPath, stbuf) < 0) {
+    ret = lstat(fullPath, stbuf);
+    if(ret < 0) {
+	fprintf(stderr, "ERROR enc_getattr: lstat(fullPath) failed\n");
+	perror("ERROR enc_getattr");
 	return -errno;
+    }
+
+    if(S_ISREG(stbuf->st_mode)) {
+
+	ret = buildTempPath(fullPath, tempPath, sizeof(tempPath));
+	if(ret < 0) {
+	    fprintf(stderr, "ERROR enc_getattr: buildTempPath failed\n");
+	    return ret;
+	}
+
+	ret = decryptToTemp(fullPath);
+	if(ret < 0) {
+	    fprintf(stderr, "ERROR enc_getattr: decryptToTemp failed\n");
+	    return ret;
+	}
+
+	ret = lstat(tempPath, stbuf);
+	if(ret < 0) {
+	    fprintf(stderr, "ERROR enc_getattr: lstat(tempPath) failed\n");
+	    perror("ERROR enc_getattr");
+	    return -errno;
+	}
+
+	ret = removeTemp(fullPath);
+	if(ret < 0) {
+	    fprintf(stderr, "ERROR enc_getattr: removeTemp failed\n");
+	    return ret;
+	}
+
     }
 
     return RETURN_SUCCESS;
