@@ -264,6 +264,10 @@ static int removeFile(const char* filePath) {
 
     int ret;
 
+#ifdef DEBUG
+    fprintf(stderr, "INFO removeFile: function called on %s\n", filePath);
+#endif
+
     ret = unlink(filePath);
     if(ret < 0) {
 	fprintf(stderr, "ERROR removeFile: unlink failed\n");
@@ -351,7 +355,7 @@ static int encryptFile(const char* plainPath, const char* encPath) {
     
     plainFP = fopen(plainPath, "r");
     if(!plainFP) {
-	fprintf(stderr, "ERROR encryptFile: fopen(plainPath) failed\n");
+	fprintf(stderr, "ERROR encryptFile: fopen(%s) failed\n", plainPath);
 	perror("ERROR encryptFile");
 	ret = -errno;
 	goto ERROR_0;
@@ -359,7 +363,7 @@ static int encryptFile(const char* plainPath, const char* encPath) {
     
     encFP = fopen(encPath, "w");
     if(!encFP) {
-	fprintf(stderr, "ERROR encryptFile: fopen(encPath) failed\n");
+	fprintf(stderr, "ERROR encryptFile: fopen(%s) failed\n", encPath);
 	perror("ERROR encryptFile");
 	ret = -errno;
 	goto ERROR_1;
@@ -412,6 +416,7 @@ static int encryptFile(const char* plainPath, const char* encPath) {
 static int enc_getattr(const char* path, stat_t* stbuf) {
     
     int ret;
+    int exists;
     char fullPath[PATHBUFSIZE];
     char tempPath[PATHBUFSIZE];
 
@@ -436,11 +441,20 @@ static int enc_getattr(const char* path, stat_t* stbuf) {
 	    fprintf(stderr, "ERROR enc_getattr: buildTempPath failed\n");
 	    return ret;
 	}
+	
+	if(access(tempPath, F_OK) < 0) {
+	    exists = 0;
+	}
+	else {
+	    exists = 1;
+	}
 
-	ret = decryptFile(fullPath, tempPath);
-	if(ret < 0) {
-	    fprintf(stderr, "ERROR enc_getattr: decryptFile failed\n");
-	    return ret;
+	if(!exists) {
+	    ret = decryptFile(fullPath, tempPath);
+	    if(ret < 0) {
+		fprintf(stderr, "ERROR enc_getattr: decryptFile failed\n");
+		return ret;
+	    }
 	}
 
 	ret = lstat(tempPath, stbuf);
@@ -450,12 +464,13 @@ static int enc_getattr(const char* path, stat_t* stbuf) {
 	    return -errno;
 	}
 
-	ret = removeFile(tempPath);
-	if(ret < 0) {
-	    fprintf(stderr, "ERROR enc_getattr: removeFile failed\n");
-	    return ret;
+	if(!exists) {
+	    ret = removeFile(tempPath);
+	    if(ret < 0) {
+		fprintf(stderr, "ERROR enc_getattr: removeFile failed\n");
+		return ret;
+	    }
 	}
-
     }
 
     return RETURN_SUCCESS;
@@ -935,6 +950,10 @@ static int enc_create(const char* path, mode_t mode, fuse_file_info_t* fi) {
     char fullPath[PATHBUFSIZE];
     char tempPath[PATHBUFSIZE];
 
+#ifdef DEBUG
+    fprintf(stderr, "INFO enc_create: function called\n");
+#endif
+
     ret = buildPath(path, fullPath, sizeof(fullPath));
     if(ret < 0){
 	fprintf(stderr, "ERROR enc_create: buildPath failed\n");
@@ -954,7 +973,41 @@ static int enc_create(const char* path, mode_t mode, fuse_file_info_t* fi) {
 	return RETURN_FAILURE;
     }
 
+    ret = closeFilePair(fhs);
+    if(ret < 0) {
+	fprintf(stderr, "ERROR enc_create: closeFilePair failed\n");
+	return ret;
+    }    
+
+    ret = encryptFile(tempPath, fullPath);
+    if(ret < 0) {
+	fprintf(stderr, "ERROR enc_create: encryptFile failed\n");
+	return ret;
+    }
+
+    ret = removeFile(tempPath);
+    if(ret < 0) {
+	fprintf(stderr, "ERROR enc_create: removeFile failed\n");
+	return ret;
+    }
+
+    ret = decryptFile(fullPath, tempPath);
+    if(ret < 0) {
+	fprintf(stderr, "ERROR enc_create: decryptFile failed\n");
+	return ret;
+    }
+
+    fhs = openFilePair(fullPath, tempPath, fi->flags);
+    if(!fhs) {
+	fprintf(stderr, "ERROR enc_create: openFilePair failed\n");
+	return RETURN_FAILURE;
+    }    
+
     fi->fh = put_fhs(fhs);
+
+#ifdef DEBUG
+    fprintf(stderr, "INFO enc_create: returning successfully\n");
+#endif
 
     return RETURN_SUCCESS;
 
@@ -1083,6 +1136,10 @@ static int enc_release(const char* path, fuse_file_info_t* fi) {
     char fullPath[PATHBUFSIZE];
     char tempPath[PATHBUFSIZE];
 
+#ifdef DEBUG
+    fprintf(stderr, "INFO enc_release: function called\n");
+#endif
+
     if(!path) {
 	fprintf(stderr, "ERROR enc_release: path is NULL");
 	return -EINVAL;
@@ -1125,6 +1182,10 @@ static int enc_release(const char* path, fuse_file_info_t* fi) {
 	fprintf(stderr, "ERROR enc_release: removeFile failed\n");
 	return ret;
     }
+
+#ifdef DEBUG
+    fprintf(stderr, "INFO enc_release: returning successfully\n");
+#endif
 
     return RETURN_SUCCESS;
 
