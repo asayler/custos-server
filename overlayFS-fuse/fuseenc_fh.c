@@ -989,6 +989,7 @@ static int enc_utimens(const char* path, const timespec_t ts[2]) {
 static int enc_create(const char* path, mode_t mode, fuse_file_info_t* fi) {
 
     int ret;
+    int newFlags;
     enc_fhs_t* fhs;
     char fullPath[PATHBUFSIZE];
     char tempPath[PATHBUFSIZE];
@@ -1040,7 +1041,8 @@ static int enc_create(const char* path, mode_t mode, fuse_file_info_t* fi) {
 	return ret;
     }
 
-    fhs = openFilePair(fullPath, tempPath, fi->flags);
+    newFlags = fi->flags & (~O_CREAT & ~O_EXCL);
+    fhs = openFilePair(fullPath, tempPath, newFlags);
     if(!fhs) {
 	fprintf(stderr, "ERROR enc_create: openFilePair failed\n");
 	return RETURN_FAILURE;
