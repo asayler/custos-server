@@ -877,11 +877,15 @@ static int enc_ftruncate(const char* path, off_t size,
 
     (void) path;
 
+    int ret;
     enc_fhs_t* fhs;
 
     fhs = get_fhs(fi->fh);
 
-    if(ftruncate(fhs->clearFH, size) < 0) {
+    ret = ftruncate(fhs->clearFH, size);
+    if(ret < 0) {
+	fprintf(stderr, "ERROR enc_ftruncate: ftruncate failed\n");
+	perror("ERROR enc_ftruncate");
 	return -errno;
     }
 
