@@ -1,3 +1,8 @@
 * 2013-04-28 - ANDY - Implement non-FH functions (truncate, etc)
+
 * 2013-04-28 - ANDY - Add proper memory clean-up on error and errno
-  pass through in fueenc_fh.c
+                      pass through in fueenc_fh.c
+
+* 2013-04-30 - ANDY - Copy permissions to temp file on creation so
+                      stat shows proper permissions
+
