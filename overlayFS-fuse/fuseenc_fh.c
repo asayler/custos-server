@@ -44,6 +44,9 @@ typedef struct stat stat_t;
 typedef struct statvfs statvfs_t;
 typedef struct timespec timespec_t;
 
+#define FHS_DIRTY 1
+#define FHS_CLEAN 0
+
 typedef struct enc_fhs {
     uint64_t encFH;
     uint64_t clearFH;
@@ -927,6 +930,7 @@ static int enc_truncate(const char* path, off_t size) {
 	if(ret < 0) {
 	    fprintf(stderr, "ERROR enc_getattr: decryptFile failed\n");
 	    return ret;
+
 	}
 	
     }
@@ -938,18 +942,19 @@ static int enc_truncate(const char* path, off_t size) {
 	return -errno;
     }
 
+    ret = encryptFile(tempPath, fullPath);
+    if(ret < 0) {
+	fprintf(stderr, "ERROR enc_truncate: decryptFile failed\n");
+	return ret;
+    }
+
     if(!exists) {
 	
-	ret = encryptFile(tempPath, fullPath);
-	if(ret < 0) {
-	    fprintf(stderr, "ERROR enc_truncate: decryptFile failed\n");
-	    return ret;
-	}
-
 	ret = removeFile(tempPath);
 	if(ret < 0) {
 	    fprintf(stderr, "ERROR enc_truncate: removeFile failed\n");
 	    return ret;
+
 	}
     
     }
@@ -1069,6 +1074,7 @@ static int enc_create(const char* path, mode_t mode, fuse_file_info_t* fi) {
 	return RETURN_FAILURE;
     }    
 
+    fhs->dirty = FHS_CLEAN;
     fi->fh = put_fhs(fhs);
 
 #ifdef DEBUG
@@ -1111,6 +1117,7 @@ static int enc_open(const char* path, fuse_file_info_t* fi) {
 	return RETURN_FAILURE;
     }    
     
+    fhs->dirty = FHS_CLEAN;
     fi->fh = put_fhs(fhs);
 
     return RETURN_SUCCESS;
@@ -1147,6 +1154,7 @@ static int enc_write(const char* path, const char* buf, size_t size,
     enc_fhs_t* fhs;
 
     fhs = get_fhs(fi->fh);
+    fhs->dirty = FHS_DIRTY;
 
     ret = pwrite(fhs->clearFH, buf, size, offset);
     if(ret < 0) {
@@ -1246,10 +1254,16 @@ static int enc_flush(const char* path, fuse_file_info_t* fi) {
 	return -errno;
     }
 
-    ret = encryptFile(tempPath, fullPath);
-    if(ret < 0) {
-	fprintf(stderr, "ERROR enc_flush: encryptFile failed\n");
-	return ret;
+    if(fhs->dirty == FHS_DIRTY) {
+	
+	ret = encryptFile(tempPath, fullPath);
+	if(ret < 0) {
+	    fprintf(stderr, "ERROR enc_flush: encryptFile failed\n");
+	    return ret;
+	}
+
+	fhs->dirty = FHS_CLEAN;
+	
     }
 
     return RETURN_SUCCESS;
@@ -1286,6 +1300,7 @@ static int enc_fsync(const char* path, int isdatasync,
 static int enc_release(const char* path, fuse_file_info_t* fi) {
 
     int ret;
+    int dirty;
     enc_fhs_t* fhs;
     char fullPath[PATHBUFSIZE];
     char tempPath[PATHBUFSIZE];
@@ -1318,6 +1333,7 @@ static int enc_release(const char* path, fuse_file_info_t* fi) {
     }
 
     fhs = get_fhs(fi->fh);
+    dirty = fhs->dirty;
 
     ret = closeFilePair(fhs);
     if(ret < 0) {
@@ -1325,10 +1341,14 @@ static int enc_release(const char* path, fuse_file_info_t* fi) {
 	return ret;
     }
 
-    ret = encryptFile(tempPath, fullPath);
-    if(ret < 0) {
-	fprintf(stderr, "ERROR enc_release: encryptFile failed\n");
-	return ret;
+    if(dirty == FHS_DIRTY) {
+
+	ret = encryptFile(tempPath, fullPath);
+	if(ret < 0) {
+	    fprintf(stderr, "ERROR enc_release: encryptFile failed\n");
+	    return ret;
+	}
+
     }
 
     ret = removeFile(tempPath);
