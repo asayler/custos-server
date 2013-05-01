@@ -87,6 +87,7 @@ aes-crypt.o: aes-crypt.c aes-crypt.h
 
 clean:
 	rm -f $(ENCFS)
+	rm -f $(MIRFS)
 	rm -f $(FUSE_EXAMPLES)
 	rm -f $(XATTR_EXAMPLES)
 	rm -f $(OPENSSL_EXAMPLES)
