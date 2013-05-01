@@ -47,6 +47,8 @@ typedef struct timespec timespec_t;
 typedef struct enc_fhs {
     uint64_t encFH;
     uint64_t clearFH;
+    char     dirty;
+    char     padding[7];
 } enc_fhs_t;
 
 static inline enc_fhs_t* get_fhs(uint64_t fh) {
