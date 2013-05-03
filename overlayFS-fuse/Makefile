@@ -23,16 +23,18 @@ MIRFS            = fusemir_fh
 FUSE_EXAMPLES    = fusehello fusexmp fusexmp_fh
 XATTR_EXAMPLES   = xattr-util
 OPENSSL_EXAMPLES = aes-crypt-util 
+CUSTOS_UTIL      = custos_client_util
 
-.PHONY: all encfs fuse-examples xattr-examples openssl-examples clean
+.PHONY: all encfs mirfs fuse-examples xattr-examples openssl-examples custss_util clean
 
-all: encfs mirfs fuse-examples xattr-examples openssl-examples
+all: encfs mirfs fuse-examples xattr-examples openssl-examples custos_util
 
 encfs: $(ENCFS)
 mirfs: $(MIRFS)
 fuse-examples: $(FUSE_EXAMPLES)
 xattr-examples: $(XATTR_EXAMPLES)
 openssl-examples: $(OPENSSL_EXAMPLES)
+custos_util: $(CUSTOS_UTIL)
 
 fusehello: fusehello.o
 	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSFUSE)
@@ -56,6 +58,9 @@ xattr-util: xattr-util.o
 	$(CC) $(LFLAGS) $^ -o $@
 
 aes-crypt-util: aes-crypt-util.o aes-crypt.o
+	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSOPENSSL)
+
+custos_client_util: custos_client_util.o custos_client.o
 	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSOPENSSL)
 
 fusehello.o: fusehello.c
@@ -85,6 +90,9 @@ aes-crypt-util.o: aes-crypt-util.c aes-crypt.h
 aes-crypt.o: aes-crypt.c aes-crypt.h
 	$(CC) $(CFLAGS) $<
 
+custos_client_util.o: custos_client_util.c custos_client.h
+	$(CC) $(CFLAGS) $<
+
 custos_client.o: custos_client.c custos_client.h
 	$(CC) $(CFLAGS) $<
 
@@ -94,6 +102,7 @@ clean:
 	rm -f $(FUSE_EXAMPLES)
 	rm -f $(XATTR_EXAMPLES)
 	rm -f $(OPENSSL_EXAMPLES)
+	rm -f $(CUSTOS_UTIL)
 	rm -f *.o
 	rm -f *~
 	rm -f handout/*~
