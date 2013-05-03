@@ -12,7 +12,7 @@
 #define RETURN_FAILURE -1
 #define RETURN_SUCCESS  0
 
-extern custosReq_t* custos_createReq(const custosUUID_t* uuid) {
+extern custosReq_t* custos_createReq(const custosUUID_t* uuid, const char* uri) {
 
     custosReq_t* req = NULL;
 
@@ -26,7 +26,16 @@ extern custosReq_t* custos_createReq(const custosUUID_t* uuid) {
     req = malloc(sizeof(*req));
     if(!req) {
 #ifdef DEBUG
-	fprintf(stderr, "ERROR custos_createReq: malloc failed\n");
+	fprintf(stderr, "ERROR custos_createReq: malloc(req) failed\n");
+	perror(         "---------------------->");
+#endif
+	return NULL;
+    }
+
+    req->uri = malloc(sizeof(*uri) * (strlen(uri) + 1));
+    if(!(req->uri)) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_createReq: malloc(uri) failed\n");
 	perror(         "---------------------->");
 #endif
 	return NULL;
