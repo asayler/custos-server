@@ -48,6 +48,57 @@ extern custosReq_t* custos_createReq(const custosUUID_t* uuid) {
 
 }
 
+extern int custos_updateReq(custosReq_t* req, const custosAttrID_t id,
+			    const void* value, const size_t size) {
+
+    if(!req) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_updateReq: 'req' must not be NULL\n");
+#endif
+	return -EINVAL;
+    }
+    if(id >= CUS_ATTRID_MAX) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_updateReq: 'id' must be less than %d\n",
+		CUS_ATTRID_MAX);
+#endif
+	return -EINVAL;
+    }
+    if(!value) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_updateReq: 'value' must not be NULL\n");
+#endif
+	return -EINVAL;
+    }
+    if(!size) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_updateReq: 'size' must not be 0\n");
+#endif
+	return -EINVAL;
+    }
+
+    if(req->attrs[id].val) {
+	free(req->attrs[id].val);
+    }
+    req->attrs[id].val  = NULL;
+    req->attrs[id].size = 0;
+
+    req->attrs[id].val = malloc(size);
+    if(!req) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_updateReq: malloc failed\n");
+	perror(         "---------------------->");
+#endif
+	return -errno;
+    }
+    req->attrs[id].size = size;
+    
+    memcpy(req->attrs[id].val, value, size);
+
+    return RETURN_SUCCESS;
+
+}
+
 extern int custos_getkey(const custosReq_t* req, custosRes_t* res) {
 
     (void) req;
