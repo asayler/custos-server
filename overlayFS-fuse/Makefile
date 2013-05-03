@@ -70,7 +70,7 @@ fusexmp_fh.o: fusexmp_fh.c
 fuseenc.o: fuseenc.c
 	$(CC) $(CFLAGS) $(CFLAGSFUSE) $<
 
-fuseenc_fh.o: fuseenc_fh.c
+fuseenc_fh.o: fuseenc_fh.c aes-crypt.h
 	$(CC) $(CFLAGS) $(CFLAGSFUSE) $<
 
 fusemir_fh.o: fusemir_fh.c
@@ -83,6 +83,9 @@ aes-crypt-util.o: aes-crypt-util.c aes-crypt.h
 	$(CC) $(CFLAGS) $<
 
 aes-crypt.o: aes-crypt.c aes-crypt.h
+	$(CC) $(CFLAGS) $<
+
+custos_client.o: custos_client.c custos_client.h
 	$(CC) $(CFLAGS) $<
 
 clean:
