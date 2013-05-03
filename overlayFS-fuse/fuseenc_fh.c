@@ -1273,18 +1273,53 @@ static int enc_flush(const char* path, fuse_file_info_t* fi) {
 static int enc_fsync(const char* path, int isdatasync,
 		     fuse_file_info_t* fi) {
 
-    (void) path;
-
     int ret;
     enc_fhs_t* fhs;
+    char fullPath[PATHBUFSIZE];
+    char tempPath[PATHBUFSIZE];
+
+    if(!path) {
+	fprintf(stderr, "ERROR enc_fsync: path is NULL");
+	return -EINVAL;
+    }
+
+    if(!fi) {
+	fprintf(stderr, "ERROR enc_fsync: fi is NULL");
+	return -EINVAL;
+    }
+
+    ret = buildPath(path, fullPath, sizeof(fullPath));
+    if(ret < 0) {
+	fprintf(stderr, "ERROR enc_fsync: buildPath failed\n");
+	return ret;
+    }
+    path = NULL;
+
+    ret = buildTempPath(fullPath, tempPath, sizeof(tempPath));
+    if(ret < 0) {
+	fprintf(stderr, "ERROR enc_fsync: buildTempPath failed\n");
+	return ret;
+    }
 
     fhs = get_fhs(fi->fh);
 
+    if(fhs->dirty == FHS_DIRTY) {
+	
+	ret = encryptFile(tempPath, fullPath);
+	if(ret < 0) {
+	    fprintf(stderr, "ERROR enc_fsync: encryptFile failed\n");
+	    return ret;
+	}
+
+	fhs->dirty = FHS_CLEAN;
+	
+    }
+
     if(isdatasync) {
-	ret = fdatasync(fhs->clearFH);
+	ret = fdatasync(fhs->encFH);
     }
     else {
-	ret = fsync(fhs->clearFH);
+	ret = fsync(fhs->encFH);
     }
 
     if(ret < 0) {
