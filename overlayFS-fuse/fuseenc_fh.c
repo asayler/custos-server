@@ -33,6 +33,7 @@
 #include <sys/file.h>
 
 #include "aes-crypt.h"
+#include "custos_client.h"
 
 typedef struct fuse_args fuse_args_t;
 typedef struct fuse_bufvec fuse_bufvec_t;
@@ -88,7 +89,7 @@ typedef struct fsState {
 #define TEMPNAME_POST ".decrypt"
 #define KEYBUFSIZE 1024
 
-#define TESTKEY "test"
+#define TESTKEY CUS_TEST_KEY
 
 static int buildPath(const char* path, char* buf, size_t bufSize) {
     

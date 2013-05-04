@@ -49,8 +49,8 @@ fusexmp_fh: fusexmp_fh.o
 fuseenc: fuseenc.o aes-crypt.o
 	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSFUSE) $(LLIBSOPENSSL)
 
-fuseenc_fh: fuseenc_fh.o aes-crypt.o
-	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSFUSE) $(LLIBSULOCK) $(LLIBSOPENSSL)
+fuseenc_fh: fuseenc_fh.o aes-crypt.o custos_client.o
+	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSFUSE) $(LLIBSULOCK) $(LLIBSOPENSSL) $(LLIBSUUID)
 
 fusemir_fh: fusemir_fh.o
 	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSFUSE) $(LLIBSULOCK)
