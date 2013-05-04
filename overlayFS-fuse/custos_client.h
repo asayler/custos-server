@@ -16,10 +16,7 @@
 #include <string.h>
 #include <errno.h>
 #include <inttypes.h>
-
-typedef struct custosUUID {
-    uint8_t bytes[16];
-} custosUUID_t;
+#include <uuid/uuid.h>
 
 typedef struct custosAttr {
     void*  val;
@@ -32,7 +29,7 @@ typedef enum custosAttrID {
 } custosAttrID_t;
 
 typedef struct custosReq {
-    custosUUID_t uuid;
+    uuid_t       uuid;
     char*        uri;
     custosAttr_t attrs[CUS_ATTRID_MAX];
 } custosReq_t;
@@ -41,7 +38,7 @@ typedef struct custosRes {
     uint8_t* key;
 } custosRes_t;
 
-extern custosReq_t* custos_createReq(const custosUUID_t* uuid, const char* uri);
+extern custosReq_t* custos_createReq(const uuid_t uuid, const char* uri);
 extern int custos_updateReq(custosReq_t* req, const custosAttrID_t id,
 			    const void* value, const size_t size);
 extern int custos_destroyReq(custosReq_t** req);

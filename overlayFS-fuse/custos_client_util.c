@@ -19,11 +19,12 @@ int main(int argc, char* argv[]) {
     (void) argv;
 
     int ret;
-    custosUUID_t uuid;
+    uuid_t uuid;
     custosReq_t* req;
     char* pw = "password";
 
-    req = custos_createReq(&uuid, "http://test.com");
+    uuid_generate(uuid);
+    req = custos_createReq(uuid, "http://test.com");
     if(!req) {
 	fprintf(stderr, "ERROR %s: custos_createReq failed\n", argv[0]);
 	return EXIT_FAILURE;

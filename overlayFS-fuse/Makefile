@@ -14,6 +14,7 @@ CFLAGSFUSE   = `pkg-config fuse --cflags`
 LLIBSFUSE    = `pkg-config fuse --libs`
 LLIBSULOCK   = -lulockmgr
 LLIBSOPENSSL = -lcrypto
+LLIBSUUID    = -luuid
 
 CFLAGS = -c -g -Wall -Wextra
 LFLAGS = -g -Wall -Wextra
@@ -61,7 +62,7 @@ aes-crypt-util: aes-crypt-util.o aes-crypt.o
 	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSOPENSSL)
 
 custos_client_util: custos_client_util.o custos_client.o
-	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSOPENSSL)
+	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSUUID)
 
 fusehello.o: fusehello.c
 	$(CC) $(CFLAGS) $(CFLAGSFUSE) $<

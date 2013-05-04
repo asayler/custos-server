@@ -14,16 +14,9 @@
 
 #define DEBUG
 
-extern custosReq_t* custos_createReq(const custosUUID_t* uuid, const char* uri) {
+extern custosReq_t* custos_createReq(const uuid_t uuid, const char* uri) {
 
     custosReq_t* req = NULL;
-
-    if(!uuid) {
-#ifdef DEBUG
-	fprintf(stderr, "ERROR custos_createReq: 'uuid' must not be NULL\n");
-#endif
-	return NULL;
-    }
 
     req = malloc(sizeof(*req));
     if(!req) {
@@ -45,11 +38,7 @@ extern custosReq_t* custos_createReq(const custosUUID_t* uuid, const char* uri) 
 	return NULL;
     }
 
-#ifdef DEBUG
-    fprintf(stderr, "INFO custos_createReq: uuid memcpy size = %zd\n",
-	    sizeof(req->uuid));
-#endif
-    memcpy(&(req->uuid), uuid, sizeof(req->uuid));
+    uuid_copy(req->uuid, uuid);
 
     return req;
 
