@@ -141,10 +141,16 @@ extern int custos_destroyKeyReq(custosKeyReq_t** reqp) {
 
 }
 
-extern int custos_getkey(const custosKeyReq_t* req, custosRes_t* res) {
+extern custosKeyRes_t* custos_getKey(const custosKeyReq_t* req) {
 
     (void) req;
-    (void) res;
+
+    return NULL;
+}
+
+extern int custos_destroyKeyRes(custosKeyRes_t** resp) {
+
+    (void) resp;
 
     return RETURN_FAILURE;
 }
