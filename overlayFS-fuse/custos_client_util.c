@@ -29,12 +29,12 @@ int main(int argc, char* argv[]) {
 	return EXIT_FAILURE;
     }
     
-    ret = custos_updateReq(req, CUS_ATTRID_PSK, pw, 9);
+    ret = custos_updateReq(req, CUS_ATTRID_PSK, pw, (strlen(pw) + 1));
     if(ret < 0) {
     	fprintf(stderr, "ERROR %s: custos_updateReq failed\n", argv[0]);
     	return EXIT_FAILURE;
     }
-    ret = custos_updateReq(req, CUS_ATTRID_PSK, pw, 9);
+    ret = custos_updateReq(req, CUS_ATTRID_PSK, pw, (strlen(pw) + 1));
     if(ret < 0) {
     	fprintf(stderr, "ERROR %s: custos_updateReq failed\n", argv[0]);
     	return EXIT_FAILURE;
