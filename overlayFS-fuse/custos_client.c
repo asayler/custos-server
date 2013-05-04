@@ -169,6 +169,7 @@ extern custosKeyRes_t* custos_getKeyRes(const custosKeyReq_t* req) {
 	return NULL;
     }
     memset(res, 0, sizeof(*res));
+    res->resStat = CUS_RESSTAT_GOOD;
     res->key = NULL;
     res->size = 0;
 

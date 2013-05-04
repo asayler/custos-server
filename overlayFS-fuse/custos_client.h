@@ -22,6 +22,11 @@
 #define CUS_TEST_BADPSK "badpassword"
 #define CUS_TEST_KEY "myfakekey"
 
+typedef enum custosResStatus {
+    CUS_RESSTAT_GOOD = 0,
+    CUS_RESSTAT_ERR,
+} custosResStatus_t;
+
 typedef struct custosAttr {
     void*  val;
     size_t size;
@@ -47,6 +52,7 @@ typedef struct custosKeyReq {
 } custosKeyReq_t;
 
 typedef struct custosKeyRes {
+    custosResStatus_t  resStat;
     uint8_t*           key;
     size_t             size;
     custosAttrStatus_t attrStat[CUS_ATTRID_MAX];
