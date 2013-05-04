@@ -14,14 +14,14 @@
 
 #define DEBUG
 
-extern custosReq_t* custos_createReq(const uuid_t uuid, const char* uri) {
+extern custosKeyReq_t* custos_createKeyReq(const uuid_t uuid, const char* uri) {
 
-    custosReq_t* req = NULL;
+    custosKeyReq_t* req = NULL;
 
     req = malloc(sizeof(*req));
     if(!req) {
 #ifdef DEBUG
-	fprintf(stderr, "ERROR custos_createReq: malloc(req) failed\n");
+	fprintf(stderr, "ERROR custos_createKeyReq: malloc(req) failed\n");
 	perror(         "---------------------->");
 #endif
 	return NULL;
@@ -32,7 +32,7 @@ extern custosReq_t* custos_createReq(const uuid_t uuid, const char* uri) {
     req->uri = strdup(uri);
     if(!(req->uri)) {
 #ifdef DEBUG
-	fprintf(stderr, "ERROR custos_createReq: strdup(uri) failed\n");
+	fprintf(stderr, "ERROR custos_createKeyReq: strdup(uri) failed\n");
 	perror(         "---------------------->");
 #endif
 	return NULL;
@@ -44,32 +44,32 @@ extern custosReq_t* custos_createReq(const uuid_t uuid, const char* uri) {
 
 }
 
-extern int custos_updateReq(custosReq_t* req, const custosAttrID_t id,
+extern int custos_updateKeyReq(custosKeyReq_t* req, const custosAttrID_t id,
 			    const void* value, const size_t size) {
 
     /* Input Invariant Check */
     if(!req) {
 #ifdef DEBUG
-	fprintf(stderr, "ERROR custos_updateReq: 'req' must not be NULL\n");
+	fprintf(stderr, "ERROR custos_updateKeyReq: 'req' must not be NULL\n");
 #endif
 	return -EINVAL;
     }
     if(id >= CUS_ATTRID_MAX) {
 #ifdef DEBUG
-	fprintf(stderr, "ERROR custos_updateReq: 'id' must be less than %d\n",
+	fprintf(stderr, "ERROR custos_updateKeyReq: 'id' must be less than %d\n",
 		CUS_ATTRID_MAX);
 #endif
 	return -EINVAL;
     }
     if(!value) {
 #ifdef DEBUG
-	fprintf(stderr, "ERROR custos_updateReq: 'value' must not be NULL\n");
+	fprintf(stderr, "ERROR custos_updateKeyReq: 'value' must not be NULL\n");
 #endif
 	return -EINVAL;
     }
     if(!size) {
 #ifdef DEBUG
-	fprintf(stderr, "ERROR custos_updateReq: 'size' must not be 0\n");
+	fprintf(stderr, "ERROR custos_updateKeyReq: 'size' must not be 0\n");
 #endif
 	return -EINVAL;
     }
@@ -85,7 +85,7 @@ extern int custos_updateReq(custosReq_t* req, const custosAttrID_t id,
     req->attrs[id].val = malloc(size);
     if(!req) {
 #ifdef DEBUG
-	fprintf(stderr, "ERROR custos_updateReq: malloc failed\n");
+	fprintf(stderr, "ERROR custos_updateKeyReq: malloc failed\n");
 	perror(         "---------------------->");
 #endif
 	return -errno;
@@ -97,29 +97,29 @@ extern int custos_updateReq(custosReq_t* req, const custosAttrID_t id,
 
 }
 
-extern int custos_destroyReq(custosReq_t** reqp) {
+extern int custos_destroyKeyReq(custosKeyReq_t** reqp) {
 
     uint i;
-    custosReq_t* req = *reqp;
+    custosKeyReq_t* req = *reqp;
 
     /* Input Invariant Check */
     if(!reqp) {
 #ifdef DEBUG
-	fprintf(stderr, "ERROR custos_destroyReq: 'reqp' must not be NULL\n");
+	fprintf(stderr, "ERROR custos_destroyKeyReq: 'reqp' must not be NULL\n");
 #endif
 	return -EINVAL;
     }
     if(!req) {
 #ifdef DEBUG
-	fprintf(stderr, "ERROR custos_destroyReq: 'req' must not be NULL\n");
+	fprintf(stderr, "ERROR custos_destroyKeyReq: 'req' must not be NULL\n");
 #endif
 	return -EINVAL;
     }
 
-    /* Check and Free Required Memebers */
+    /* Check and Free Required Members */
     if(!(req->uri)) {
 #ifdef DEBUG
-	fprintf(stderr, "ERROR custos_destroyReq: 'req->uri' must not be NULL\n");
+	fprintf(stderr, "ERROR custos_destroyKeyReq: 'req->uri' must not be NULL\n");
 #endif	
     }
     free(req->uri);
@@ -141,7 +141,7 @@ extern int custos_destroyReq(custosReq_t** reqp) {
 
 }
 
-extern int custos_getkey(const custosReq_t* req, custosRes_t* res) {
+extern int custos_getkey(const custosKeyReq_t* req, custosRes_t* res) {
 
     (void) req;
     (void) res;

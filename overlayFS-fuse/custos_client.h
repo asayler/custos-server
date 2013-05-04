@@ -36,11 +36,11 @@ typedef enum custosAttrID {
     CUS_ATTRID_MAX,
 } custosAttrID_t;
 
-typedef struct custosReq {
+typedef struct custosKeyReq {
     uuid_t       uuid;
     char*        uri;
     custosAttr_t attrs[CUS_ATTRID_MAX];
-} custosReq_t;
+} custosKeyReq_t;
 
 typedef struct custosRes {
     uint8_t*           key;
@@ -48,11 +48,11 @@ typedef struct custosRes {
     custosAttrStatus_t attrStat[CUS_ATTRID_MAX];
 } custosRes_t;
 
-extern custosReq_t* custos_createReq(const uuid_t uuid, const char* uri);
-extern int custos_updateReq(custosReq_t* req, const custosAttrID_t id,
+extern custosKeyReq_t* custos_createKeyReq(const uuid_t uuid, const char* uri);
+extern int custos_updateKeyReq(custosKeyReq_t* req, const custosAttrID_t id,
 			    const void* value, const size_t size);
-extern int custos_destroyReq(custosReq_t** req);
+extern int custos_destroyKeyReq(custosKeyReq_t** req);
 
-extern int custos_getkey(const custosReq_t* req, custosRes_t* res);
+extern int custos_getkey(const custosKeyReq_t* req, custosRes_t* res);
 
 #endif

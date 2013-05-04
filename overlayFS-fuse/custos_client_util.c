@@ -20,34 +20,34 @@ int main(int argc, char* argv[]) {
 
     int ret;
     uuid_t uuid;
-    custosReq_t* req;
+    custosKeyReq_t* req;
     char* pw = "password";
 
     uuid_generate(uuid);
-    req = custos_createReq(uuid, "http://test.com");
+    req = custos_createKeyReq(uuid, "http://test.com");
     if(!req) {
-	fprintf(stderr, "ERROR %s: custos_createReq failed\n", argv[0]);
+	fprintf(stderr, "ERROR %s: custos_createKeyReq failed\n", argv[0]);
 	return EXIT_FAILURE;
     }
     
-    ret = custos_updateReq(req, CUS_ATTRID_PSK, pw, (strlen(pw) + 1));
+    ret = custos_updateKeyReq(req, CUS_ATTRID_PSK, pw, (strlen(pw) + 1));
     if(ret < 0) {
-    	fprintf(stderr, "ERROR %s: custos_updateReq failed\n", argv[0]);
+    	fprintf(stderr, "ERROR %s: custos_updateKeyReq failed\n", argv[0]);
     	return EXIT_FAILURE;
     }
-    ret = custos_updateReq(req, CUS_ATTRID_PSK, pw, (strlen(pw) + 1));
+    ret = custos_updateKeyReq(req, CUS_ATTRID_PSK, pw, (strlen(pw) + 1));
     if(ret < 0) {
-    	fprintf(stderr, "ERROR %s: custos_updateReq failed\n", argv[0]);
+    	fprintf(stderr, "ERROR %s: custos_updateKeyReq failed\n", argv[0]);
     	return EXIT_FAILURE;
     }
 
-    ret = custos_destroyReq(&req);
+    ret = custos_destroyKeyReq(&req);
     if(ret < 0) {
-	fprintf(stderr, "ERROR %s: custos_destroyReq failed\n", argv[0]);
+	fprintf(stderr, "ERROR %s: custos_destroyKeyReq failed\n", argv[0]);
 	return EXIT_FAILURE;
     }
     if(req) {
-	fprintf(stderr, "ERROR %s: custos_destroyReq failed to set req to NULL\n", argv[0]);
+	fprintf(stderr, "ERROR %s: custos_destroyKeyReq failed to set req to NULL\n", argv[0]);
 	return EXIT_FAILURE;
     }
 
