@@ -288,10 +288,14 @@ static int removeFile(const char* filePath) {
 static int decryptFile(const char* encPath, const char* plainPath) {
     
     int ret;
+    int i;
     FILE* encFP = NULL;
     FILE* plainFP = NULL;
-    char key[KEYBUFSIZE] = TESTKEY;
-    
+    custosKeyReq_t* req;
+    custosKeyRes_t* res;
+    uuid_t uuid;
+    char* key;
+        
     encFP = fopen(encPath, "r");
     if(!encFP) {
 	fprintf(stderr, "ERROR decryptFile: fopen(encPath) failed\n");
@@ -308,10 +312,104 @@ static int decryptFile(const char* encPath, const char* plainPath) {
 	goto ERROR_1;
     }
     
+    /* Create a new Custos request */
+    uuid_generate(uuid);
+    req = custos_createKeyReq(uuid, "http://test.com");
+    if(!req) {
+	fprintf(stderr, "ERROR decryptFile: custos_createKeyReq failed\n");
+	ret = -errno;
+	goto ERROR_2;
+    }
+
+    /* Get Key - 1st Attempt */
+    res = custos_getKeyRes(req);
+    if(!res) {
+	fprintf(stderr, "ERROR decryptFile: custos_getKeyRes failed\n");
+	ret = -errno;
+	goto ERROR_3;
+    }
+
+    if(res->resStat) {
+	fprintf(stderr, "ERROR decryptFile: response error %d\n", res->resStat);
+	ret = -errno;
+	goto ERROR_4;
+    }
+
+    if(!(res->key)) {
+
+	/* Update Request */
+	for(i = 0; i < CUS_ATTRID_MAX; i++) {
+	    if(res->attrStat[i] == CUS_ATTRSTAT_REQ) {
+		switch(i) {
+		case CUS_ATTRID_PSK:
+		    ret = custos_updateKeyReq(req, i, CUS_TEST_PSK,
+					      (strlen(CUS_TEST_PSK) + 1));
+		    if(ret < 0) {
+			fprintf(stderr, "ERROR decryptFile: custos_updateKeyReq failed\n");
+			goto ERROR_4;
+		    }
+		    break;
+		default:
+		    fprintf(stderr, "ERROR decryptFile: Unknown Custos Attr %d required\n", i);
+		    goto ERROR_4;
+		    break;
+		}
+	    }
+	    else {
+		fprintf(stderr, "ERROR decryptFile: Custos Attr %d Error %d\n",
+			i, res->attrStat[i]);
+		goto ERROR_4;
+	    }
+	}
+
+	/* Free Response */
+	ret = custos_destroyKeyRes(&res);
+	if(ret < 0) {
+	    fprintf(stderr, "ERROR decryptFile: custos_destroyKeyRes failed\n");
+	    goto ERROR_3;
+	}
+
+	/* Get Key - 2nd Attempt */
+	res = custos_getKeyRes(req);
+	if(!res) {
+	    fprintf(stderr, "ERROR decryptFile: custos_getKeyRes failed\n");
+	    ret = -errno;
+	    goto ERROR_3;
+	}
+
+	if(res->resStat) {
+	    fprintf(stderr, "ERROR decryptFile: response error %d\n", res->resStat);
+	    ret = -errno;
+	    goto ERROR_4;
+	}
+	
+	if(!(res->key)) {
+	    fprintf(stderr, "ERROR decryptFile: request failed\n");
+	    ret = RETURN_FAILURE;
+	    goto ERROR_4;
+	}
+    }
+
+    /* Decrypt */
+    key = (int8_t*)(res->key);
     ret = crypt_decrypt(encFP, plainFP, key);
     if(ret < 0) {
 	fprintf(stderr, "ERROR decryptFile: crypt_decrypt() failed\n");
 	goto ERROR_2;
+    }
+
+    /* Free Response */
+    ret = custos_destroyKeyRes(&res);
+    if(ret < 0) {
+	fprintf(stderr, "ERROR decryptFile: custos_destroyKeyRes failed\n");
+	return EXIT_FAILURE;
+    }
+
+    /* Free Request */
+    ret = custos_destroyKeyReq(&req);
+    if(ret < 0) {
+	fprintf(stderr, "ERROR decryptFile: custos_destroyKeyReq failed\n");
+	return EXIT_FAILURE;
     }
 
     if(fclose(plainFP)) {
@@ -329,6 +427,18 @@ static int decryptFile(const char* encPath, const char* plainPath) {
     }
 
     return RETURN_SUCCESS;
+
+ ERROR_4:
+    ret = custos_destroyKeyRes(&res);
+    if(ret < 0) {
+	fprintf(stderr, "ERROR decryptFile: custos_destroyKeyRes failed\n");
+    }
+
+ ERROR_3:
+    ret = custos_destroyKeyReq(&req);
+    if(ret < 0) {
+	fprintf(stderr, "ERROR decryptFile: custos_destroyKeyReq failed\n");
+    }
 
  ERROR_2:
 
