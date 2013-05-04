@@ -12,6 +12,8 @@
 #define RETURN_FAILURE -1
 #define RETURN_SUCCESS  0
 
+#define DEBUG
+
 extern custosReq_t* custos_createReq(const custosUUID_t* uuid, const char* uri) {
 
     custosReq_t* req = NULL;
@@ -32,25 +34,22 @@ extern custosReq_t* custos_createReq(const custosUUID_t* uuid, const char* uri) 
 	return NULL;
     }
 
-    req->uri = malloc(sizeof(*uri) * (strlen(uri) + 1));
+    memset(req, 0, sizeof(*req));
+
+    req->uri = strdup(uri);
     if(!(req->uri)) {
 #ifdef DEBUG
-	fprintf(stderr, "ERROR custos_createReq: malloc(uri) failed\n");
+	fprintf(stderr, "ERROR custos_createReq: strdup(uri) failed\n");
 	perror(         "---------------------->");
 #endif
 	return NULL;
     }
 
 #ifdef DEBUG
-    fprintf(stderr, "INFO custos_createReq: uuid memcpy size = %z\n",
+    fprintf(stderr, "INFO custos_createReq: uuid memcpy size = %zd\n",
 	    sizeof(req->uuid));
 #endif
     memcpy(&(req->uuid), uuid, sizeof(req->uuid));
-#ifdef DEBUG
-    fprintf(stderr, "INFO custos_createReq: attrs memset size = %z\n",
-	    (sizeof(custosAttr_t) * sizeof(req->attrs)));
-#endif
-    memset(req->attrs, 0, (sizeof(custosAttr_t) * sizeof(req->attrs)));
 
     return req;
 
@@ -59,6 +58,7 @@ extern custosReq_t* custos_createReq(const custosUUID_t* uuid, const char* uri) 
 extern int custos_updateReq(custosReq_t* req, const custosAttrID_t id,
 			    const void* value, const size_t size) {
 
+    /* Input Invariant Check */
     if(!req) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_updateReq: 'req' must not be NULL\n");
@@ -85,12 +85,14 @@ extern int custos_updateReq(custosReq_t* req, const custosAttrID_t id,
 	return -EINVAL;
     }
 
+    /* Free Old Attribute if Set */
     if(req->attrs[id].val) {
 	free(req->attrs[id].val);
 	req->attrs[id].val  = NULL;
 	req->attrs[id].size = 0;
     }
 
+    /* Create and Set New Attribute */
     req->attrs[id].val = malloc(size);
     if(!req) {
 #ifdef DEBUG
@@ -100,7 +102,6 @@ extern int custos_updateReq(custosReq_t* req, const custosAttrID_t id,
 	return -errno;
     }
     req->attrs[id].size = size;
-    
     memcpy(req->attrs[id].val, value, size);
 
     return RETURN_SUCCESS;
@@ -112,20 +113,30 @@ extern int custos_destroyReq(custosReq_t** reqp) {
     uint i;
     custosReq_t* req = *reqp;
 
+    /* Input Invariant Check */
+    if(!reqp) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_destroyReq: 'reqp' must not be NULL\n");
+#endif
+	return -EINVAL;
+    }
     if(!req) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_destroyReq: 'req' must not be NULL\n");
 #endif
 	return -EINVAL;
     }
-    if(!req) {
-#ifdef DEBUG
-	fprintf(stderr, "ERROR custos_destroyReq: '*req' must not be NULL\n");
-#endif
-	return -EINVAL;
-    }
 
-    for(i = 0; i < sizeof(req->attrs); i++) {
+    /* Check and Free Required Memebers */
+    if(!(req->uri)) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_destroyReq: 'req->uri' must not be NULL\n");
+#endif	
+    }
+    free(req->uri);
+
+    /* Check and Free Optional Memebers */
+    for(i = 0; i < CUS_ATTRID_MAX; i++) {
 	if(req->attrs[i].val) {
 	    free(req->attrs[i].val);
 	    req->attrs[i].val  = NULL;
@@ -133,6 +144,7 @@ extern int custos_destroyReq(custosReq_t** reqp) {
 	}
     }
 
+    /* Free Struct */
     free(req);
     req = NULL;
 
