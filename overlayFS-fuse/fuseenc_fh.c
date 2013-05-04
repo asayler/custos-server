@@ -391,7 +391,7 @@ static int decryptFile(const char* encPath, const char* plainPath) {
     }
 
     /* Decrypt */
-    key = (int8_t*)(res->key);
+    key = (char*)(res->key);
     ret = crypt_decrypt(encFP, plainFP, key);
     if(ret < 0) {
 	fprintf(stderr, "ERROR decryptFile: crypt_decrypt() failed\n");
