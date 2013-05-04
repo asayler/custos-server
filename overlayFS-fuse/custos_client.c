@@ -179,11 +179,11 @@ extern custosKeyRes_t* custos_getKeyRes(const custosKeyReq_t* req) {
 	res->attrStat[CUS_ATTRID_PSK] = CUS_ATTRSTAT_REQ;
     }
     else {
-	if(strcmp(req->attrs[CUS_ATTRID_PSK].val, TEST_PSK) == 0) {
+	if(strcmp(req->attrs[CUS_ATTRID_PSK].val, CUS_TEST_PSK) == 0) {
 	    res->attrStat[CUS_ATTRID_PSK] = CUS_ATTRSTAT_GOOD;
-	    res->size = strlen(TEST_KEY) + 1;
+	    res->size = strlen(CUS_TEST_KEY) + 1;
 	    res->key = malloc(res->size);
-	    memcpy(res->key, TEST_KEY, res->size);
+	    memcpy(res->key, CUS_TEST_KEY, res->size);
 	}
 	else {
 	    res->attrStat[CUS_ATTRID_PSK] = CUS_ATTRSTAT_BAD;

@@ -18,9 +18,9 @@
 #include <inttypes.h>
 #include <uuid/uuid.h>
 
-#define TEST_PSK "password"
-#define TEST_BADPSK "badpassword"
-#define TEST_KEY "myfakekey"
+#define CUS_TEST_PSK "password"
+#define CUS_TEST_BADPSK "badpassword"
+#define CUS_TEST_KEY "myfakekey"
 
 typedef struct custosAttr {
     void*  val;
