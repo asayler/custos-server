@@ -32,9 +32,9 @@ int main(int argc, char* argv[]) {
     }
 
     /* Get Key - 1st Attempt - Fails with CUSATTRSTAT_REQ on CUS_ATTRID_PSK */
-    res = custos_getKey(req);
+    res = custos_getKeyRes(req);
     if(!res) {
-	fprintf(stderr, "ERROR %s: custos_getKey failed\n", argv[0]);
+	fprintf(stderr, "ERROR %s: custos_getKeyRes failed\n", argv[0]);
 	return EXIT_FAILURE;
     }
 
@@ -50,7 +50,7 @@ int main(int argc, char* argv[]) {
 
     /* Free Response */
     ret = custos_destroyKeyRes(&res);
-    if(res < 0) {
+    if(ret < 0) {
 	fprintf(stderr, "ERROR %s: custos_destroyKeyRes failed\n", argv[0]);
 	return EXIT_FAILURE;
     }
@@ -67,9 +67,9 @@ int main(int argc, char* argv[]) {
     }
 
     /* Get Key - 2nd Attempt - Fails with CUSATTRSTAT_BAD on CUS_ATTRID_PSK */
-    res = custos_getKey(req);
+    res = custos_getKeyRes(req);
     if(!res) {
-	fprintf(stderr, "ERROR %s: custos_getKey failed\n", argv[0]);
+	fprintf(stderr, "ERROR %s: custos_getKeyRes failed\n", argv[0]);
 	return EXIT_FAILURE;
     }
 
@@ -85,7 +85,7 @@ int main(int argc, char* argv[]) {
     
     /* Free Response */
     ret = custos_destroyKeyRes(&res);
-    if(res < 0) {
+    if(ret < 0) {
 	fprintf(stderr, "ERROR %s: custos_destroyKeyRes failed\n", argv[0]);
 	return EXIT_FAILURE;
     }
@@ -102,9 +102,9 @@ int main(int argc, char* argv[]) {
     }
     
     /* Get Key - 3rd Attempt - Succeeds */
-    res = custos_getKey(req);
+    res = custos_getKeyRes(req);
     if(!res) {
-	fprintf(stderr, "ERROR %s: custos_getKey failed\n", argv[0]);
+	fprintf(stderr, "ERROR %s: custos_getKeyRes failed\n", argv[0]);
 	return EXIT_FAILURE;
     }
 
@@ -120,7 +120,7 @@ int main(int argc, char* argv[]) {
 
     /* Free Response */
     ret = custos_destroyKeyRes(&res);
-    if(res < 0) {
+    if(ret < 0) {
 	fprintf(stderr, "ERROR %s: custos_destroyKeyRes failed\n", argv[0]);
 	return EXIT_FAILURE;
     }

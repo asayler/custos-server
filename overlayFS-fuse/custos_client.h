@@ -57,7 +57,7 @@ extern int custos_updateKeyReq(custosKeyReq_t* req, const custosAttrID_t id,
 			    const void* value, const size_t size);
 extern int custos_destroyKeyReq(custosKeyReq_t** reqp);
 
-extern custosKeyRes_t* custos_getKey(const custosKeyReq_t* req);
+extern custosKeyRes_t* custos_getKeyRes(const custosKeyReq_t* req);
 extern int custos_destroyKeyRes(custosKeyRes_t** resp);
 
 #endif

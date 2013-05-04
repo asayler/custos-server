@@ -142,7 +142,7 @@ extern int custos_destroyKeyReq(custosKeyReq_t** reqp) {
 
 }
 
-extern custosKeyRes_t* custos_getKey(const custosKeyReq_t* req) {
+extern custosKeyRes_t* custos_getKeyRes(const custosKeyReq_t* req) {
     
     custosKeyRes_t* res = NULL;
     
