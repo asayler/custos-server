@@ -39,7 +39,7 @@ int main(int argc, char* argv[]) {
     }
 
     /* Print Response */
-    fprintf(stdout, "res->resStat = %d\n", res->resState);
+    fprintf(stdout, "res->resStat = %d\n", res->resStat);
     if(res->key) {
 	fprintf(stdout, "res->key = %s\n", res->key);
     }
@@ -75,7 +75,7 @@ int main(int argc, char* argv[]) {
     }
 
     /* Print Response */
-    fprintf(stdout, "res->resStat = %d\n", res->resState);
+    fprintf(stdout, "res->resStat = %d\n", res->resStat);
     if(res->key) {
 	fprintf(stdout, "res->key = %s\n", res->key);
     }
@@ -111,7 +111,7 @@ int main(int argc, char* argv[]) {
     }
 
     /* Print Response */
-    fprintf(stdout, "res->resStat = %d\n", res->resState);
+    fprintf(stdout, "res->resStat = %d\n", res->resStat);
     if(res->key) {
 	fprintf(stdout, "res->key = %s\n", res->key);
     }
