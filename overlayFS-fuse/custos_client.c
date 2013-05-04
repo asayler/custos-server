@@ -99,7 +99,7 @@ extern int custos_updateKeyReq(custosKeyReq_t* req, const custosAttrID_t id,
 extern int custos_destroyKeyReq(custosKeyReq_t** reqp) {
 
     uint i;
-    custosKeyReq_t* req = *reqp;
+    custosKeyReq_t* req;;
 
     /* Input Invariant Check */
     if(!reqp) {
@@ -108,6 +108,8 @@ extern int custos_destroyKeyReq(custosKeyReq_t** reqp) {
 #endif
 	return -EINVAL;
     }
+    req = *reqp;
+
     if(!req) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_destroyKeyReq: 'req' must not be NULL\n");
@@ -193,7 +195,33 @@ extern custosKeyRes_t* custos_getKey(const custosKeyReq_t* req) {
 
 extern int custos_destroyKeyRes(custosKeyRes_t** resp) {
 
-    (void) resp;
+    custosKeyRes_t* res;
 
-    return RETURN_FAILURE;
+    /* Input Invariant Check */
+    if(!resp) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_destroyKeyRes: 'resp' must not be NULL\n");
+#endif
+	return -EINVAL;
+    }
+    res = *resp;
+
+    if(!res) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_destroyKeyRes: 'res' must not be NULL\n");
+#endif
+	return -EINVAL;
+    }
+
+    /* Check and Free Optional Members */
+    if(res->key) {
+	free(res->key);
+    }
+
+    /* Free Struct */
+    free(res);
+    *resp = NULL;
+
+    return RETURN_SUCCESS;
+
 }

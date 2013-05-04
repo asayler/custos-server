@@ -47,6 +47,17 @@ int main(int argc, char* argv[]) {
     }
     fprintf(stdout, "res->size = %zd\n", res->size);
     fprintf(stdout, "res->attrStat[CUS_ATTRID_PSK] = %d\n", res->attrStat[CUS_ATTRID_PSK]);
+
+    /* Free Response */
+    ret = custos_destroyKeyRes(&res);
+    if(res < 0) {
+	fprintf(stderr, "ERROR %s: custos_destroyKeyRes failed\n", argv[0]);
+	return EXIT_FAILURE;
+    }
+    if(res) {
+	fprintf(stderr, "ERROR %s: custos_destroyKeyRes failed to set res to NULL\n", argv[0]);
+	return EXIT_FAILURE;
+    }
     
     /* Update Request */
     ret = custos_updateKeyReq(req, CUS_ATTRID_PSK, TEST_BADPSK, (strlen(TEST_BADPSK) + 1));
@@ -72,6 +83,17 @@ int main(int argc, char* argv[]) {
     fprintf(stdout, "res->size = %zd\n", res->size);
     fprintf(stdout, "res->attrStat[CUS_ATTRID_PSK] = %d\n", res->attrStat[CUS_ATTRID_PSK]);
     
+    /* Free Response */
+    ret = custos_destroyKeyRes(&res);
+    if(res < 0) {
+	fprintf(stderr, "ERROR %s: custos_destroyKeyRes failed\n", argv[0]);
+	return EXIT_FAILURE;
+    }
+    if(res) {
+	fprintf(stderr, "ERROR %s: custos_destroyKeyRes failed to set res to NULL\n", argv[0]);
+	return EXIT_FAILURE;
+    }
+    
     /* Update Request */
     ret = custos_updateKeyReq(req, CUS_ATTRID_PSK, TEST_PSK, (strlen(TEST_PSK) + 1));
     if(ret < 0) {
@@ -96,7 +118,18 @@ int main(int argc, char* argv[]) {
     fprintf(stdout, "res->size = %zd\n", res->size);
     fprintf(stdout, "res->attrStat[CUS_ATTRID_PSK] = %d\n", res->attrStat[CUS_ATTRID_PSK]);
 
-    /* Cleanup Request */
+    /* Free Response */
+    ret = custos_destroyKeyRes(&res);
+    if(res < 0) {
+	fprintf(stderr, "ERROR %s: custos_destroyKeyRes failed\n", argv[0]);
+	return EXIT_FAILURE;
+    }
+    if(res) {
+	fprintf(stderr, "ERROR %s: custos_destroyKeyRes failed to set res to NULL\n", argv[0]);
+	return EXIT_FAILURE;
+    }    
+
+    /* Free Request */
     ret = custos_destroyKeyReq(&req);
     if(ret < 0) {
 	fprintf(stderr, "ERROR %s: custos_destroyKeyReq failed\n", argv[0]);
