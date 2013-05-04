@@ -135,7 +135,7 @@ extern int custos_destroyReq(custosReq_t** reqp) {
 
     /* Free Struct */
     free(req);
-    req = NULL;
+    *reqp = NULL;
 
     return RETURN_SUCCESS;
 
