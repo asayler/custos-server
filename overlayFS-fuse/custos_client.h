@@ -18,6 +18,10 @@
 #include <inttypes.h>
 #include <uuid/uuid.h>
 
+#define TEST_PSK "password"
+#define TEST_BADPSK "badpassword"
+#define TEST_KEY "myfakekey"
+
 typedef struct custosAttr {
     void*  val;
     size_t size;

@@ -21,7 +21,7 @@ int main(int argc, char* argv[]) {
     int ret;
     uuid_t uuid;
     custosKeyReq_t* req;
-    char* pw = "password";
+    custosKeyRes_t* res;
 
     uuid_generate(uuid);
     req = custos_createKeyReq(uuid, "http://test.com");
@@ -29,17 +29,64 @@ int main(int argc, char* argv[]) {
 	fprintf(stderr, "ERROR %s: custos_createKeyReq failed\n", argv[0]);
 	return EXIT_FAILURE;
     }
+
+    res = custos_getKey(req);
+    if(!res) {
+	fprintf(stderr, "ERROR %s: custos_getKey failed\n", argv[0]);
+	return EXIT_FAILURE;
+    }
+
+    if(res->key) {
+	fprintf(stdout, "res->key = %s\n", res->key);
+    }
+    else {
+	fprintf(stdout, "res->key = NULL\n");
+    }
+    fprintf(stdout, "res->size = %zd\n", res->size);
+    fprintf(stdout, "res->attrStat[CUS_ATTRID_PSK] = %d\n", res->attrStat[CUS_ATTRID_PSK]);
     
-    ret = custos_updateKeyReq(req, CUS_ATTRID_PSK, pw, (strlen(pw) + 1));
+    ret = custos_updateKeyReq(req, CUS_ATTRID_PSK, TEST_BADPSK, (strlen(TEST_BADPSK) + 1));
     if(ret < 0) {
     	fprintf(stderr, "ERROR %s: custos_updateKeyReq failed\n", argv[0]);
     	return EXIT_FAILURE;
     }
-    ret = custos_updateKeyReq(req, CUS_ATTRID_PSK, pw, (strlen(pw) + 1));
+
+    res = custos_getKey(req);
+    if(!res) {
+	fprintf(stderr, "ERROR %s: custos_getKey failed\n", argv[0]);
+	return EXIT_FAILURE;
+    }
+
+    if(res->key) {
+	fprintf(stdout, "res->key = %s\n", res->key);
+    }
+    else {
+	fprintf(stdout, "res->key = NULL\n");
+    }
+    fprintf(stdout, "res->size = %zd\n", res->size);
+    fprintf(stdout, "res->attrStat[CUS_ATTRID_PSK] = %d\n", res->attrStat[CUS_ATTRID_PSK]);
+    
+    ret = custos_updateKeyReq(req, CUS_ATTRID_PSK, TEST_PSK, (strlen(TEST_PSK) + 1));
     if(ret < 0) {
     	fprintf(stderr, "ERROR %s: custos_updateKeyReq failed\n", argv[0]);
     	return EXIT_FAILURE;
     }
+
+    res = custos_getKey(req);
+    if(!res) {
+	fprintf(stderr, "ERROR %s: custos_getKey failed\n", argv[0]);
+	return EXIT_FAILURE;
+    }
+
+    if(res->key) {
+	fprintf(stdout, "res->key = %s\n", res->key);
+    }
+    else {
+	fprintf(stdout, "res->key = NULL\n");
+    }
+    fprintf(stdout, "res->size = %zd\n", res->size);
+    fprintf(stdout, "res->attrStat[CUS_ATTRID_PSK] = %d\n", res->attrStat[CUS_ATTRID_PSK]);
+
 
     ret = custos_destroyKeyReq(&req);
     if(ret < 0) {

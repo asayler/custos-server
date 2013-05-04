@@ -9,10 +9,10 @@
 
 #include "custos_client.h"
 
+#define DEBUG
+
 #define RETURN_FAILURE -1
 #define RETURN_SUCCESS  0
-
-#define DEBUG
 
 extern custosKeyReq_t* custos_createKeyReq(const uuid_t uuid, const char* uri) {
 
@@ -26,7 +26,6 @@ extern custosKeyReq_t* custos_createKeyReq(const uuid_t uuid, const char* uri) {
 #endif
 	return NULL;
     }
-
     memset(req, 0, sizeof(*req));
 
     req->uri = strdup(uri);
@@ -142,10 +141,54 @@ extern int custos_destroyKeyReq(custosKeyReq_t** reqp) {
 }
 
 extern custosKeyRes_t* custos_getKey(const custosKeyReq_t* req) {
+    
+    custosKeyRes_t* res = NULL;
+    
+    if(!req) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_getKey: 'req' must not be NULL\n");
+#endif
+	return NULL;
+    }
+    
+    if(!(req->uri)) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_getKey: 'req->uri' must not be NULL\n");
+#endif
+	return NULL;
+    }
+    
+    res = malloc(sizeof(*res));
+    if(!res) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_getReq: malloc(res) failed\n");
+	perror(         "---------------------->");
+#endif
+	return NULL;
+    }
+    memset(res, 0, sizeof(*res));
+    res->key = NULL;
+    res->size = 0;
 
-    (void) req;
+    /* ToDo: Make requet to custos server */
+    
+    /* Build Dummy Response */
+    if(!(req->attrs[CUS_ATTRID_PSK].val)) {
+	res->attrStat[CUS_ATTRID_PSK] = CUS_ATTRSTAT_REQ;
+    }
+    else {
+	if(strcmp(req->attrs[CUS_ATTRID_PSK].val, TEST_PSK) == 0) {
+	    res->attrStat[CUS_ATTRID_PSK] = CUS_ATTRSTAT_GOOD;
+	    res->size = strlen(TEST_KEY) + 1;
+	    res->key = malloc(res->size);
+	    memcpy(res->key, TEST_KEY, res->size);
+	}
+	else {
+	    res->attrStat[CUS_ATTRID_PSK] = CUS_ATTRSTAT_BAD;
+	}
+    }
 
-    return NULL;
+    return res;
 }
 
 extern int custos_destroyKeyRes(custosKeyRes_t** resp) {
