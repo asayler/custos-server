@@ -25,28 +25,28 @@ int main(int argc, char* argv[]) {
 
     req = custos_createReq(&uuid, "http://test.com");
     if(!req) {
-	fprintf(stderr, "ERROR main: custos_createReq failed\n");
+	fprintf(stderr, "ERROR %s: custos_createReq failed\n", argv[0]);
 	return EXIT_FAILURE;
     }
     
     ret = custos_updateReq(req, CUS_ATTRID_PSK, pw, 9);
     if(ret < 0) {
-    	fprintf(stderr, "ERROR main: custos_updateReq failed\n");
+    	fprintf(stderr, "ERROR %s: custos_updateReq failed\n", argv[0]);
     	return EXIT_FAILURE;
     }
     ret = custos_updateReq(req, CUS_ATTRID_PSK, pw, 9);
     if(ret < 0) {
-    	fprintf(stderr, "ERROR main: custos_updateReq failed\n");
+    	fprintf(stderr, "ERROR %s: custos_updateReq failed\n", argv[0]);
     	return EXIT_FAILURE;
     }
 
     ret = custos_destroyReq(&req);
     if(ret < 0) {
-	fprintf(stderr, "ERROR main: custos_destroyReq failed\n");
+	fprintf(stderr, "ERROR %s: custos_destroyReq failed\n", argv[0]);
 	return EXIT_FAILURE;
     }
     if(req) {
-	fprintf(stderr, "ERROR main: custos_destroyReq failed to set req to NULL\n");
+	fprintf(stderr, "ERROR %s: custos_destroyReq failed to set req to NULL\n", argv[0]);
 	return EXIT_FAILURE;
     }
 
