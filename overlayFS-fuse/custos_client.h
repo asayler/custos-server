@@ -23,6 +23,14 @@ typedef struct custosAttr {
     size_t size;
 } custosAttr_t;
 
+typedef enum custosAttrStatus {
+    CUS_ATTRSTAT_GOOD = 0,
+    CUS_ATTRSTAT_BAD,
+    CUS_ATTRSTAT_REQ,
+    CUS_ATTRSTAT_OPT,
+    CUS_ATTRSTAT_NA,
+} custosAttrStatus_t;
+
 typedef enum custosAttrID {
     CUS_ATTRID_PSK = 0,
     CUS_ATTRID_MAX,
@@ -35,7 +43,9 @@ typedef struct custosReq {
 } custosReq_t;
 
 typedef struct custosRes {
-    uint8_t* key;
+    uint8_t*           key;
+    size_t             size;
+    custosAttrStatus_t attrStat[CUS_ATTRID_MAX];
 } custosRes_t;
 
 extern custosReq_t* custos_createReq(const uuid_t uuid, const char* uri);
