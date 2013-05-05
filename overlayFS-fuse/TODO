@@ -10,6 +10,8 @@ TODO
 * 2013-05-04 - ANDY - Fix up custos unit8_t* vs void* vs char*
                       (Maybe just fix all at char*)?
 
+* 2013-05-04 - ANDY - Move curl_global_init call to FUSE init
+
 DONE
 
 * 2013-04-28 - ANDY - Implement non-FH functions (truncate, etc)

@@ -15,6 +15,7 @@ LLIBSFUSE    = `pkg-config fuse --libs`
 LLIBSULOCK   = -lulockmgr
 LLIBSOPENSSL = -lcrypto
 LLIBSUUID    = -luuid
+LLIBSCURL    = -lcurl
 
 CFLAGS = -c -g -Wall -Wextra
 LFLAGS = -g -Wall -Wextra
@@ -25,10 +26,11 @@ FUSE_EXAMPLES    = fusehello fusexmp fusexmp_fh
 XATTR_EXAMPLES   = xattr-util
 OPENSSL_EXAMPLES = aes-crypt-util 
 CUSTOS_UTIL      = custos_client_util
+CURL_TEST        = curl-test
 
-.PHONY: all encfs mirfs fuse-examples xattr-examples openssl-examples custss_util clean
+.PHONY: all encfs mirfs fuse-examples xattr-examples openssl-examples custos_util curl_test clean
 
-all: encfs mirfs fuse-examples xattr-examples openssl-examples custos_util
+all: encfs mirfs fuse-examples xattr-examples openssl-examples custos_util curl_test
 
 encfs: $(ENCFS)
 mirfs: $(MIRFS)
@@ -36,6 +38,7 @@ fuse-examples: $(FUSE_EXAMPLES)
 xattr-examples: $(XATTR_EXAMPLES)
 openssl-examples: $(OPENSSL_EXAMPLES)
 custos_util: $(CUSTOS_UTIL)
+curl_test: $(CURL_TEST)
 
 fusehello: fusehello.o
 	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSFUSE)
@@ -63,6 +66,9 @@ aes-crypt-util: aes-crypt-util.o aes-crypt.o
 
 custos_client_util: custos_client_util.o custos_client.o
 	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSUUID)
+
+curl-test: curl-test.o
+	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSCURL)
 
 fusehello.o: fusehello.c
 	$(CC) $(CFLAGS) $(CFLAGSFUSE) $<
@@ -97,6 +103,9 @@ custos_client_util.o: custos_client_util.c custos_client.h
 custos_client.o: custos_client.c custos_client.h
 	$(CC) $(CFLAGS) $<
 
+curl-test.o: curl-test.c
+	$(CC) $(CFLAGS) $<
+
 clean:
 	rm -f $(ENCFS)
 	rm -f $(MIRFS)
@@ -104,6 +113,7 @@ clean:
 	rm -f $(XATTR_EXAMPLES)
 	rm -f $(OPENSSL_EXAMPLES)
 	rm -f $(CUSTOS_UTIL)
+	rm -f $(CURL_TEST)
 	rm -f *.o
 	rm -f *~
 	rm -f handout/*~
