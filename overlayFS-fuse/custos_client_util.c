@@ -16,7 +16,6 @@
 int main(int argc, char* argv[]) {
 
     (void) argc;
-    (void) argv;
 
     int ret;
     uuid_t uuid;
