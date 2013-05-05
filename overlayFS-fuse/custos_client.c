@@ -11,6 +11,8 @@
 
 #define DEBUG
 
+#define CUS_TEST_KEY "myfakekey"
+
 #define RETURN_FAILURE -1
 #define RETURN_SUCCESS  0
 

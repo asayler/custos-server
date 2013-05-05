@@ -20,7 +20,6 @@
 
 #define CUS_TEST_PSK "password"
 #define CUS_TEST_BADPSK "badpassword"
-#define CUS_TEST_KEY "myfakekey"
 
 typedef enum custosResStatus {
     CUS_RESSTAT_GOOD = 0,
