@@ -10,13 +10,17 @@
 
 CC           = gcc
 
-CFLAGSFUSE   = `pkg-config fuse --cflags`
-LLIBSFUSE    = `pkg-config fuse --libs`
-LLIBSULOCK   = -lulockmgr
-LLIBSOPENSSL = -lcrypto
-LLIBSUUID    = -luuid
-LLIBSCURL    = -lcurl
-LLIBSJSON    = -ljson
+CFLAGSFUSE    = `pkg-config fuse --cflags`
+LLIBSFUSE     = `pkg-config fuse --libs`
+LLIBSULOCK    = -lulockmgr
+CFLAGSOPENSSL = `pkg-config openssl --cflags`
+LLIBSOPENSSL  = `pkg-config openssl --libs`
+CFLAGSUUID    = `pkg-config uuid --cflags`
+LLIBSUUID     = `pkg-config uuid --libs`
+CFLAGSCURL    = `pkg-config libcurl --cflags`
+LLIBSCURL     = `pkg-config libcurl --libs`
+CFLAGSJSON    = `pkg-config json --cflags`
+LLIBSJSON     = `pkg-config json --libs`
 
 CFLAGS = -c -g -Wall -Wextra
 LFLAGS = -g -Wall -Wextra
@@ -91,7 +95,7 @@ fuseenc.o: fuseenc.c
 	$(CC) $(CFLAGS) $(CFLAGSFUSE) $<
 
 fuseenc_fh.o: fuseenc_fh.c aes-crypt.h
-	$(CC) $(CFLAGS) $(CFLAGSFUSE) $<
+	$(CC) $(CFLAGS) $(CFLAGSFUSE) $(CFLAGSUUID) $<
 
 fusemir_fh.o: fusemir_fh.c
 	$(CC) $(CFLAGS) $(CFLAGSFUSE) $<
@@ -103,19 +107,19 @@ aes-crypt-util.o: aes-crypt-util.c aes-crypt.h
 	$(CC) $(CFLAGS) $<
 
 aes-crypt.o: aes-crypt.c aes-crypt.h
-	$(CC) $(CFLAGS) $<
+	$(CC) $(CFLAGS) $(CFLAGSOPENSSL) $<
 
 custos_client_util.o: custos_client_util.c custos_client.h
-	$(CC) $(CFLAGS) $<
+	$(CC) $(CFLAGS) $(CFLAGSUUID) $<
 
 custos_client.o: custos_client.c custos_client.h
-	$(CC) $(CFLAGS) $<
+	$(CC) $(CFLAGS) $(CFLAGSUUID) $<
 
 curl-test.o: curl-test.c
-	$(CC) $(CFLAGS) $<
+	$(CC) $(CFLAGS) $(CFLAGSCURL) $<
 
 json-test.o: json-test.c
-	$(CC) $(CFLAGS) $<
+	$(CC) $(CFLAGS) $(CFLAGSJSON) $<
 
 clean:
 	rm -f $(ENCFS)
