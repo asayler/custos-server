@@ -3,6 +3,9 @@
 #include <string.h>
 #include <curl/curl.h>
 
+#define URI "http://condor.andysayler.com/test.json"
+#define USERAGENT "libcurl-agent/1.0"
+
 typedef struct CurlData {
     char*  data;
     size_t size;
@@ -16,7 +19,7 @@ size_t writeCurlData(char* input, size_t size, size_t nmemb, void* output) {
     outData->data = realloc(outData->data, (outData->size + fullSize));
     if(!(outData->data)) {
 	fprintf(stderr, "ERROR writeCurlData: realloc failed\n");
-	perror(         "--------------->");
+	perror(         "------------------->");
 	return 0;
     }
     
@@ -78,7 +81,7 @@ int main(int argc, char* argv[]) {
     }    
 
     /* Set Request Options */
-    ret = curl_easy_setopt(curl, CURLOPT_URL, "http://condor.andysayler.com/test.json");
+    ret = curl_easy_setopt(curl, CURLOPT_URL, URI);
     if(ret) {
 	fprintf(stderr, "ERROR %s: curl_easy_setopt(CURLOPT_URL) failed - %s\n",
 		argv[0], curl_easy_strerror(ret));
@@ -90,7 +93,7 @@ int main(int argc, char* argv[]) {
 		argv[0], curl_easy_strerror(ret));
 	goto EXIT_1;
     }
-    ret = curl_easy_setopt(curl, CURLOPT_USERAGENT, "libcurl-agent/1.0");
+    ret = curl_easy_setopt(curl, CURLOPT_USERAGENT, USERAGENT);
     if(ret) {
 	fprintf(stderr, "ERROR %s: curl_easy_setopt(CURLOPT_USERAGENT) failed - %s\n",
 		argv[0], curl_easy_strerror(ret));
