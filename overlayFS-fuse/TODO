@@ -12,6 +12,8 @@ TODO
 
 * 2013-05-04 - ANDY - Move curl_global_init call to FUSE init
 
+* 2013-05-04 - ANDY - Make code thread safe for FUSE (until then, use -s option)
+
 DONE
 
 * 2013-04-28 - ANDY - Implement non-FH functions (truncate, etc)
