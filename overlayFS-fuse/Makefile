@@ -142,6 +142,7 @@ clean:
 	rm -f $(XATTR_EXAMPLES)
 	rm -f $(OPENSSL_EXAMPLES)
 	rm -f $(CUSTOS_UTIL)
+	rm -f $(HTTP_TEST)
 	rm -f $(CURL_TEST)
 	rm -f $(JSON_TEST)
 	rm -f *.o
