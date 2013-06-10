@@ -31,14 +31,15 @@ FUSE_EXAMPLES    = fusehello fusexmp fusexmp_fh
 XATTR_EXAMPLES   = xattr-util
 OPENSSL_EXAMPLES = aes-crypt-util 
 CUSTOS_UTIL      = custos_client_util
+HTTP_TEST        = http-test
 CURL_TEST        = curl-test
 JSON_TEST        = json-test
 
 .PHONY: all encfs mirfs \
 	fuse-examples xattr-examples openssl-examples \
-	custos_util curl_test json_test clean
+	custos_util http_test curl_test json_test clean
 
-all: encfs mirfs fuse-examples xattr-examples openssl-examples custos_util curl_test json_test
+all: encfs mirfs fuse-examples xattr-examples openssl-examples custos_util http_test curl_test json_test
 
 encfs: $(ENCFS)
 mirfs: $(MIRFS)
@@ -46,6 +47,7 @@ fuse-examples: $(FUSE_EXAMPLES)
 xattr-examples: $(XATTR_EXAMPLES)
 openssl-examples: $(OPENSSL_EXAMPLES)
 custos_util: $(CUSTOS_UTIL)
+http_test: $(HTTP_TEST)
 curl_test: $(CURL_TEST)
 json_test: $(JSON_TEST)
 
@@ -75,6 +77,9 @@ aes-crypt-util: aes-crypt-util.o aes-crypt.o
 
 custos_client_util: custos_client_util.o custos_client.o
 	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSUUID)
+
+http-test: http-test.o http-util.o
+	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSCURL)
 
 curl-test: curl-test.o
 	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSCURL)
@@ -115,8 +120,14 @@ custos_client_util.o: custos_client_util.c custos_client.h
 custos_client.o: custos_client.c custos_client.h
 	$(CC) $(CFLAGS) $(CFLAGSUUID) $<
 
+http-util.o: http-util.c http-util.h
+	$(CC) $(CFLAGS) $(CFLAGSCURL) $<
+
 json-util.o: json-util.c json-util.h
 	$(CC) $(CFLAGS) $(CFLAGSJSON) $<
+
+http-test.o: http-test.c http-util.h
+	$(CC) $(CFLAGS) $(CFLAGSCURL) $<
 
 curl-test.o: curl-test.c
 	$(CC) $(CFLAGS) $(CFLAGSCURL) $<

@@ -16,6 +16,7 @@ fusemir_fh
 xattr-util
 aes-crypt-util
 custos_client_util
+http-test
 curl-test
 json-test
 
