@@ -79,7 +79,7 @@ custos_client_util: custos_client_util.o custos_client.o
 curl-test: curl-test.o
 	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSCURL)
 
-json-test: json-test.o
+json-test: json-test.o json-util.o
 	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSJSON)
 
 fusehello.o: fusehello.c
@@ -115,10 +115,13 @@ custos_client_util.o: custos_client_util.c custos_client.h
 custos_client.o: custos_client.c custos_client.h
 	$(CC) $(CFLAGS) $(CFLAGSUUID) $<
 
+json-util.o: json-util.c json-util.h
+	$(CC) $(CFLAGS) $(CFLAGSJSON) $<
+
 curl-test.o: curl-test.c
 	$(CC) $(CFLAGS) $(CFLAGSCURL) $<
 
-json-test.o: json-test.c
+json-test.o: json-test.c json-util.h
 	$(CC) $(CFLAGS) $(CFLAGSJSON) $<
 
 clean:
