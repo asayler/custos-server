@@ -1,0 +1,25 @@
+{
+    "Request": {
+	"RequestSource": "",
+	"RequestTarget": "condor.andysayler.com",
+	"RequestVersion": "0.1-dev",
+	"RequestID": "",
+	"RequestAuthAttrs": [
+	    {
+		"AttrType": "explicit",
+		"AttrClass": "direct_provide",
+		"AttrID": "psk",
+		"AttrIndex": 0
+		"AttrEcho": false,
+		"AttrValue": "CorrectHorseBatteryStaple",
+	    },
+	]
+	"RequestKey": {
+	    "KeyUUID": "7af8c95d-479a-46fe-b5de-8574c6ca1369",
+	}
+    }
+    "Checksums": {
+	"md5" : "",
+	"sha1" : ""
+    }
+}

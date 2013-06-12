@@ -1,6 +1,7 @@
 {
     "Response": {
 	"ResponseSource": "condor.andysayler.com",
+	"ResponseTarget": "",
 	"ResponseVersion": "0.1-dev",
 	"ResponseID": "",
 	"ResponseRequestID": "",
@@ -11,9 +12,9 @@
 		"AttrClass": "direct_provide",
 		"AttrID": "psk",
 		"AttrIndex": 0
-		"AttrReceived": true,
 		"AttrEcho": false,
 		"AttrValue": "",
+		"AttrReceived": true,
 		"AttrStatus": "denied",
 	    },
 	    {
@@ -21,9 +22,9 @@
 		"AttrClass": "network_id",
 		"AttrID": "source_ip",
 		"AttrIndex": 0
-		"AttrReceived": true,
 		"AttrEcho": false,
 		"AttrValue": "",
+		"AttrReceived": true,
 		"AttrStatus": "ignored",
 	    },
 	    {
@@ -31,9 +32,9 @@
 		"AttrClass": "ssh_id",
 		"AttrID": "client_cert",
 		"AttrIndex": 0
-		"AttrReceived": false,
 		"AttrEcho": false,
 		"AttrValue": "",
+		"AttrReceived": false,
 		"AttrStatus": "optional",
 	    }
 	]
