@@ -1,0 +1,47 @@
+{
+    "Response": {
+	"ResponseSource": "condor.andysayler.com",
+	"ResponseID": 1,
+	"RequestID": 2,
+	"RequestStatus": "accepted",
+	"AuthAttributes": [
+	    {
+		"AttrType": "explicit",
+		"AttrClass": "direct_provide",
+		"AttrID": "psk",
+		"AttrIndex": 0
+		"AttrReceived": true,
+		"AttrEcho": false,
+		"AttrValue": "",
+		"AttrStatus": "accepted",
+	    },
+	    {
+		"AttrType": "implicit",
+		"AttrClass": "network_id",
+		"AttrID": "source_ip",
+		"AttrIndex": 0
+		"AttrReceived": true,
+		"AttrEcho": false,
+		"AttrValue": "",
+		"AttrStatus": "ignored",
+	    },
+	    {
+		"AttrType": "implicit",
+		"AttrClass": "ssh_id",
+		"AttrID": "client_cert",
+		"AttrIndex": 0
+		"AttrReceived": false,
+		"AttrEcho": false,
+		"AttrValue": "",
+		"AttrStatus": "optional",
+	    }
+	]
+	"keyUUID": "7af8c95d-479a-46fe-b5de-8574c6ca1369",
+	"keySize": 17,
+	"key": "ThisIsNotARealKey"
+    }
+    "Checksums": {
+	"md5" : "",
+	"sha1" : ""
+    }
+}
