@@ -1,10 +1,11 @@
 {
     "Response": {
 	"ResponseSource": "condor.andysayler.com",
-	"ResponseID": 1,
-	"RequestID": 2,
-	"RequestStatus": "accepted",
-	"AuthAttributes": [
+	"ResponseVersion": "0.1-dev",
+	"ResponseID": "",
+	"ResponseRequestID": "",
+	"ResponseStatus": "accepted",
+	"ResponseAuthAttrs": [
 	    {
 		"AttrType": "explicit",
 		"AttrClass": "direct_provide",
@@ -36,9 +37,11 @@
 		"AttrStatus": "optional",
 	    }
 	]
-	"keyUUID": "7af8c95d-479a-46fe-b5de-8574c6ca1369",
-	"keySize": 17,
-	"key": "ThisIsNotARealKey"
+	"ResponseKey": {
+	    "KeyUUID": "7af8c95d-479a-46fe-b5de-8574c6ca1369",
+	    "KeySize": 17,
+	    "KeyVal": "ThisIsNotARealKey"
+	}
     }
     "Checksums": {
 	"md5" : "",
