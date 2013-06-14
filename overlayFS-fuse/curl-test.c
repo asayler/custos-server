@@ -3,7 +3,7 @@
 #include <string.h>
 #include <curl/curl.h>
 
-#define URI "http://condor.andysayler.com/test.json"
+#define URI "http://condor.andysayler.com/custos/01-accept-response.json"
 #define USERAGENT "libcurl-agent/1.0"
 
 typedef struct CurlData {
@@ -12,7 +12,7 @@ typedef struct CurlData {
 } CurlData_t;
 
 size_t writeCurlData(char* input, size_t size, size_t nmemb, void* output) {
-    
+
     CurlData_t* outData = output;
     size_t fullSize = size * nmemb;
 
@@ -22,7 +22,7 @@ size_t writeCurlData(char* input, size_t size, size_t nmemb, void* output) {
 	perror(         "------------------->");
 	return 0;
     }
-    
+
     memcpy(&(outData->data[outData->size]), input, fullSize);
     outData->size += fullSize;
 
@@ -41,9 +41,9 @@ int main(int argc, char* argv[]) {
     long resCode;
 
     /* Initialize Data */
-    recHeader.size = 0; 
+    recHeader.size = 0;
     recHeader.data = NULL;
-    recData.size = 0; 
+    recData.size = 0;
     recData.data = NULL;
 
     /* Initialize Curl */
@@ -66,19 +66,19 @@ int main(int argc, char* argv[]) {
 	fprintf(stderr, "ERROR %s: curl_easy_setopt(CURLOPT_WRITEFUNCTION) failed - %s\n",
 		argv[0], curl_easy_strerror(ret));
 	goto EXIT_1;
-    }    
+    }
     ret = curl_easy_setopt(curl, CURLOPT_WRITEDATA, &recData);
     if(ret) {
 	fprintf(stderr, "ERROR %s: curl_easy_setopt(CURLOPT_WRITEDATA) failed - %s\n",
 		argv[0], curl_easy_strerror(ret));
 	goto EXIT_1;
-    }    
+    }
     ret = curl_easy_setopt(curl, CURLOPT_WRITEHEADER, &recHeader);
     if(ret) {
 	fprintf(stderr, "ERROR %s: curl_easy_setopt(CURLOPT_WRITEHEADER) failed - %s\n",
 		argv[0], curl_easy_strerror(ret));
 	goto EXIT_1;
-    }    
+    }
 
     /* Set Request Options */
     ret = curl_easy_setopt(curl, CURLOPT_URL, URI);
@@ -125,7 +125,7 @@ int main(int argc, char* argv[]) {
     }
     recHeader.data[recHeader.size] = '\0';
     recHeader.size += 1;
-    
+
     recData.data = realloc(recData.data, (recData.size + 1));
     if(!(recData.data)) {
     	fprintf(stderr, "ERROR %s: realloc failed\n", argv[0]);
@@ -165,10 +165,10 @@ int main(int argc, char* argv[]) {
 
  EXIT_1:
 
-    curl_easy_cleanup(curl);    
+    curl_easy_cleanup(curl);
 
  EXIT_0:
-    
+
     return EXIT_FAILURE;
 
 }

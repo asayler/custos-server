@@ -3,7 +3,7 @@
 
 #include "http-util.h"
 
-#define URI "http://condor.andysayler.com/test.json"
+#define URI "http://condor.andysayler.com/custos/01-accept-response.json"
 
 int main(int argc, char* argv[]) {
 
