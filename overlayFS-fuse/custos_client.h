@@ -44,16 +44,16 @@ typedef enum custosAttrStatus {
 } custosAttrStatus_t;
 
 typedef enum custosAttrType {
-    CUS_ATTRID_IMPLICIT = 0,
-    CUS_ATTRID_EXPLICIT,
-    CUS_ATTRID_MAX,
+    CUS_ATTRTYPE_IMPLICIT = 0,
+    CUS_ATTRTYPE_EXPLICIT,
+    CUS_ATTRTYPE_MAX,
 } custosAttrType_t;
 
 typedef enum custosAttrClass {
-    CUS_ATTRID_DIRECT = 0,
-    CUS_ATTRID_NETWORKID,
-    CUS_ATTRID_CLIENTID,
-    CUS_ATTRID_MAX,
+    CUS_ATTRCLASS_DIRECT = 0,
+    CUS_ATTRCLASS_NETWORKID,
+    CUS_ATTRCLASS_CLIENTID,
+    CUS_ATTRCLASS_MAX,
 } custosAttrClass_t;
 
 typedef enum custosAttrID {
@@ -66,7 +66,7 @@ typedef enum custosAttrID {
 typedef struct custosAttr {
     custosAttrType_t   type;
     custosAttrClass_t  class;
-    custosAttrIDs_t    id;
+    custosAttrID_t     id;
     custosAttrStatus_t status;
     size_t             size;
     uint8_t*           val;
@@ -94,7 +94,15 @@ typedef struct custosKeyRes {
     custosKey_t       keys[CUS_MAX_KEYS];
 } custosKeyRes_t;
 
-extern custosKey_t*
+extern custosKey_t* custos_createKey(const uuid_t uuid);
+extern int custos_destroyKey(custosKey_t** keyp);
+
+extern custosKey_t* custos_createAttr(const custosAttrType_t type,
+				      const custosAttrClass_t class,
+				      const custosAttrID_t id,
+				      const custosAttrStatus_t status,
+				      const size_t size, const uint8_t* val);
+extern int custos_destroyAttr(custosAttr_t** attrp);
 
 extern custosKeyReq_t* custos_createKeyReq(const char* uri);
 extern int custos_updateKeyReqKey(custosKeyReq_t* req, const custosKey_t* key);

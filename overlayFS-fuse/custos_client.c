@@ -1,5 +1,5 @@
 /* custos_client.c
- * 
+ *
  * custos_client interface implementation
  *
  * By Andy Sayler (www.andysayler.com)
@@ -123,7 +123,7 @@ extern int custos_destroyKeyReq(custosKeyReq_t** reqp) {
     if(!(req->uri)) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_destroyKeyReq: 'req->uri' must not be NULL\n");
-#endif	
+#endif
     }
     free(req->uri);
 
@@ -145,23 +145,23 @@ extern int custos_destroyKeyReq(custosKeyReq_t** reqp) {
 }
 
 extern custosKeyRes_t* custos_getKeyRes(const custosKeyReq_t* req) {
-    
+
     custosKeyRes_t* res = NULL;
-    
+
     if(!req) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_getKey: 'req' must not be NULL\n");
 #endif
 	return NULL;
     }
-    
+
     if(!(req->uri)) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_getKey: 'req->uri' must not be NULL\n");
 #endif
 	return NULL;
     }
-    
+
     res = malloc(sizeof(*res));
     if(!res) {
 #ifdef DEBUG
@@ -176,7 +176,7 @@ extern custosKeyRes_t* custos_getKeyRes(const custosKeyReq_t* req) {
     res->size = 0;
 
     /* ToDo: Make requet to custos server */
-    
+
     /* Build Dummy Response */
     if(!(req->attrs[CUS_ATTRID_PSK].val)) {
 	res->attrStat[CUS_ATTRID_PSK] = CUS_ATTRSTAT_REQ;
