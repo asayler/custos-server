@@ -9,15 +9,19 @@
 		"AttrType": "explicit",
 		"AttrClass": "direct_provide",
 		"AttrID": "psk",
-		"AttrIndex": 0
+		"AttrIndex": 0,
 		"AttrEcho": false,
-		"AttrValue": "HorseBatteryStaple",
-	    },
+		"AttrValue": "HorseBatteryStaple"
+	    }
+	],
+	"RequestKeys": [
+	    {
+		"KeyUUID": "7af8c95d-479a-46fe-b5de-8574c6ca1369",
+		"KeyVersion": "",
+		"KeyRevision": ""
+	    }
 	]
-	"RequestKey": {
-	    "KeyUUID": "7af8c95d-479a-46fe-b5de-8574c6ca1369",
-	}
-    }
+    },
     "Checksums": {
 	"md5" : "",
 	"sha1" : ""

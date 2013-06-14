@@ -11,39 +11,43 @@
 		"AttrType": "explicit",
 		"AttrClass": "direct_provide",
 		"AttrID": "psk",
-		"AttrIndex": 0
+		"AttrIndex": 0,
 		"AttrEcho": false,
 		"AttrValue": "",
 		"AttrReceived": true,
-		"AttrStatus": "denied",
+		"AttrStatus": "denied"
 	    },
 	    {
 		"AttrType": "implicit",
 		"AttrClass": "network_id",
 		"AttrID": "source_ip",
-		"AttrIndex": 0
+		"AttrIndex": 0,
 		"AttrEcho": false,
 		"AttrValue": "",
 		"AttrReceived": true,
-		"AttrStatus": "ignored",
+		"AttrStatus": "ignored"
 	    },
 	    {
 		"AttrType": "implicit",
 		"AttrClass": "ssh_id",
 		"AttrID": "client_cert",
-		"AttrIndex": 0
+		"AttrIndex": 0,
 		"AttrEcho": false,
 		"AttrValue": "",
 		"AttrReceived": false,
-		"AttrStatus": "optional",
+		"AttrStatus": "optional"
+	    }
+	],
+	"ResponseKeys": [
+	    {
+		"KeyUUID": "7af8c95d-479a-46fe-b5de-8574c6ca1369",
+		"KeyVersion": "",
+		"KeyRevision": "",
+		"KeySize": 0,
+		"KeyVal": ""
 	    }
 	]
-	"ResponseKey": {
-	    "KeyUUID": "7af8c95d-479a-46fe-b5de-8574c6ca1369",
-	    "KeySize": 0,
-	    "KeyVal": ""
-	}
-    }
+    },
     "Checksums": {
 	"md5" : "",
 	"sha1" : ""
