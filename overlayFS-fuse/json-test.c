@@ -10,7 +10,7 @@ int main(int argc, char* argv[]) {
     (void) argc;
     (void) argv;
 
-    char* string = 
+    char* string =
 	"{ "
 	"\"sitename\": "
 	"\"joys of programming\", "
@@ -25,9 +25,9 @@ int main(int argc, char* argv[]) {
     json_object* jobj = json_tokener_parse(string);
 
     printf("jobj:  %s\n", json_object_to_json_string(jobj));
-    
+
     json_print(jobj, 0);
-        
+
     json_object_put(jobj);
 
     return EXIT_SUCCESS;

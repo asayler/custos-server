@@ -14,7 +14,7 @@ int main(int argc, char* argv[]) {
     long resCode;
 
     /* Initialize Data */
-    res.size = 0; 
+    res.size = 0;
     res.data = NULL;
 
     /* Make Request */

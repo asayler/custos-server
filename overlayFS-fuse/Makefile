@@ -29,17 +29,20 @@ ENCFS            = fuseenc fuseenc_fh
 MIRFS            = fusemir_fh
 FUSE_EXAMPLES    = fusehello fusexmp fusexmp_fh
 XATTR_EXAMPLES   = xattr-util
-OPENSSL_EXAMPLES = aes-crypt-util 
+OPENSSL_EXAMPLES = aes-crypt-util
 CUSTOS_UTIL      = custos_client_util
 HTTP_TEST        = http-test
 CURL_TEST        = curl-test
 JSON_TEST        = json-test
+DECODE_TEST      = decode-test
 
 .PHONY: all encfs mirfs \
 	fuse-examples xattr-examples openssl-examples \
-	custos_util http_test curl_test json_test clean
+	custos_util http_test curl_test json_test decode-test \
+	clean
 
-all: encfs mirfs fuse-examples xattr-examples openssl-examples custos_util http_test curl_test json_test
+all: encfs mirfs fuse-examples xattr-examples openssl-examples custos_util \
+	http_test curl_test json_test decode-test
 
 encfs: $(ENCFS)
 mirfs: $(MIRFS)
@@ -50,6 +53,7 @@ custos_util: $(CUSTOS_UTIL)
 http_test: $(HTTP_TEST)
 curl_test: $(CURL_TEST)
 json_test: $(JSON_TEST)
+decode_test: $(DECODE_TEST)
 
 fusehello: fusehello.o
 	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSFUSE)
@@ -86,6 +90,9 @@ curl-test: curl-test.o
 
 json-test: json-test.o json-util.o
 	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSJSON)
+
+decode-test: decode-test.o json-util.o http-util.o
+	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSJSON) $(LLIBSCURL)
 
 fusehello.o: fusehello.c
 	$(CC) $(CFLAGS) $(CFLAGSFUSE) $<
@@ -135,6 +142,9 @@ curl-test.o: curl-test.c
 json-test.o: json-test.c json-util.h
 	$(CC) $(CFLAGS) $(CFLAGSJSON) $<
 
+decode-test.o: decode-test.c json-util.h http-util.h
+	$(CC) $(CFLAGS) $(CFLAGSJSON) $<
+
 clean:
 	rm -f $(ENCFS)
 	rm -f $(MIRFS)
@@ -151,6 +161,3 @@ clean:
 	rm -f handout/*.log
 	rm -f handout/*.aux
 	rm -f handout/*.out
-
-
-
