@@ -130,6 +130,7 @@ typedef struct custosRes {
 } custosRes_t;
 
 
+/* custosAttr Functions */
 extern custosAttr_t* custos_createAttr(const custosAttrType_t type,
 				       const custosAttrClass_t class,
 				       const custosAttrID_t id,
@@ -137,24 +138,39 @@ extern custosAttr_t* custos_createAttr(const custosAttrType_t type,
 				       const size_t size, const uint8_t* val);
 extern int custos_destroyAttr(custosAttr_t** attrp);
 
-extern custosAttrReq_t* custos_createAttrReq(const bool echo);
-extern int custos_destroyAttrReq(custosAttrReq_t** attrreqp);
-extern int custos_updateAttrReqAddAttr(custosAttrReq_t* attrreq, custosAttr_t* attr);
-
+/* custosKey Functions */
 extern custosKey_t* custos_createKey(const uuid_t uuid,
 				     const uint64_t version,
 				     const size_t size, const uint8_t* val);
 extern int custos_destroyKey(custosKey_t** keyp);
 
+/* custosAttrReq Functions */
+extern custosAttrReq_t* custos_createAttrReq(const bool echo);
+extern int custos_destroyAttrReq(custosAttrReq_t** attrreqp);
+extern int custos_updateAttrReqAddAttr(custosAttrReq_t* attrreq, custosAttr_t* attr);
+
+/* custosKeyReq Functions */
 extern custosKeyReq_t* custos_createKeyReq(const bool echo);
 extern int custos_destroyKeyReq(custosKeyReq_t** keyreqp);
-extern int custos_updatekEYReqAddKey(custosKeyReq_t* keyreq, custosKey_t* key);
+extern int custos_updateKeyReqAddKey(custosKeyReq_t* keyreq, custosKey_t* key);
 
+/* custosReq Functions */
 extern custosReq_t* custos_createReq(const char* target);
 extern int custos_destroyReq(custosReq_t** reqp);
 extern int custos_updateReqAddAttrReq(custosReq_t* req, custosAttrReq_t* attrreq);
 extern int custos_updateReqAddKeyReq(custosReq_t* req, custosKeyReq_t* keyreq);
 
+/* custosAttrRes Functions */
+extern custosAttrRes_t* custos_createAttrRes(const custosAttrStatus_t status, const bool echo);
+extern int custos_destroyAttrRes(custosAttrRes_t** attrresp);
+extern int custos_updateAttrResAddAttr(custosAttrRes_t* attrres, custosAttr_t* attr);
+
+/* custosKeyRes Functions */
+extern custosKeyRes_t* custos_createKeyRes(const custosKeyStatus_t status, const bool echo);
+extern int custos_destroyKeyRes(custosKeyRes_t** keyresp);
+extern int custos_updateKeyResAddKey(custosKeyRes_t* keyres, custosKey_t* key);
+
+/* custosRes Functions */
 extern custosRes_t* custos_getRes(const custosReq_t* req);
 /*extern int custos_destroyRes(custosRes_t** resp);*/
 
