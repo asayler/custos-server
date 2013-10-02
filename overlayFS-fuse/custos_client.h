@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <string.h>
 #include <errno.h>
 #include <inttypes.h>
@@ -43,6 +44,12 @@ typedef enum custosAttrStatus {
     CUS_ATTRSTAT_MAX
 } custosAttrStatus_t;
 
+typedef enum custosKeyStatus {
+    CUS_KEYSTAT_ACCEPTED = 0,
+    CUS_KEYSTAT_DENIED,
+    CUS_KEYSTAT_MAX,
+} custosKeyStatus_t;
+
 typedef enum custosAttrType {
     CUS_ATTRTYPE_IMPLICIT = 0,
     CUS_ATTRTYPE_EXPLICIT,
@@ -67,49 +74,79 @@ typedef struct custosAttr {
     custosAttrType_t   type;
     custosAttrClass_t  class;
     custosAttrID_t     id;
-    custosAttrStatus_t status;
+    size_t             index;
     size_t             size;
     uint8_t*           val;
 } custosAttr_t;
 
+typedef struct custosAttrReq {
+    bool               echo;
+    custosAttr_t*      attr;
+} custosAttrReq_t;
+
+typedef struct custosAttrRes {
+    custosAttrStatus_t status;
+    bool               echo;
+    custosAttr_t*      attr;
+} custosAttrRes_t;
+
 typedef struct custosKey {
     uuid_t   uuid;
+    uint64_t version;
     size_t   size;
     uint8_t* val;
 } custosKey_t;
 
 typedef struct custosKeyReq {
-    char*        uri;
-    size_t       num_attrs;
-    custosAttr_t attrs[CUS_MAX_ATTRS];
-    size_t       num_keys;
-    custosKey_t  keys[CUS_MAX_KEYS];
+    bool              echo;
+    custosKey_t*      key;
 } custosKeyReq_t;
 
 typedef struct custosKeyRes {
-    custosResStatus_t status;
-    size_t            num_attrs;
-    custosAttr_t      attrs[CUS_MAX_ATTRS];
-    size_t            num_keys;
-    custosKey_t       keys[CUS_MAX_KEYS];
+    custosKeyStatus_t status;
+    bool              echo;
+    custosKey_t*      key;
 } custosKeyRes_t;
 
-extern custosKey_t* custos_createKey(const uuid_t uuid);
-extern int custos_destroyKey(custosKey_t** keyp);
+typedef struct custosReq {
+    char*            target;
+    char*            version;
+    size_t           num_attrs;
+    custosAttrReq_t* attrs[CUS_MAX_ATTRS];
+    size_t           num_keys;
+    custosKeyReq_t*  keys[CUS_MAX_KEYS];
+} custosReq_t;
 
-extern custosKey_t* custos_createAttr(const custosAttrType_t type,
-				      const custosAttrClass_t class,
-				      const custosAttrID_t id,
-				      const custosAttrStatus_t status,
-				      const size_t size, const uint8_t* val);
+typedef struct custosRes {
+    custosResStatus_t status;
+    char*             source;
+    char*             version;
+    size_t            num_attrs;
+    custosAttrRes_t*  attrs[CUS_MAX_ATTRS];
+    size_t            num_keys;
+    custosKeyRes_t*   keys[CUS_MAX_KEYS];
+} custosRes_t;
+
+extern custosAttr_t* custos_createAttr(const custosAttrType_t type,
+				       const custosAttrClass_t class,
+				       const custosAttrID_t id,
+				       const size_t index,
+				       const size_t size, const uint8_t* val);
 extern int custos_destroyAttr(custosAttr_t** attrp);
 
-extern custosKeyReq_t* custos_createKeyReq(const char* uri);
-extern int custos_updateKeyReqKey(custosKeyReq_t* req, const custosKey_t* key);
-extern int custos_updateKeyReqAttr(custosKeyReq_t* req, const custosAttr_t* attr);
-extern int custos_destroyKeyReq(custosKeyReq_t** reqp);
+extern custosKey_t* custos_createKey(const uuid_t uuid,
+				     const uint64_t version,
+				     const size_t size, const uint8_t* val);
+extern int custos_destroyKey(custosKey_t** keyp);
 
-extern custosKeyRes_t* custos_getKeyRes(const custosKeyReq_t* req);
-extern int custos_destroyKeyRes(custosKeyRes_t** resp);
+/*
+extern custosReq_t* custos_createReq(const char* uri);
+extern int custos_updateReqAddKey(custosReq_t* req, const custosKeyReq_t* key);
+extern int custos_updateReqAddAttr(custosReq_t* req, const custosAttrReq_t* attr);
+extern int custos_destroyReq(custosReq_t** reqp);
+
+extern custosRes_t* custos_getRes(const custosReq_t* req);
+extern int custos_destroyRes(custosRes_t** resp);
+*/
 
 #endif
