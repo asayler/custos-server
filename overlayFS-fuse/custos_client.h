@@ -129,12 +129,16 @@ typedef struct custosRes {
     custosKeyRes_t*   keys[CUS_MAX_KEYS];
 } custosRes_t;
 
-extern custosAttrReq_t* custos_createAttrReq(const custosAttrType_t type,
-					     const custosAttrClass_t class,
-					     const custosAttrID_t id,
-					     const size_t index,
-					     const size_t size, const uint8_t* val,
-					     const bool echo);
+
+extern custosAttr_t* custos_createAttr(const custosAttrType_t type,
+				       const custosAttrClass_t class,
+				       const custosAttrID_t id,
+				       const size_t index,
+				       const size_t size, const uint8_t* val);
+extern int custos_destroyAttr(custosAttr_t** attrp);
+
+
+extern custosAttrReq_t* custos_createAttrReq(const bool echo);
 extern int custos_destroyAttrReq(custosAttrReq_t** attrreqp);
 
 extern custosKeyReq_t* custos_createKeyReq(const uuid_t uuid,
@@ -145,13 +149,10 @@ extern int custos_destroyKeyReq(custosKeyReq_t** keyreqp);
 
 extern custosReq_t* custos_createReq(const char* target);
 extern int custos_destroyReq(custosReq_t** reqp);
-
 extern int custos_updateReqAddAttrReq(custosReq_t* req, custosAttrReq_t* attrreq);
 extern int custos_updateReqAddKeyReq(custosReq_t* req, custosKeyReq_t* keyreq);
 
-/*
 extern custosRes_t* custos_getRes(const custosReq_t* req);
-extern int custos_destroyRes(custosRes_t** resp);
-*/
+/*extern int custos_destroyRes(custosRes_t** resp);*/
 
 #endif
