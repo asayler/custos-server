@@ -137,9 +137,9 @@ extern custosAttr_t* custos_createAttr(const custosAttrType_t type,
 				       const size_t size, const uint8_t* val);
 extern int custos_destroyAttr(custosAttr_t** attrp);
 
-
 extern custosAttrReq_t* custos_createAttrReq(const bool echo);
 extern int custos_destroyAttrReq(custosAttrReq_t** attrreqp);
+extern int custos_updateAttrReqAddAttr(custosAttrReq_t* attrreq, custosAttr_t* attr);
 
 extern custosKeyReq_t* custos_createKeyReq(const uuid_t uuid,
 					   const uint64_t version,

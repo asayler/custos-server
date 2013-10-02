@@ -148,6 +148,7 @@ extern custosAttrReq_t* custos_createAttrReq(const bool echo) {
 
     /* Populate */
     attrreq->echo = echo;
+    attrreq->attr = NULL;
 
     return attrreq;
 
@@ -191,6 +192,30 @@ extern int custos_destroyAttrReq(custosAttrReq_t** attrreqp) {
     return RETURN_SUCCESS;
 
 }
+
+extern int custos_updateAttrReqAddAttr(custosAttrReq_t* attrreq, custosAttr_t* attr) {
+
+   /* Input Invariant Check */
+   if(!attrreq) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_updateAttrReqAddAttr: 'attrreq' must not be NULL\n");
+#endif
+	return -EINVAL;
+   }
+   if(!attr) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_updateAttrReqAddAttr: 'attr' must not be NULL\n");
+#endif
+	return -EINVAL;
+   }
+
+   /* Add Attr to Request*/
+   attrreq->attr = attr;
+
+   return RETURN_SUCCESS;
+
+}
+
 
 extern custosKeyReq_t* custos_createKeyReq(const uuid_t uuid,
 					   const uint64_t version,
@@ -412,7 +437,7 @@ extern int custos_destroyReq(custosReq_t** reqp) {
 
 }
 
-extern int custos_updateKeyReqAddAttrReq(custosReq_t* req, custosAttrReq_t* attrreq) {
+extern int custos_updateReqAddAttrReq(custosReq_t* req, custosAttrReq_t* attrreq) {
 
     /* Local vars */
     int index = 0;
@@ -420,13 +445,13 @@ extern int custos_updateKeyReqAddAttrReq(custosReq_t* req, custosAttrReq_t* attr
    /* Input Invariant Check */
    if(!req) {
 #ifdef DEBUG
-	fprintf(stderr, "ERROR custos_updateKeyReqAddAttrReq: 'req' must not be NULL\n");
+	fprintf(stderr, "ERROR custos_updateReqAddAttrReq: 'req' must not be NULL\n");
 #endif
 	return -EINVAL;
    }
    if(!attrreq) {
 #ifdef DEBUG
-	fprintf(stderr, "ERROR custos_updateKeyReqAddAttrReq: 'attrreq' must not be NULL\n");
+	fprintf(stderr, "ERROR custos_updateReqAddAttrReq: 'attrreq' must not be NULL\n");
 #endif
 	return -EINVAL;
    }
@@ -435,7 +460,7 @@ extern int custos_updateKeyReqAddAttrReq(custosReq_t* req, custosAttrReq_t* attr
    index = req->num_attrs;
    if(index >= CUS_MAX_ATTRS) {
 #ifdef DEBUG
-	fprintf(stderr, "ERROR custos_updateKeyReqAddAttrReq: Max num_attrs exceeded\n");
+	fprintf(stderr, "ERROR custos_updateReqAddAttrReq: Max num_attrs exceeded\n");
 #endif
 	return -ERANGE;
    }
