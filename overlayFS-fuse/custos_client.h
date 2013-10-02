@@ -137,13 +137,14 @@ extern custosAttrReq_t* custos_createAttrReq(const custosAttrType_t type,
 					     const bool echo);
 extern int custos_destroyAttrReq(custosAttrReq_t** attrreqp);
 
-extern custosKey_t* custos_createKey(const uuid_t uuid,
-				     const uint64_t version,
-				     const size_t size, const uint8_t* val);
-extern int custos_destroyKey(custosKey_t** keyp);
+extern custosKeyReq_t* custos_createKeyReq(const uuid_t uuid,
+					   const uint64_t version,
+					   const size_t size, const uint8_t* val,
+					   const bool echo);
+extern int custos_destroyKeyReq(custosKeyRew_t** keyreqp);
 
 extern custosReq_t* custos_createReq(const char* target);
-extern int custos_destroyReq(custosReq_t** reqp);
+/* extern int custos_destroyReq(custosReq_t** reqp); */
 
 /* extern int custos_updateReqAddAttr(custosReq_t* req, const custosAttrReq_t* attr); */
 /* extern int custos_updateReqAddKey(custosReq_t* req, const custosKeyReq_t* key); */

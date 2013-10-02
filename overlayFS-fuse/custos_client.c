@@ -152,59 +152,72 @@ extern int custos_destroyAttrReq(custosAttrReq_t** attrreqp) {
 
 }
 
-extern custosKey_t* custos_createKey(const uuid_t uuid,
-				     const uint64_t version,
-				     const size_t size, const uint8_t* val) {
+extern custosKeyReq_t* custos_createKeyReq(const uuid_t uuid,
+					   const uint64_t version,
+					   const size_t size, const uint8_t* val,
+					   const bool echo) {
 
     /* Local vars */
-    custosKey_t* key = NULL;
+    custosKeyReq_t* keyreq = NULL;
 
     /* Input Invariant Check */
     if(uuid_is_null(uuid)) {
 #ifdef DEBUG
-	fprintf(stderr, "ERROR custos_createKey: 'uuid' must not be null\n");
+	fprintf(stderr, "ERROR custos_createKeyReq: 'uuid' must not be null\n");
 #endif
 	errno = EINVAL;
 	return NULL;
     }
 
     /* Initialize Vars */
-    key = malloc(sizeof(*key));
-    if(!key) {
+    keyreq = malloc(sizeof(*keyreq));
+    if(!keyreq) {
 #ifdef DEBUG
-	fprintf(stderr, "ERROR custos_createKey: malloc(*key) failed\n");
+	fprintf(stderr, "ERROR custos_createKeyReq: malloc(keyreq) failed\n");
 	perror(         "---------------------->");
 #endif
 	return NULL;
     }
-    memset(key, 0, sizeof(*key));
+    memset(keyreq, 0, sizeof(*keyreq));
+
+    keyreq->key = malloc(sizeof(*(keyreq->key)));
+    if(!(keyreq->key)) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_createKeyReq: malloc(keyreq->key) failed\n");
+	perror(         "---------------------->");
+#endif
+	return NULL;
+    }
+    memset(keyreq->key, 0, sizeof(*(keyreq->key)));
 
     /* Populate */
-    uuid_copy(key->uuid, uuid);
-    key->version = version;
-    key->size = size;
-    if((key->size) > 0) {
+    uuid_copy(keyreq->key->uuid, uuid);
+    keyreq->key->version = version;
+    keyreq->key->size = size;
+    keyreq->echo = echo;
+
+    if((keyreq->key->size) > 0) {
 	/* Validate val */
 	if(!val) {
 #ifdef DEBUG
-	    fprintf(stderr, "ERROR custos_createKey: 'val' can't be null when size non-zero\n");
+	    fprintf(stderr, "ERROR custos_createKeyReq: 'val' can't be null when size non-zero\n");
 #endif
 	    errno = EINVAL;
 	    return NULL;
 	}
 	/* Create and Set New Attribute */
-	key->val = malloc(key->size);
-	if(!(key->val)) {
+	keyreq->key->val = malloc(keyreq->key->size);
+	if(!(keyreq->key->val)) {
 #ifdef DEBUG
-	    fprintf(stderr, "ERROR custos_createKey: malloc(key->size) failed\n");
+	    fprintf(stderr, "ERROR custos_createKeyReq: malloc(keyreq->key->size) failed\n");
 	    perror(         "---------------------->");
 #endif
 	    return NULL;
 	}
-	memcpy(key->val, val, key->size);
+	memcpy(keyreq->key->val, val, keyreq->key->size);
     }
 
-    return key;
+    return keyreq;
 
 }
 
