@@ -16,6 +16,8 @@
 #define RETURN_FAILURE -1
 #define RETURN_SUCCESS  0
 
+/********* custosAttr Functions *********/
+
 extern custosAttr_t* custos_createAttr(const custosAttrType_t type,
 				       const custosAttrClass_t class,
 				       const custosAttrID_t id,
@@ -130,91 +132,7 @@ extern int custos_destroyAttr(custosAttr_t** attrp) {
 
 }
 
-extern custosAttrReq_t* custos_createAttrReq(const bool echo) {
-
-    /* Local vars */
-    custosAttrReq_t* attrreq = NULL;
-
-    /* Initialize Vars */
-    attrreq = malloc(sizeof(*attrreq));
-    if(!attrreq) {
-#ifdef DEBUG
-	fprintf(stderr, "ERROR custos_createAttrReq: malloc(attrreq) failed\n");
-	perror(         "---------------------->");
-#endif
-	return NULL;
-    }
-    memset(attrreq, 0, sizeof(*attrreq));
-
-    /* Populate */
-    attrreq->echo = echo;
-    attrreq->attr = NULL;
-
-    return attrreq;
-
-}
-
-extern int custos_destroyAttrReq(custosAttrReq_t** attrreqp) {
-
-    /* Local Vars */
-    custosAttrReq_t* attrreq;
-
-    /* Input Invariant Check */
-    if(!attrreqp) {
-#ifdef DEBUG
-	fprintf(stderr, "ERROR custos_destroyAttrReq: 'attrreqp' must not be NULL\n");
-#endif
-	return -EINVAL;
-    }
-    attrreq = *attrreqp;
-
-    if(!attrreq) {
-#ifdef DEBUG
-	fprintf(stderr, "ERROR custos_destroyAttrReq: 'attrreq' must not be NULL\n");
-#endif
-	return -EINVAL;
-    }
-
-    /* Check and Free Optional Members */
-    if(attrreq->attr) {
-	if(custos_destroyAttr(&(attrreq->attr)) < 0) {
-#ifdef DEBUG
-	    fprintf(stderr, "ERROR custos_destroyAttrReq: custos_destroyAttr() failed\n");
-#endif
-	}
-    }
-
-    /* Free Struct */
-    free(attrreq);
-    attrreq = NULL;
-    *attrreqp = NULL;
-
-    return RETURN_SUCCESS;
-
-}
-
-extern int custos_updateAttrReqAddAttr(custosAttrReq_t* attrreq, custosAttr_t* attr) {
-
-   /* Input Invariant Check */
-   if(!attrreq) {
-#ifdef DEBUG
-	fprintf(stderr, "ERROR custos_updateAttrReqAddAttr: 'attrreq' must not be NULL\n");
-#endif
-	return -EINVAL;
-   }
-   if(!attr) {
-#ifdef DEBUG
-	fprintf(stderr, "ERROR custos_updateAttrReqAddAttr: 'attr' must not be NULL\n");
-#endif
-	return -EINVAL;
-   }
-
-   /* Add Attr to Request*/
-   attrreq->attr = attr;
-
-   return RETURN_SUCCESS;
-
-}
+/********* custosKey Functions *********/
 
 extern custosKey_t* custos_createKey(const uuid_t uuid,
 				     const uint64_t version,
@@ -309,6 +227,96 @@ extern int custos_destroyKey(custosKey_t** keyp) {
 
 }
 
+/********* custosAttrReq Functions *********/
+
+extern custosAttrReq_t* custos_createAttrReq(const bool echo) {
+
+    /* Local vars */
+    custosAttrReq_t* attrreq = NULL;
+
+    /* Initialize Vars */
+    attrreq = malloc(sizeof(*attrreq));
+    if(!attrreq) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_createAttrReq: malloc(attrreq) failed\n");
+	perror(         "---------------------->");
+#endif
+	return NULL;
+    }
+    memset(attrreq, 0, sizeof(*attrreq));
+
+    /* Populate */
+    attrreq->echo = echo;
+    attrreq->attr = NULL;
+
+    return attrreq;
+
+}
+
+extern int custos_destroyAttrReq(custosAttrReq_t** attrreqp) {
+
+    /* Local Vars */
+    custosAttrReq_t* attrreq;
+
+    /* Input Invariant Check */
+    if(!attrreqp) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_destroyAttrReq: 'attrreqp' must not be NULL\n");
+#endif
+	return -EINVAL;
+    }
+    attrreq = *attrreqp;
+
+    if(!attrreq) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_destroyAttrReq: 'attrreq' must not be NULL\n");
+#endif
+	return -EINVAL;
+    }
+
+    /* Check and Free Optional Members */
+    if(attrreq->attr) {
+	if(custos_destroyAttr(&(attrreq->attr)) < 0) {
+#ifdef DEBUG
+	    fprintf(stderr, "ERROR custos_destroyAttrReq: custos_destroyAttr() failed\n");
+#endif
+	}
+    }
+
+    /* Free Struct */
+    free(attrreq);
+    attrreq = NULL;
+    *attrreqp = NULL;
+
+    return RETURN_SUCCESS;
+
+}
+
+extern int custos_updateAttrReqAddAttr(custosAttrReq_t* attrreq, custosAttr_t* attr) {
+
+   /* Input Invariant Check */
+   if(!attrreq) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_updateAttrReqAddAttr: 'attrreq' must not be NULL\n");
+#endif
+	return -EINVAL;
+   }
+   if(!attr) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_updateAttrReqAddAttr: 'attr' must not be NULL\n");
+#endif
+	return -EINVAL;
+   }
+
+   /* Add Attr to Request*/
+   attrreq->attr = attr;
+
+   return RETURN_SUCCESS;
+
+}
+
+/********* custosKeyReq Functions *********/
+
 extern custosKeyReq_t* custos_createKeyReq(const bool echo) {
 
     /* Local vars */
@@ -394,6 +402,186 @@ extern int custos_updateKeyReqAddKey(custosKeyReq_t* keyreq, custosKey_t* key) {
    return RETURN_SUCCESS;
 
 }
+
+/********* custosAttrRes Functions *********/
+
+extern custosAttrRes_t* custos_createAttrRes(const custosAttrStatus_t status, const bool echo) {
+
+    /* Local vars */
+    custosAttrRes_t* attrres = NULL;
+
+    /* Initialize Vars */
+    attrres = malloc(sizeof(*attrres));
+    if(!attrres) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_createAttrRes: malloc(attrres) failed\n");
+	perror(         "---------------------->");
+#endif
+	return NULL;
+    }
+    memset(attrres, 0, sizeof(*attrres));
+
+    /* Populate */
+    attrres->status = status;
+    attrres->echo = echo;
+    attrres->attr = NULL;
+
+    return attrres;
+
+}
+
+extern int custos_destroyAttrRes(custosAttrRes_t** attrresp) {
+
+    /* Local Vars */
+    custosAttrRes_t* attrres;
+
+    /* Input Invariant Check */
+    if(!attrresp) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_destroyAttrRes: 'attrresp' must not be NULL\n");
+#endif
+	return -EINVAL;
+    }
+    attrres = *attrresp;
+
+    if(!attrres) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_destroyAttrRes: 'attrres' must not be NULL\n");
+#endif
+	return -EINVAL;
+    }
+
+    /* Check and Free Optional Members */
+    if(attrres->attr) {
+	if(custos_destroyAttr(&(attrres->attr)) < 0) {
+#ifdef DEBUG
+	    fprintf(stderr, "ERROR custos_destroyAttrRes: custos_destroyAttr() failed\n");
+#endif
+	}
+    }
+
+    /* Free Struct */
+    free(attrres);
+    attrres = NULL;
+    *attrresp = NULL;
+
+    return RETURN_SUCCESS;
+
+}
+
+extern int custos_updateAttrResAddAttr(custosAttrRes_t* attrres, custosAttr_t* attr) {
+
+   /* Input Invariant Check */
+   if(!attrres) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_updateAttrResAddAttr: 'attrres' must not be NULL\n");
+#endif
+	return -EINVAL;
+   }
+   if(!attr) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_updateAttrResAddAttr: 'attr' must not be NULL\n");
+#endif
+	return -EINVAL;
+   }
+
+   /* Add Attr to Request*/
+   attrres->attr = attr;
+
+   return RETURN_SUCCESS;
+
+}
+
+/********* custosKeyReq Functions *********/
+
+extern custosKeyRes_t* custos_createKeyRes(const custosKeyStatus_t status, const bool echo) {
+
+    /* Local vars */
+    custosKeyRes_t* keyres = NULL;
+
+    /* Initialize Vars */
+    keyres = malloc(sizeof(*keyres));
+    if(!keyres) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_createKeyRes: malloc(keyres) failed\n");
+	perror(         "---------------------->");
+#endif
+	return NULL;
+    }
+    memset(keyres, 0, sizeof(*keyres));
+
+    /* Populate */
+    keyres->status = status;
+    keyres->echo = echo;
+    keyres->key = NULL;
+
+    return keyres;
+
+}
+
+extern int custos_destroyKeyRes(custosKeyRes_t** keyresp) {
+
+    /* Local Vars */
+    custosKeyRes_t* keyres;
+
+    /* Input Invariant Check */
+    if(!keyresp) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_destroyKeyRes: 'keyresp' must not be NULL\n");
+#endif
+	return -EINVAL;
+    }
+    keyres = *keyresp;
+
+    if(!keyres) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_destroyKeyRes: 'keyres' must not be NULL\n");
+#endif
+	return -EINVAL;
+    }
+
+    /* Check and Free Optional Members */
+    if(keyres->key) {
+	if(custos_destroyKey(&(keyres->key)) < 0) {
+#ifdef DEBUG
+	    fprintf(stderr, "ERROR custos_destroyKeyRes: custos_destroyKey() failed\n");
+#endif
+	}
+    }
+
+    /* Free Struct */
+    free(keyres);
+    keyres = NULL;
+    *keyresp = NULL;
+
+    return RETURN_SUCCESS;
+
+}
+
+extern int custos_updateKeyResAddKey(custosKeyRes_t* keyres, custosKey_t* key) {
+
+   /* Input Invariant Check */
+   if(!keyres) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_updateKeyResAddKey: 'keyres' must not be NULL\n");
+#endif
+	return -EINVAL;
+   }
+   if(!key) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_updateKeyResAddKey: 'key' must not be NULL\n");
+#endif
+	return -EINVAL;
+   }
+
+   /* Add Attr to Request*/
+   keyres->key = key;
+
+   return RETURN_SUCCESS;
+
+}
+
+/********* CustosReq Funcation*********/
 
 extern custosReq_t* custos_createReq(const char* target) {
 
@@ -567,6 +755,8 @@ extern int custos_updateReqAddKeyReq(custosReq_t* req, custosKeyReq_t* keyreq) {
    return index;
 
 }
+
+/********* CustosRes Funcation*********/
 
 extern custosRes_t* custos_getRes(const custosReq_t* req) {
 
