@@ -216,23 +216,103 @@ extern int custos_updateAttrReqAddAttr(custosAttrReq_t* attrreq, custosAttr_t* a
 
 }
 
-
-extern custosKeyReq_t* custos_createKeyReq(const uuid_t uuid,
-					   const uint64_t version,
-					   const size_t size, const uint8_t* val,
-					   const bool echo) {
+extern custosKey_t* custos_createKey(const uuid_t uuid,
+				     const uint64_t version,
+				     const size_t size, const uint8_t* val) {
 
     /* Local vars */
-    custosKeyReq_t* keyreq = NULL;
+    custosKey_t* key = NULL;
 
     /* Input Invariant Check */
     if(uuid_is_null(uuid)) {
 #ifdef DEBUG
-	fprintf(stderr, "ERROR custos_createKeyReq: 'uuid' must not be null\n");
+	fprintf(stderr, "ERROR custos_createKey: 'uuid' must not be null\n");
 #endif
 	errno = EINVAL;
 	return NULL;
     }
+
+    /* Initialize Vars */
+    key = malloc(sizeof(*key));
+    if(!key) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_createKey: malloc(key) failed\n");
+	perror(         "---------------------->");
+#endif
+	return NULL;
+    }
+    memset(key, 0, sizeof(*key));
+
+    /* Populate */
+    uuid_copy(key->uuid, uuid);
+    key->version = version;
+    key->size = size;
+
+    if((key->size) > 0) {
+	/* Validate val */
+	if(!val) {
+#ifdef DEBUG
+	    fprintf(stderr, "ERROR custos_createKey: 'val' can't be null when size non-zero\n");
+#endif
+	    errno = EINVAL;
+	    return NULL;
+	}
+	/* Create and Set New Attribute */
+	key->val = malloc(key->size);
+	if(!(key->val)) {
+#ifdef DEBUG
+	    fprintf(stderr, "ERROR custos_createKey: malloc(key->size) failed\n");
+	    perror(         "---------------------->");
+#endif
+	    return NULL;
+	}
+	memcpy(key->val, val, key->size);
+    }
+
+    return key;
+
+}
+
+extern int custos_destroyKey(custosKey_t** keyp) {
+
+    /* Local Vars */
+    custosKey_t* key;
+
+    /* Input Invariant Check */
+    if(!keyp) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_destroyKey: 'keyp' must not be NULL\n");
+#endif
+	return -EINVAL;
+    }
+    key = *keyp;
+
+    if(!key) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_destroyKey: 'key' must not be NULL\n");
+#endif
+	return -EINVAL;
+    }
+
+    /* Check and Free Optional Members */
+    if(key->val) {
+	free(key->val);
+	key->val = NULL;
+    }
+
+    /* Free Struct */
+    free(key);
+    key = NULL;
+    *keyp = NULL;
+
+    return RETURN_SUCCESS;
+
+}
+
+extern custosKeyReq_t* custos_createKeyReq(const bool echo) {
+
+    /* Local vars */
+    custosKeyReq_t* keyreq = NULL;
 
     /* Initialize Vars */
     keyreq = malloc(sizeof(*keyreq));
@@ -245,42 +325,9 @@ extern custosKeyReq_t* custos_createKeyReq(const uuid_t uuid,
     }
     memset(keyreq, 0, sizeof(*keyreq));
 
-    keyreq->key = malloc(sizeof(*(keyreq->key)));
-    if(!(keyreq->key)) {
-#ifdef DEBUG
-	fprintf(stderr, "ERROR custos_createKeyReq: malloc(keyreq->key) failed\n");
-	perror(         "---------------------->");
-#endif
-	return NULL;
-    }
-    memset(keyreq->key, 0, sizeof(*(keyreq->key)));
-
     /* Populate */
-    uuid_copy(keyreq->key->uuid, uuid);
-    keyreq->key->version = version;
-    keyreq->key->size = size;
     keyreq->echo = echo;
-
-    if((keyreq->key->size) > 0) {
-	/* Validate val */
-	if(!val) {
-#ifdef DEBUG
-	    fprintf(stderr, "ERROR custos_createKeyReq: 'val' can't be null when size non-zero\n");
-#endif
-	    errno = EINVAL;
-	    return NULL;
-	}
-	/* Create and Set New Attribute */
-	keyreq->key->val = malloc(keyreq->key->size);
-	if(!(keyreq->key->val)) {
-#ifdef DEBUG
-	    fprintf(stderr, "ERROR custos_createKeyReq: malloc(keyreq->key->size) failed\n");
-	    perror(         "---------------------->");
-#endif
-	    return NULL;
-	}
-	memcpy(keyreq->key->val, val, keyreq->key->size);
-    }
+    keyreq->key = NULL;
 
     return keyreq;
 
@@ -307,28 +354,44 @@ extern int custos_destroyKeyReq(custosKeyReq_t** keyreqp) {
 	return -EINVAL;
     }
 
-    /* Check and Free Required Members */
-    if(!(keyreq->key)) {
-#ifdef DEBUG
-	fprintf(stderr, "ERROR custos_destroyKeyReq: 'keyreq->key' must not be NULL\n");
-#endif
-	return -EINVAL;
-    }
-    free(keyreq->key);
-    keyreq->key = NULL;
-
     /* Check and Free Optional Members */
-    if(keyreq->key->val) {
-	free(keyreq->key->val);
-	keyreq->key->val = NULL;
+    if(keyreq->key) {
+	if(custos_destroyKey(&(keyreq->key)) < 0) {
+#ifdef DEBUG
+	    fprintf(stderr, "ERROR custos_destroyKeyReq: custos_destroyKey() failed\n");
+#endif
+	}
     }
 
-    /* Free Outer Struct */
+    /* Free Struct */
     free(keyreq);
     keyreq = NULL;
     *keyreqp = NULL;
 
     return RETURN_SUCCESS;
+
+}
+
+extern int custos_updateKeyReqAddKey(custosKeyReq_t* keyreq, custosKey_t* key) {
+
+   /* Input Invariant Check */
+   if(!keyreq) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_updateKeyReqAddKey: 'keyreq' must not be NULL\n");
+#endif
+	return -EINVAL;
+   }
+   if(!key) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_updateKeyReqAddKey: 'key' must not be NULL\n");
+#endif
+	return -EINVAL;
+   }
+
+   /* Add Attr to Request*/
+   keyreq->key = key;
+
+   return RETURN_SUCCESS;
 
 }
 
