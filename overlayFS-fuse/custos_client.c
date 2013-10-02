@@ -372,67 +372,73 @@ extern int custos_destroyReq(custosReq_t** reqp) {
 
 }
 
-/* extern int custos_updateReqAddKey(custosReq_t* req, const CustosKeyReq_t* key) { */
+extern int custos_updateKeyReqAddAttrReq(custosReq_t* req, custosAttrReq_t* attrreq) {
 
-/*    /\* Input Invariant Check *\/ */
-/*    if(!req) { */
-/* #ifdef DEBUG */
-/* 	fprintf(stderr, "ERROR custos_updateReqAddKey: 'req' must not be NULL\n"); */
-/* #endif */
-/* 	return -EINVAL; */
-/*    } */
-/*    if(!key) { */
-/* #ifdef DEBUG */
-/* 	fprintf(stderr, "ERROR custos_updateReqAddKey: 'key' must not be NULL\n"); */
-/* #endif */
-/* 	return -EINVAL; */
-/*    } */
+    /* Local vars */
+    int index = 0;
 
-/*    /\* Add Key to Array *\/ */
-/*    /\* TODO Add handling for re-adding keys *\/ */
-/*    if(req->num_keys >= CUS_MAX_KEYS) { */
-/* #ifdef DEBUG */
-/* 	fprintf(stderr, "ERROR custos_updateReqAddKey: Max num_keys exceeded\n"); */
-/* #endif */
-/* 	return -ERANGE */
-/*    } */
-/*    req->keys[req->num_keys] = key; */
-/*    req->num_keys++; */
+   /* Input Invariant Check */
+   if(!req) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_updateKeyReqAddAttrReq: 'req' must not be NULL\n");
+#endif
+	return -EINVAL;
+   }
+   if(!attrreq) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_updateKeyReqAddAttrReq: 'attrreq' must not be NULL\n");
+#endif
+	return -EINVAL;
+   }
 
-/*    return RETURN_SUCCESS; */
+   /* Add Attr to Array */
+   index = req->num_attrs;
+   if(index >= CUS_MAX_ATTRS) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_updateKeyReqAddAttrReq: Max num_attrs exceeded\n");
+#endif
+	return -ERANGE;
+   }
+   req->attrs[index] = attrreq;
+   req->num_attrs++;
 
-/* } */
+   return index;
 
-/* extern int custos_updateKeyReqAddAttr(custosKeyReq_t* req, const CustosAttr_t* attr) { */
+}
 
-/*    /\* Input Invariant Check *\/ */
-/*    if(!req) { */
-/* #ifdef DEBUG */
-/* 	fprintf(stderr, "ERROR custos_updateKeyReqAddAttr: 'req' must not be NULL\n"); */
-/* #endif */
-/* 	return -EINVAL; */
-/*    } */
-/*    if(!attr) { */
-/* #ifdef DEBUG */
-/* 	fprintf(stderr, "ERROR custos_updateKeyReqAddAttr: 'attr' must not be NULL\n"); */
-/* #endif */
-/* 	return -EINVAL; */
-/*    } */
+extern int custos_updateReqAddKeyReq(custosReq_t* req, custosKeyReq_t* keyreq) {
 
-/*    /\* Add Attr to Array *\/ */
-/*    /\* TODO Add handling for re-adding attrs *\/ */
-/*    if(req->num_attrs >= CUS_MAX_ATTRS) { */
-/* #ifdef DEBUG */
-/* 	fprintf(stderr, "ERROR custos_updateKeyReqAddAttr: Max num_attrs exceeded\n"); */
-/* #endif */
-/* 	return -ERANGE */
-/*    } */
-/*    req->attrs[req->num_attrs] = attr; */
-/*    req->num_attrs++; */
+    /* Local vars */
+    int index = 0;
 
-/*    return RETURN_SUCCESS; */
+   /* Input Invariant Check */
+   if(!req) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_updateReqAddKeyReq: 'req' must not be NULL\n");
+#endif
+	return -EINVAL;
+   }
+   if(!keyreq) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_updateReqAddKeyReq: 'keyreq' must not be NULL\n");
+#endif
+	return -EINVAL;
+   }
 
-/* } */
+   /* Add Key to Array */
+   index = req->num_keys;
+   if(index >= CUS_MAX_KEYS) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_updateReqAddKeyReq: Max num_keys exceeded\n");
+#endif
+	return -ERANGE;
+   }
+   req->keys[index] = keyreq;
+   req->num_keys++;
+
+   return index;
+
+}
 
 /* extern custosKeyRes_t* custos_getKeyRes(const custosKeyReq_t* req) { */
 
