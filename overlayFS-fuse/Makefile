@@ -155,6 +155,7 @@ clean:
 	rm -f $(HTTP_TEST)
 	rm -f $(CURL_TEST)
 	rm -f $(JSON_TEST)
+	rm -f $(DECODE_TEST)
 	rm -f *.o
 	rm -f *~
 	rm -f handout/*~
