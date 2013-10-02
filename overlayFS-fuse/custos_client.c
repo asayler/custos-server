@@ -127,12 +127,15 @@ extern int custos_destroyAttrReq(custosAttrReq_t** attrreqp) {
 	return -EINVAL;
     }
 
+    /* Check and Free Required Members */
     if(!(attrreq->attr)) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_destroyAttrReq: 'attrreq->attr' must not be NULL\n");
 #endif
 	return -EINVAL;
     }
+    free(attrreq->attr);
+    attrreq->attr = NULL;
 
     /* Check and Free Optional Members */
     if(attrreq->attr->val) {
@@ -140,13 +143,10 @@ extern int custos_destroyAttrReq(custosAttrReq_t** attrreqp) {
 	attrreq->attr->val = NULL;
     }
 
-    /* Free Inner Struct */
-    free(attrreq->attr);
-    attrreq->attr = NULL;
-
     /* Free Outer Struct */
     free(attrreq);
     attrreq = NULL;
+    *attrreqp = NULL;
 
     return RETURN_SUCCESS;
 
@@ -221,36 +221,47 @@ extern custosKeyReq_t* custos_createKeyReq(const uuid_t uuid,
 
 }
 
-extern int custos_destroyKey(custosKey_t** keyp) {
+extern int custos_destroyKeyReq(custosKeyReq_t** keyreqp) {
 
     /* Local Vars */
-    custosKey_t* key;
+    custosKeyReq_t* keyreq;
 
     /* Input Invariant Check */
-    if(!keyp) {
+    if(!keyreqp) {
 #ifdef DEBUG
-	fprintf(stderr, "ERROR custos_destroyKey: 'keyp' must not be NULL\n");
+	fprintf(stderr, "ERROR custos_destroyKeyReq: 'keyreqp' must not be NULL\n");
 #endif
 	return -EINVAL;
     }
-    key = *keyp;
+    keyreq = *keyreqp;
 
-    if(!key) {
+    if(!keyreq) {
 #ifdef DEBUG
-	fprintf(stderr, "ERROR custos_destroyKey: 'key' must not be NULL\n");
+	fprintf(stderr, "ERROR custos_destroyKeyReq: 'keyreq' must not be NULL\n");
 #endif
 	return -EINVAL;
     }
+
+    /* Check and Free Required Members */
+    if(!(keyreq->key)) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_destroyKeyReq: 'keyreq->key' must not be NULL\n");
+#endif
+	return -EINVAL;
+    }
+    free(keyreq->key);
+    keyreq->key = NULL;
 
     /* Check and Free Optional Members */
-    if(key->val) {
-	free(key->val);
-	key->val = NULL;
+    if(keyreq->key->val) {
+	free(keyreq->key->val);
+	keyreq->key->val = NULL;
     }
 
-    /* Free Struct */
-    free(key);
-    *keyp = NULL;
+    /* Free Outer Struct */
+    free(keyreq);
+    keyreq = NULL;
+    *keyreqp = NULL;
 
     return RETURN_SUCCESS;
 
@@ -278,6 +289,7 @@ extern custosReq_t* custos_createReq(const char* target) {
 #endif
 	return NULL;
    }
+
    req->version = strdup(CUS_VERSION);
    if(!(req->version)) {
 #ifdef DEBUG
@@ -293,63 +305,72 @@ extern custosReq_t* custos_createReq(const char* target) {
 
 }
 
-/* extern int custos_destroyKeyReq(custosKeyReq_t** reqp) { */
+extern int custos_destroyReq(custosReq_t** reqp) {
 
-/*    /\* Local vars *\/ */
-/*    uint i; */
-/*    custosKeyReq_t* req; */
+   /* Local vars */
+   uint i;
+   custosReq_t* req;
 
-/*    /\* Input Invariant Check *\/ */
-/*    if(!reqp) { */
-/* #ifdef DEBUG */
-/* 	fprintf(stderr, "ERROR custos_destroyKeyReq: 'reqp' must not be NULL\n"); */
-/* #endif */
-/* 	return -EINVAL; */
-/*    } */
-/*    req = *reqp; */
+   /* Input Invariant Check */
+   if(!reqp) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_destroyReq: 'reqp' must not be NULL\n");
+#endif
+	return -EINVAL;
+   }
+   req = *reqp;
 
-/*    if(!req) { */
-/* #ifdef DEBUG */
-/* 	fprintf(stderr, "ERROR custos_destroyKeyReq: 'req' must not be NULL\n"); */
-/* #endif */
-/* 	return -EINVAL; */
-/*    } */
+   if(!req) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_destroyReq: 'req' must not be NULL\n");
+#endif
+	return -EINVAL;
+   }
 
-/*    /\* Check and Free Required Members *\/ */
-/*    if(!(req->uri)) { */
-/* #ifdef DEBUG */
-/* 	fprintf(stderr, "ERROR custos_destroyKeyReq: 'req->uri' must not be NULL\n"); */
-/* #endif */
-/*    } */
-/*    free(req->uri); */
+   /* Check and Free Required Members */
+   if(!(req->target)) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_destroyReq: 'req->target' must not be NULL\n");
+#endif
+   }
+   free(req->target);
 
-/*    /\* Check and Free Optional Members *\/ */
-/*    /\* Free Attrs *\/ */
-/*    for(i = 0; i < req->num_attrs; i++) { */
-/* 	if(custos_destroyAttr(&attrs[i]) < 0){ */
-/* #ifdef DEBUG */
-/* 	    fprintf(stderr, "ERROR custos_destroyKeyReq: custos_destroyAttr() failed\n"); */
-/* #endif */
-/* 	} */
-/*    } */
-/*    req->num_attrs = 0; */
-/*    /\* Free Keys *\/ */
-/*    for(i = 0; i < req->num_keys; i++) { */
-/* 	if(custos_destroyKey(&keys[i]) < 0){ */
-/* #ifdef DEBUG */
-/* 	    fprintf(stderr, "ERROR custos_destroyKeyReq: custos_destroyKey() failed\n"); */
-/* #endif */
-/* 	} */
-/*    } */
-/*    req->num_keys = 0;     */
+   if(!(req->version)) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_destroyReq: 'req->version' must not be NULL\n");
+#endif
+   }
+   free(req->version);
 
-/*    /\* Free Struct *\/ */
-/*    free(req); */
-/*    *reqp = NULL; */
+   /* Check and Free Optional Members */
+   /* Free Attrs */
+   for(i = 0; i < req->num_attrs; i++) {
+       if(custos_destroyAttrReq(&(req->attrs[i])) < 0) {
+#ifdef DEBUG
+	    fprintf(stderr, "ERROR custos_destroyReq: custos_destroyAttrReq() failed\n");
+#endif
+	}
+   }
+   req->num_attrs = 0;
 
-/*    return RETURN_SUCCESS; */
+   /* Free Keys */
+   for(i = 0; i < req->num_keys; i++) {
+       if(custos_destroyKeyReq(&(req->keys[i])) < 0) {
+#ifdef DEBUG
+	    fprintf(stderr, "ERROR custos_destroyReq: custos_destroyKeyReq() failed\n");
+#endif
+	}
+   }
+   req->num_keys = 0;
 
-/* } */
+   /* Free Struct */
+   free(req);
+   req = NULL;
+   *reqp = NULL;
+
+   return RETURN_SUCCESS;
+
+}
 
 /* extern int custos_updateReqAddKey(custosReq_t* req, const CustosKeyReq_t* key) { */
 
