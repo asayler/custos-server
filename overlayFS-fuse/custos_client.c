@@ -132,6 +132,33 @@ extern int custos_destroyAttr(custosAttr_t** attrp) {
 
 }
 
+extern custosAttr_t* custos_duplicateAttr(const custosAttr_t* attr) {
+
+    /* Local Vars */
+    custosAttr_t* out = NULL;
+
+    /* Input Invariant Check */
+    if(!attr) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_duplicateAttr: 'attr' must not be NULL\n");
+#endif
+	return NULL;
+    }
+
+    out = custos_createAttr(attr->type, attr->class, attr->id,
+			    attr->index, attr->size, attr->val);
+    if(!out) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_duplicateAttr: custos_createAttr() failed\n");
+	perror(         "-------------------------->");
+#endif
+	return NULL;
+    }
+
+    return out;
+
+}
+
 /********* custosKey Functions *********/
 
 extern custosKey_t* custos_createKey(const uuid_t uuid,
@@ -224,6 +251,32 @@ extern int custos_destroyKey(custosKey_t** keyp) {
     *keyp = NULL;
 
     return RETURN_SUCCESS;
+
+}
+
+extern custosKey_t* custos_duplicateKey(const custosKey_t* key) {
+
+    /* Local Vars */
+    custosKey_t* out = NULL;
+
+    /* Input Invariant Check */
+    if(!key) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_duplicateKey: 'key' must not be NULL\n");
+#endif
+	return NULL;
+    }
+
+    out = custos_createKey(key->uuid, key->version, key->size, key->val);
+    if(!out) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_duplicateKeyr: custos_createKey() failed\n");
+	perror(         "-------------------------->");
+#endif
+	return NULL;
+    }
+
+    return out;
 
 }
 
@@ -776,22 +829,11 @@ extern custosRes_t* custos_getRes(const custosReq_t* req) {
 	return NULL;
    }
 
-   res = malloc(sizeof(*res));
-   if(!res) {
-#ifdef DEBUG
-	fprintf(stderr, "ERROR custos_getRes: malloc(res) failed\n");
-	perror(         "------------------->");
-#endif
-	return NULL;
-   }
-   memset(res, 0, sizeof(*res));
-
-   /* Populate */
-   res->status = CUS_RESSTAT_ACCEPTED;
-
    /* ToDo: Make requet to custos server */
 
    /* Build Dummy Response */
+   res = custos_createRes(CUS_RESSTAT_ACCEPTED, req->target);
+
    /* if(!(req->attrs[CUS_ATTRID_PSK].val)) { */
    /* 	res->attrStat[CUS_ATTRID_PSK] = CUS_ATTRSTAT_REQ; */
    /* } */

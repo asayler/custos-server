@@ -137,12 +137,14 @@ extern custosAttr_t* custos_createAttr(const custosAttrType_t type,
 				       const size_t index,
 				       const size_t size, const uint8_t* val);
 extern int custos_destroyAttr(custosAttr_t** attrp);
+extern custosAttr_t* custos_duplicateAttr(const custosAttr_t* attr);
 
 /* custosKey Functions */
 extern custosKey_t* custos_createKey(const uuid_t uuid,
 				     const uint64_t version,
 				     const size_t size, const uint8_t* val);
 extern int custos_destroyKey(custosKey_t** keyp);
+extern custosKey_t* custos_duplicateKey(const custosKey_t* key);
 
 /* custosAttrReq Functions */
 extern custosAttrReq_t* custos_createAttrReq(const bool echo);
