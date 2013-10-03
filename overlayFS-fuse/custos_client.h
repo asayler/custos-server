@@ -22,8 +22,7 @@
 
 #include "http-util.h"
 
-#define CUS_TEST_PSK "password"
-#define CUS_TEST_BADPSK "badpassword"
+#define CUS_TEST_PSK_GOOD "password"
 
 #define CUS_MAX_ATTRS 100
 #define CUS_MAX_KEYS 100
@@ -137,14 +136,24 @@ extern custosAttr_t* custos_createAttr(const custosAttrType_t type,
 				       const size_t index,
 				       const size_t size, const uint8_t* val);
 extern int custos_destroyAttr(custosAttr_t** attrp);
-extern custosAttr_t* custos_duplicateAttr(const custosAttr_t* attr);
+extern custosAttr_t* custos_duplicateAttr(const custosAttr_t* attr, bool echo);
+extern int custos_updateAttr(custosAttr_t* attr,
+			     const custosAttrType_t type,
+			     const custosAttrClass_t class,
+			     const custosAttrID_t id,
+			     const size_t index,
+			     const size_t size, const uint8_t* val);
 
 /* custosKey Functions */
 extern custosKey_t* custos_createKey(const uuid_t uuid,
 				     const uint64_t version,
 				     const size_t size, const uint8_t* val);
 extern int custos_destroyKey(custosKey_t** keyp);
-extern custosKey_t* custos_duplicateKey(const custosKey_t* key);
+extern custosKey_t* custos_duplicateKey(const custosKey_t* key, bool echo);
+extern int custos_updateKey(custosKey_t* key,
+			    const uuid_t uuid,
+			    const uint64_t version,
+			    const size_t size, const uint8_t* val);
 
 /* custosAttrReq Functions */
 extern custosAttrReq_t* custos_createAttrReq(const bool echo);
