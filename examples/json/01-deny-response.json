@@ -29,7 +29,7 @@
 	    },
 	    {
 		"AttrType": "implicit",
-		"AttrClass": "ssh_id",
+		"AttrClass": "ssl_id",
 		"AttrID": "client_cert",
 		"AttrIndex": 0,
 		"AttrEcho": false,
