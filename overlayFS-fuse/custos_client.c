@@ -810,35 +810,177 @@ extern custosRes_t* custos_getRes(const custosReq_t* req) {
    return res;
 }
 
-/* extern int custos_destroyKeyRes(custosKeyRes_t** resp) { */
+extern custosRes_t* custos_createRes(const custosResStatus_t status, const char* source) {
 
-/*    custosKeyRes_t* res; */
+   custosRes_t* res = NULL;
 
-/*    /\* Input Invariant Check *\/ */
-/*    if(!resp) { */
-/* #ifdef DEBUG */
-/* 	fprintf(stderr, "ERROR custos_destroyKeyRes: 'resp' must not be NULL\n"); */
-/* #endif */
-/* 	return -EINVAL; */
-/*    } */
-/*    res = *resp; */
+   res = malloc(sizeof(*res));
+   if(!res) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_createRes: malloc(res) failed\n");
+	perror(         "---------------------->");
+#endif
+	return NULL;
+   }
+   memset(res, 0, sizeof(*res));
 
-/*    if(!res) { */
-/* #ifdef DEBUG */
-/* 	fprintf(stderr, "ERROR custos_destroyKeyRes: 'res' must not be NULL\n"); */
-/* #endif */
-/* 	return -EINVAL; */
-/*    } */
+   res->source = strdup(source);
+   if(!(res->source)) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_createRes: strdup(source) failed\n");
+	perror(         "---------------------->");
+#endif
+	return NULL;
+   }
 
-/*    /\* Check and Free Optional Members *\/ */
-/*    if(res->key) { */
-/* 	free(res->key); */
-/*    } */
+   res->version = strdup(CUS_VERSION);
+   if(!(res->version)) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_createRes: strdup(CUSTOS_VERSION) failed\n");
+	perror(         "---------------------->");
+#endif
+	return NULL;
+   }
 
-/*    /\* Free Struct *\/ */
-/*    free(res); */
-/*    *resp = NULL; */
+   res->status = status;
+   res->num_attrs = 0;
+   res->num_keys = 0;
 
-/*    return RETURN_SUCCESS; */
+   return res;
 
-/* } */
+}
+
+extern int custos_destroyRes(custosRes_t** resp) {
+
+   /* Local vars */
+   uint i;
+   custosRes_t* res;
+
+   /* Input Invariant Check */
+   if(!resp) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_destroyRes: 'resp' must not be NULL\n");
+#endif
+	return -EINVAL;
+   }
+   res = *resp;
+
+   if(!res) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_destroyRes: 'res' must not be NULL\n");
+#endif
+	return -EINVAL;
+   }
+
+   /* Check and Free Required Members */
+   if(!(res->source)) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_destroyRes: 'res->source' must not be NULL\n");
+#endif
+   }
+   free(res->source);
+
+   if(!(res->version)) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_destroyRes: 'res->version' must not be NULL\n");
+#endif
+   }
+   free(res->version);
+
+   /* Check and Free Optional Members */
+   /* Free Attrs */
+   for(i = 0; i < res->num_attrs; i++) {
+       if(custos_destroyAttrRes(&(res->attrs[i])) < 0) {
+#ifdef DEBUG
+	    fprintf(stderr, "ERROR custos_destroyRes: custos_destroyAttrRes() failed\n");
+#endif
+	}
+   }
+   res->num_attrs = 0;
+
+   /* Free Keys */
+   for(i = 0; i < res->num_keys; i++) {
+       if(custos_destroyKeyRes(&(res->keys[i])) < 0) {
+#ifdef DEBUG
+	    fprintf(stderr, "ERROR custos_destroyRes: custos_destroyKeyRes() failed\n");
+#endif
+	}
+   }
+   res->num_keys = 0;
+
+   /* Free Struct */
+   free(res);
+   res = NULL;
+   *resp = NULL;
+
+   return RETURN_SUCCESS;
+
+}
+
+extern int custos_updateResAddAttrRes(custosRes_t* res, custosAttrRes_t* attrres) {
+
+    /* Local vars */
+    int index = 0;
+
+   /* Input Invariant Check */
+   if(!res) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_updateResAddAttrRes: 'res' must not be NULL\n");
+#endif
+	return -EINVAL;
+   }
+   if(!attrres) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_updateResAddAttrRes: 'attrres' must not be NULL\n");
+#endif
+	return -EINVAL;
+   }
+
+   /* Add Attr to Array */
+   index = res->num_attrs;
+   if(index >= CUS_MAX_ATTRS) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_updateResAddAttrRes: Max num_attrs exceeded\n");
+#endif
+	return -ERANGE;
+   }
+   res->attrs[index] = attrres;
+   res->num_attrs++;
+
+   return index;
+
+}
+
+extern int custos_updateResAddKeyRes(custosRes_t* res, custosKeyRes_t* keyres) {
+
+    /* Local vars */
+    int index = 0;
+
+   /* Input Invariant Check */
+   if(!res) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_updateResAddKeyRes: 'res' must not be NULL\n");
+#endif
+	return -EINVAL;
+   }
+   if(!keyres) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_updateResAddKeyRes: 'keyres' must not be NULL\n");
+#endif
+	return -EINVAL;
+   }
+
+   /* Add Key to Array */
+   index = res->num_keys;
+   if(index >= CUS_MAX_KEYS) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_updateResAddKeyRes: Max num_keys exceeded\n");
+#endif
+	return -ERANGE;
+   }
+   res->keys[index] = keyres;
+   res->num_keys++;
+
+   return index;
+
+}
