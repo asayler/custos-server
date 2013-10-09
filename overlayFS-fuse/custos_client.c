@@ -11,7 +11,7 @@
 
 #define DEBUG
 
-#define CUS_TEST_KEY "myfakekey"
+#define TEST_KEY "myfakekey"
 
 #define RETURN_FAILURE -1
 #define RETURN_SUCCESS  0
@@ -1076,7 +1076,7 @@ extern custosRes_t* custos_getRes(const custosReq_t* req) {
        }
        if(accept) {
 	   if(custos_updateKey(key, req->keys[i]->key->uuid, req->keys[i]->key->revision,
-			       (strlen(CUS_TEST_KEY) + 1), (uint8_t*) CUS_TEST_KEY) < 0) {
+			       (strlen(TEST_KEY) + 1), (uint8_t*) TEST_KEY) < 0) {
 #ifdef DEBUG
 	       fprintf(stderr, "ERROR custos_getRes: custos_updateKey() failed\n");
 #endif

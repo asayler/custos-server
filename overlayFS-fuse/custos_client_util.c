@@ -21,6 +21,8 @@
 #define RETURN_FAILURE -1
 #define RETURN_SUCCESS  0
 
+#define BAD_PSK "Nonsense"
+
 #define CUS_PRINT_OFFSET 4
 
 char* custos_stringifyVal(size_t size, uint8_t* val) {
@@ -327,10 +329,12 @@ int main(int argc, char* argv[]) {
 
     //int ret;
     uuid_t uuid;
-    custosReq_t*    req    = NULL;
-    custosKey_t*    key    = NULL;
-    custosKeyReq_t* keyreq = NULL;
-    custosRes_t*    res    = NULL;
+    custosReq_t*     req     = NULL;
+    custosKey_t*     key     = NULL;
+    custosKeyReq_t*  keyreq  = NULL;
+    custosAttr_t*    attr    = NULL;
+    custosAttrReq_t* attrreq = NULL;
+    custosRes_t*     res     = NULL;
 
     /* Setup a new request */
     req = custos_createReq("http://test.com");
@@ -356,17 +360,19 @@ int main(int argc, char* argv[]) {
 	return EXIT_FAILURE;
     }
     if(custos_updateReqAddKeyReq(req, keyreq) < 0) {
-	fprintf(stderr, "ERROR %s: custos_updateKeyReqAddKey() failed\n", argv[0]);
+	fprintf(stderr, "ERROR %s: custos_updateReqAddKeyReq() failed\n", argv[0]);
 	return EXIT_FAILURE;
     }
 
     /* Print Request */
+    fprintf(stdout, "*********First  Request*********\n");
     if(custos_printReq(req, 0, stdout) < 0) {
 	fprintf(stderr, "ERROR %s: custos_printReq() failed\n", argv[0]);
 	return EXIT_FAILURE;
     }
+    fprintf(stdout, "\n");
 
-    /* Get Key - 1st Attempt - Fails with */
+    /* Get Response - 1st Attempt - Fails */
     res = custos_getRes(req);
     if(!res) {
     	fprintf(stderr, "ERROR %s: custos_getRes() failed\n", argv[0]);
@@ -374,28 +380,69 @@ int main(int argc, char* argv[]) {
     }
 
     /* Print Response */
+    fprintf(stdout, "*********First Response********\n");
     if(custos_printRes(res, 0, stdout) < 0) {
 	fprintf(stderr, "ERROR %s: custos_printRes() failed\n", argv[0]);
 	return EXIT_FAILURE;
     }
+    fprintf(stdout, "\n");
 
-    /* /\* Free Response *\/ */
-    /* ret = custos_destroyKeyRes(&res); */
-    /* if(ret < 0) { */
-    /* 	fprintf(stderr, "ERROR %s: custos_destroyKeyRes failed\n", argv[0]); */
-    /* 	return EXIT_FAILURE; */
-    /* } */
-    /* if(res) { */
-    /* 	fprintf(stderr, "ERROR %s: custos_destroyKeyRes failed to set res to NULL\n", argv[0]); */
-    /* 	return EXIT_FAILURE; */
-    /* } */
+    /* Free Response */
+    if(custos_destroyRes(&res) < 0) {
+	fprintf(stderr, "ERROR %s: custos_destroyRes() failed\n", argv[0]);
+	return EXIT_FAILURE;
+    }
 
-    /* /\* Update Request *\/ */
-    /* ret = custos_updateKeyReq(req, CUS_ATTRID_PSK, CUS_TEST_BADPSK, (strlen(CUS_TEST_BADPSK) + 1)); */
-    /* if(ret < 0) { */
-    /* 	fprintf(stderr, "ERROR %s: custos_updateKeyReq failed\n", argv[0]); */
-    /* 	return EXIT_FAILURE; */
-    /* } */
+    /* Add attr to request */
+    attr = custos_createAttr(CUS_ATTRTYPE_EXPLICIT, CUS_ATTRCLASS_DIRECT,
+			     CUS_ATTRID_PSK, 0,
+			     (strlen(BAD_PSK) + 1), (uint8_t*) BAD_PSK);
+    if(!attr) {
+	fprintf(stderr, "ERROR %s: custos_createAttr() failed\n", argv[0]);
+	return EXIT_FAILURE;
+    }
+    attrreq = custos_createAttrReq(true);
+    if(!attrreq) {
+	fprintf(stderr, "ERROR %s: custos_createAttrReq() failed\n", argv[0]);
+	return EXIT_FAILURE;
+    }
+    if(custos_updateAttrReqAddAttr(attrreq, attr) < 0) {
+	fprintf(stderr, "ERROR %s: custos_updateAttrReqAddAttr() failed\n", argv[0]);
+	return EXIT_FAILURE;
+    }
+    if(custos_updateReqAddAttrReq(req, attrreq) < 0) {
+	fprintf(stderr, "ERROR %s: custos_updateReqAddAttrReq() failed\n", argv[0]);
+	return EXIT_FAILURE;
+    }
+
+    /* Print Request */
+    fprintf(stdout, "*********Second  Request*********\n");
+    if(custos_printReq(req, 0, stdout) < 0) {
+	fprintf(stderr, "ERROR %s: custos_printReq() failed\n", argv[0]);
+	return EXIT_FAILURE;
+    }
+    fprintf(stdout, "\n");
+
+    /* Get Response - 2nd Attempt - Fails */
+    res = custos_getRes(req);
+    if(!res) {
+    	fprintf(stderr, "ERROR %s: custos_getRes() failed\n", argv[0]);
+    	return EXIT_FAILURE;
+    }
+
+    /* Print Response */
+    fprintf(stdout, "*********Second Response********\n");
+    if(custos_printRes(res, 0, stdout) < 0) {
+	fprintf(stderr, "ERROR %s: custos_printRes() failed\n", argv[0]);
+	return EXIT_FAILURE;
+    }
+    fprintf(stdout, "\n");
+
+    /* Free Response */
+    if(custos_destroyRes(&res) < 0) {
+	fprintf(stderr, "ERROR %s: custos_destroyRes() failed\n", argv[0]);
+	return EXIT_FAILURE;
+    }
 
     /* /\* Get Key - 2nd Attempt - Fails with CUSATTRSTAT_BAD on CUS_ATTRID_PSK *\/ */
     /* res = custos_getKeyRes(req); */
@@ -473,13 +520,9 @@ int main(int argc, char* argv[]) {
     /* 	return EXIT_FAILURE; */
     /* } */
 
-    /* Clean up */
+    /* Free Request */
     if(custos_destroyReq(&req) < 0) {
 	fprintf(stderr, "ERROR %s: custos_destroyReq() failed\n", argv[0]);
-	return EXIT_FAILURE;
-    }
-    if(custos_destroyRes(&res) < 0) {
-	fprintf(stderr, "ERROR %s: custos_destroyRes() failed\n", argv[0]);
 	return EXIT_FAILURE;
     }
 
