@@ -16,6 +16,8 @@
 
 #include "custos_client.h"
 
+#define DEBUG
+
 #define RETURN_FAILURE -1
 #define RETURN_SUCCESS  0
 
@@ -51,12 +53,12 @@ int custos_printAttr(custosAttr_t* attr, uint offset, FILE* stream) {
 	return -EINVAL;
     }
 
-    fprintf(stream, "%*s" "attr->type  = %2d\n",  offset, "", attr->type);
-    fprintf(stream, "%*s" "attr->class = %2d\n",  offset, "", attr->class);
-    fprintf(stream, "%*s" "attr->id    = %2d\n",  offset, "", attr->id);
-    fprintf(stream, "%*s" "attr->index = %2zd\n", offset, "", attr->index);
-    fprintf(stream, "%*s" "attr->size  = %zd\n",  offset, "", attr->size);
-    fprintf(stream, "%*s" "attr->val   = %p\n",   offset, "", attr->val);
+    fprintf(stream, "%*s" "attr->type    = %d\n",   offset, "", attr->type);
+    fprintf(stream, "%*s" "attr->class   = %d\n",   offset, "", attr->class);
+    fprintf(stream, "%*s" "attr->id      = %d\n",   offset, "", attr->id);
+    fprintf(stream, "%*s" "attr->index   = %zd\n",  offset, "", attr->index);
+    fprintf(stream, "%*s" "attr->size    = %zd\n",  offset, "", attr->size);
+    fprintf(stream, "%*s" "attr->val     = %p\n",   offset, "", attr->val);
 
 return RETURN_SUCCESS;
 
@@ -152,9 +154,9 @@ int custos_printKeyReq(custosKeyReq_t* keyreq, uint offset, FILE* stream) {
 	return -EINVAL;
     }
 
-    fprintf(stream, "%*s" "keyreq->echo = %s\n", offset, "",
+    fprintf(stream, "%*s" "keyreq->echo    = %s\n", offset, "",
 	    keyreq->echo ? "true" : "false");
-    fprintf(stream, "%*s" "keyreq->key  = %p\n", offset, "", keyreq->key);
+    fprintf(stream, "%*s" "keyreq->key     = %p\n", offset, "", keyreq->key);
     if(keyreq->key) {
 	ret = custos_printKey(keyreq->key, (offset + CUS_PRINT_OFFSET), stream);
 	if(ret < 0) {
@@ -180,10 +182,10 @@ int custos_printKeyRes(custosKeyRes_t* keyres, uint offset, FILE* stream) {
 	return -EINVAL;
     }
 
-    fprintf(stream, "%*s" "keyres->status = %d\n", offset, "", keyres->status);
-    fprintf(stream, "%*s" "keyres->echo   = %s\n", offset, "",
+    fprintf(stream, "%*s" "keyres->status  = %d\n", offset, "", keyres->status);
+    fprintf(stream, "%*s" "keyres->echo    = %s\n", offset, "",
 	    keyres->echo ? "true" : "false");
-    fprintf(stream, "%*s" "keyres->key  = %p\n", offset, "", keyres->key);
+    fprintf(stream, "%*s" "keyres->key     = %p\n", offset, "", keyres->key);
     if(keyres->key) {
 	ret = custos_printKey(keyres->key, (offset + CUS_PRINT_OFFSET), stream);
 	if(ret < 0) {
@@ -227,7 +229,7 @@ int custos_printReq(custosReq_t* req, uint offset, FILE* stream) {
     fprintf(stream, "%*s" "req->version   = %s\n",  offset, "", req->version);
     fprintf(stream, "%*s" "req->num_attrs = %zd\n", offset, "", req->num_attrs);
     for(i = 0; i < req->num_attrs; i++) {
-	fprintf(stream, "%*s" "req->attrs[%zd] = %p\n",
+	fprintf(stream, "%*s" "req->attrs[%2zd] = %p\n",
 		newoffset, "", i, req->attrs[i]);
 	if(req->attrs[i]) {
 	    ret = custos_printAttrReq(req->attrs[i], (newoffset + CUS_PRINT_OFFSET), stream);
@@ -241,7 +243,7 @@ int custos_printReq(custosReq_t* req, uint offset, FILE* stream) {
     }
     fprintf(stream, "%*s" "req->num_keys  = %zd\n", offset, "", req->num_keys);
     for(i = 0; i < req->num_keys; i++) {
-	fprintf(stream, "%*s" "req->keys[%zd] = %p\n",
+	fprintf(stream, "%*s" "req->keys[%2zd]  = %p\n",
 		newoffset, "", i, req->keys[i]);
 	if(req->keys[i]) {
 	    ret = custos_printKeyReq(req->keys[i], (newoffset + CUS_PRINT_OFFSET), stream);
@@ -328,7 +330,7 @@ int main(int argc, char* argv[]) {
     custosReq_t*    req    = NULL;
     custosKey_t*    key    = NULL;
     custosKeyReq_t* keyreq = NULL;
-    //custosRes_t*    res    = NULL;
+    custosRes_t*    res    = NULL;
 
     /* Setup a new request */
     req = custos_createReq("http://test.com");
@@ -364,23 +366,18 @@ int main(int argc, char* argv[]) {
 	return EXIT_FAILURE;
     }
 
-    /* /\* Get Key - 1st Attempt - Fails with *\/ */
-    /* res = custos_getKeyRes(req); */
-    /* if(!res) { */
-    /* 	fprintf(stderr, "ERROR %s: custos_getKeyRes failed\n", argv[0]); */
-    /* 	return EXIT_FAILURE; */
-    /* } */
+    /* Get Key - 1st Attempt - Fails with */
+    res = custos_getRes(req);
+    if(!res) {
+    	fprintf(stderr, "ERROR %s: custos_getRes() failed\n", argv[0]);
+    	return EXIT_FAILURE;
+    }
 
-    /* /\* Print Response *\/ */
-    /* fprintf(stdout, "res->resStat = %d\n", res->resStat); */
-    /* if(res->key) { */
-    /* 	fprintf(stdout, "res->key = %s\n", res->key); */
-    /* } */
-    /* else { */
-    /* 	fprintf(stdout, "res->key = NULL\n"); */
-    /* } */
-    /* fprintf(stdout, "res->size = %zd\n", res->size); */
-    /* fprintf(stdout, "res->attrStat[CUS_ATTRID_PSK] = %d\n", res->attrStat[CUS_ATTRID_PSK]); */
+    /* Print Response */
+    if(custos_printRes(res, 0, stdout) < 0) {
+	fprintf(stderr, "ERROR %s: custos_printRes() failed\n", argv[0]);
+	return EXIT_FAILURE;
+    }
 
     /* /\* Free Response *\/ */
     /* ret = custos_destroyKeyRes(&res); */
@@ -476,9 +473,13 @@ int main(int argc, char* argv[]) {
     /* 	return EXIT_FAILURE; */
     /* } */
 
-    /* Clean up Req */
+    /* Clean up */
     if(custos_destroyReq(&req) < 0) {
 	fprintf(stderr, "ERROR %s: custos_destroyReq() failed\n", argv[0]);
+	return EXIT_FAILURE;
+    }
+    if(custos_destroyRes(&res) < 0) {
+	fprintf(stderr, "ERROR %s: custos_destroyRes() failed\n", argv[0]);
 	return EXIT_FAILURE;
     }
 

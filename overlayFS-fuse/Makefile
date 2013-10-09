@@ -22,8 +22,8 @@ LLIBSCURL     = `pkg-config libcurl --libs`
 CFLAGSJSON    = `pkg-config json --cflags`
 LLIBSJSON     = `pkg-config json --libs`
 
-CFLAGS = -c -g -Wall -Wextra
-LFLAGS = -g -Wall -Wextra
+CFLAGS = -c -g -Wall -Wextra -Werror
+LFLAGS = -g -Wall -Wextra -Werror
 
 ENCFS            = fuseenc fuseenc_fh
 MIRFS            = fusemir_fh
