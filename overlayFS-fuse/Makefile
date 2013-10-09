@@ -1,12 +1,6 @@
 # File: Makefile
 # By: Andy Sayler <www.andysayler.com>
-# Adopted from work by: Chris Wailes <chris.wailes@gmail.com>
-# Project: CSCI 3753 Programming Assignment 5
-# Creation Date: 2010/04/06
-# Modififed Date: 2012/04/12
-# Description:
-#	This is the Makefile for PA5.
-
+# Build Custos Filesystem Demo
 
 CC           = gcc
 
@@ -35,25 +29,29 @@ HTTP_TEST        = http-test
 CURL_TEST        = curl-test
 JSON_TEST        = json-test
 DECODE_TEST      = decode-test
+CUSTOS_TEST      = custos_client_test
 
-.PHONY: all encfs mirfs \
+.PHONY: all tests encfs mirfs \
 	fuse-examples xattr-examples openssl-examples \
-	custos_util http_test curl_test json_test decode-test \
+	custos_test http_test curl_test json_test decode_test \
 	clean
 
-all: encfs mirfs fuse-examples xattr-examples openssl-examples custos_util \
-	http_test curl_test json_test decode-test
+all: encfs mirfs \
+	fuse-examples xattr-examples openssl-examples \
+	custos_test http_test curl_test json_test decode_test
+
+tests: custos_test http_test curl_test json_test decode_test
 
 encfs: $(ENCFS)
 mirfs: $(MIRFS)
 fuse-examples: $(FUSE_EXAMPLES)
 xattr-examples: $(XATTR_EXAMPLES)
 openssl-examples: $(OPENSSL_EXAMPLES)
-custos_util: $(CUSTOS_UTIL)
 http_test: $(HTTP_TEST)
 curl_test: $(CURL_TEST)
 json_test: $(JSON_TEST)
 decode_test: $(DECODE_TEST)
+custos_test: $(CUSTOS_TEST)
 
 fusehello: fusehello.o
 	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSFUSE)
@@ -79,7 +77,7 @@ xattr-util: xattr-util.o
 aes-crypt-util: aes-crypt-util.o aes-crypt.o
 	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSOPENSSL)
 
-custos_client_util: custos_client_util.o custos_client.o
+custos_client_test: custos_client_test.o custos_client.o custos_client_print.o
 	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSUUID)
 
 http-test: http-test.o http-util.o
@@ -121,10 +119,13 @@ aes-crypt-util.o: aes-crypt-util.c aes-crypt.h
 aes-crypt.o: aes-crypt.c aes-crypt.h
 	$(CC) $(CFLAGS) $(CFLAGSOPENSSL) $<
 
-custos_client_util.o: custos_client_util.c custos_client.h
+custos_client_test.o: custos_client_test.c custos_client.h custos_client_print.h
 	$(CC) $(CFLAGS) $(CFLAGSUUID) $<
 
 custos_client.o: custos_client.c custos_client.h
+	$(CC) $(CFLAGS) $(CFLAGSUUID) $<
+
+custos_client_print.o: custos_client_print.c custos_client_print.h custos_client.h
 	$(CC) $(CFLAGS) $(CFLAGSUUID) $<
 
 http-util.o: http-util.c http-util.h
@@ -151,7 +152,7 @@ clean:
 	rm -f $(FUSE_EXAMPLES)
 	rm -f $(XATTR_EXAMPLES)
 	rm -f $(OPENSSL_EXAMPLES)
-	rm -f $(CUSTOS_UTIL)
+	rm -f $(CUSTOS_TEST)
 	rm -f $(HTTP_TEST)
 	rm -f $(CURL_TEST)
 	rm -f $(JSON_TEST)
