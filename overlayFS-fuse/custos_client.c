@@ -18,9 +18,8 @@
 
 /********* custosAttr Functions *********/
 
-extern custosAttr_t* custos_createAttr(const custosAttrType_t type,
-				       const custosAttrClass_t class,
-				       const custosAttrID_t id,
+extern custosAttr_t* custos_createAttr(const custosAttrClass_t class,
+				       const custosAttrType_t type,
 				       const size_t index,
 				       const size_t size, const uint8_t* val) {
 
@@ -28,14 +27,6 @@ extern custosAttr_t* custos_createAttr(const custosAttrType_t type,
     custosAttr_t* attr = NULL;
 
     /* Input Invariant Check */
-    if(type >= CUS_ATTRTYPE_MAX) {
-#ifdef DEBUG
-	fprintf(stderr, "ERROR custos_createAttr: 'type' must not be less than %d\n",
-		CUS_ATTRTYPE_MAX);
-#endif
-	errno = EINVAL;
-	return NULL;
-    }
     if(class >= CUS_ATTRCLASS_MAX) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_createAttr: 'class' must not be less than %d\n",
@@ -44,10 +35,10 @@ extern custosAttr_t* custos_createAttr(const custosAttrType_t type,
 	errno = EINVAL;
 	return NULL;
     }
-    if(id >= CUS_ATTRID_MAX) {
+    if((type >= CUS_ATTRTYPE_EXP_MAX) && (type >= CUS_ATTRTYPE_IMP_MAX)) {
 #ifdef DEBUG
-	fprintf(stderr, "ERROR custos_createAttr: 'id' must be less than %d\n",
-		CUS_ATTRID_MAX);
+	fprintf(stderr, "ERROR custos_createAttr: 'type' must not be greater than %d or %d\n",
+		CUS_ATTRTYPE_EXP_MAX, CUS_ATTRTYPE_IMP_MAX);
 #endif
 	errno = EINVAL;
 	return NULL;
@@ -65,9 +56,8 @@ extern custosAttr_t* custos_createAttr(const custosAttrType_t type,
     memset(attr, 0, sizeof(*attr));
 
     /* Populate */
-    attr->type = type;
     attr->class = class;
-    attr->id = id;
+    attr->type = type;
     attr->index = index;
     attr->size = size;
 
@@ -146,11 +136,11 @@ extern custosAttr_t* custos_duplicateAttr(const custosAttr_t* attr, bool echo) {
     }
 
     if(echo) {
-	out = custos_createAttr(attr->type, attr->class, attr->id,
+	out = custos_createAttr(attr->class, attr->type,
 				attr->index, attr->size, attr->val);
     }
     else {
-	out = custos_createAttr(attr->type, attr->class, attr->id,
+	out = custos_createAttr(attr->class, attr->type,
 				attr->index, 0, NULL);
     }
     if(!out) {
@@ -166,9 +156,8 @@ extern custosAttr_t* custos_duplicateAttr(const custosAttr_t* attr, bool echo) {
 }
 
 extern int custos_updateAttr(custosAttr_t* attr,
-			     const custosAttrType_t type,
 			     const custosAttrClass_t class,
-			     const custosAttrID_t id,
+			     const custosAttrType_t type,
 			     const size_t index,
 			     const size_t size, const uint8_t* val) {
 
@@ -179,13 +168,6 @@ extern int custos_updateAttr(custosAttr_t* attr,
 #endif
 	return -EINVAL;
     }
-    if(type >= CUS_ATTRTYPE_MAX) {
-#ifdef DEBUG
-	fprintf(stderr, "ERROR custos_updateAttr: 'type' must not be less than %d\n",
-		CUS_ATTRTYPE_MAX);
-#endif
-	return -EINVAL;
-    }
     if(class >= CUS_ATTRCLASS_MAX) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_updateAttr: 'class' must not be less than %d\n",
@@ -193,18 +175,17 @@ extern int custos_updateAttr(custosAttr_t* attr,
 #endif
 	return -EINVAL;
     }
-    if(id >= CUS_ATTRID_MAX) {
+    if((type >= CUS_ATTRTYPE_EXP_MAX) && (type >= CUS_ATTRTYPE_IMP_MAX)) {
 #ifdef DEBUG
-	fprintf(stderr, "ERROR custos_updateAttr: 'id' must be less than %d\n",
-		CUS_ATTRID_MAX);
+	fprintf(stderr, "ERROR custos_createAttr: 'type' must not be greater than %d or %d\n",
+		CUS_ATTRTYPE_EXP_MAX, CUS_ATTRTYPE_IMP_MAX);
 #endif
 	return -EINVAL;
     }
 
     /* Update Meta Fields */
-    attr->type = type;
     attr->class = class;
-    attr->id = id;
+    attr->type = type;
     attr->index = index;
 
     /* Free old value */
@@ -994,14 +975,19 @@ extern custosRes_t* custos_getRes(const custosReq_t* req) {
 #endif
 	   return NULL;
        }
-       if(req->attrs[i]->attr->id == CUS_ATTRID_PSK) {
-	   psk = true;
-	   if (strcmp((char*) req->attrs[i]->attr->val, CUS_TEST_PSK_GOOD) == 0) {
-	       attrres = custos_createAttrRes(CUS_ATTRSTAT_ACCEPTED, req->attrs[i]->echo);
-	       accept = true;
+       if(req->attrs[i]->attr->class == CUS_ATTRCLASS_EXPLICIT) {
+	   if(req->attrs[i]->attr->type == CUS_ATTRTYPE_EXP_PSK) {
+	       psk = true;
+	       if (strcmp((char*) req->attrs[i]->attr->val, CUS_TEST_PSK_GOOD) == 0) {
+		   attrres = custos_createAttrRes(CUS_ATTRSTAT_ACCEPTED, req->attrs[i]->echo);
+		   accept = true;
+	       }
+	       else {
+		   attrres = custos_createAttrRes(CUS_ATTRSTAT_DENIED, req->attrs[i]->echo);
+	       }
 	   }
 	   else {
-	       attrres = custos_createAttrRes(CUS_ATTRSTAT_DENIED, req->attrs[i]->echo);
+	       attrres = custos_createAttrRes(CUS_ATTRSTAT_IGNORED, req->attrs[i]->echo);
 	   }
        }
        else {
@@ -1033,8 +1019,8 @@ extern custosRes_t* custos_getRes(const custosReq_t* req) {
    /* Add PSK Attribute if not sent */
    if(!psk) {
 
-       attr = custos_createAttr(CUS_ATTRTYPE_EXPLICIT, CUS_ATTRCLASS_DIRECT,
-				CUS_ATTRID_PSK, 0, 0, NULL);
+       attr = custos_createAttr(CUS_ATTRCLASS_EXPLICIT, CUS_ATTRTYPE_EXP_PSK,
+				0, 0, NULL);
        if(!attr) {
 #ifdef DEBUG
 	   fprintf(stderr, "ERROR custos_getRes: custos_createAttr() failed\n");

@@ -33,10 +33,10 @@ typedef enum custosResStatus {
     CUS_RESSTAT_ACCEPTED = 0,
     CUS_RESSTAT_DENIED,
     CUS_RESSTAT_ERROR,
-    CUS_RESSTAT_MAX,
+    CUS_RESSTAT_MAX
 } custosResStatus_t;
 
-typedef enum custosAttrStatus {
+typedef enum custosAttrResStatus {
     CUS_ATTRSTAT_ACCEPTED = 0,
     CUS_ATTRSTAT_DENIED,
     CUS_ATTRSTAT_REQUIRED,
@@ -45,36 +45,29 @@ typedef enum custosAttrStatus {
     CUS_ATTRSTAT_MAX
 } custosAttrStatus_t;
 
-typedef enum custosKeyStatus {
+typedef enum custosKeyResStatus {
     CUS_KEYSTAT_ACCEPTED = 0,
     CUS_KEYSTAT_DENIED,
-    CUS_KEYSTAT_MAX,
+    CUS_KEYSTAT_MAX
 } custosKeyStatus_t;
 
-typedef enum custosAttrType {
-    CUS_ATTRTYPE_IMPLICIT = 0,
-    CUS_ATTRTYPE_EXPLICIT,
-    CUS_ATTRTYPE_MAX,
-} custosAttrType_t;
-
 typedef enum custosAttrClass {
-    CUS_ATTRCLASS_DIRECT = 0,
-    CUS_ATTRCLASS_NETWORKID,
-    CUS_ATTRCLASS_CLIENTID,
-    CUS_ATTRCLASS_MAX,
+    CUS_ATTRCLASS_IMPLICIT = 0,
+    CUS_ATTRCLASS_EXPLICIT,
+    CUS_ATTRCLASS_MAX
 } custosAttrClass_t;
 
-typedef enum custosAttrID {
-    CUS_ATTRID_PSK = 0,
-    CUS_ATTRID_SOURCEIP,
-    CUS_ATTRID_CLIENTCERT,
-    CUS_ATTRID_MAX,
-} custosAttrID_t;
+typedef enum custosAttrType {
+    CUS_ATTRTYPE_EXP_PSK = 0,
+    CUS_ATTRTYPE_EXP_MAX,
+    CUS_ATTRTYPE_IMP_SOURCEIP = 0,
+    CUS_ATTRTYPE_IMP_CLIENTCERT,
+    CUS_ATTRTYPE_IMP_MAX
+} custosAttrType_t;
 
 typedef struct custosAttr {
-    custosAttrType_t   type;
     custosAttrClass_t  class;
-    custosAttrID_t     id;
+    custosAttrType_t   type;
     size_t             index;
     size_t             size;
     uint8_t*           val;
@@ -130,17 +123,15 @@ typedef struct custosRes {
 
 
 /* custosAttr Functions */
-extern custosAttr_t* custos_createAttr(const custosAttrType_t type,
-				       const custosAttrClass_t class,
-				       const custosAttrID_t id,
+extern custosAttr_t* custos_createAttr(const custosAttrClass_t class,
+				       const custosAttrType_t type,
 				       const size_t index,
 				       const size_t size, const uint8_t* val);
 extern int custos_destroyAttr(custosAttr_t** attrp);
 extern custosAttr_t* custos_duplicateAttr(const custosAttr_t* attr, bool echo);
 extern int custos_updateAttr(custosAttr_t* attr,
-			     const custosAttrType_t type,
 			     const custosAttrClass_t class,
-			     const custosAttrID_t id,
+			     const custosAttrType_t type,
 			     const size_t index,
 			     const size_t size, const uint8_t* val);
 

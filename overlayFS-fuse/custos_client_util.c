@@ -55,9 +55,8 @@ int custos_printAttr(custosAttr_t* attr, uint offset, FILE* stream) {
 	return -EINVAL;
     }
 
-    fprintf(stream, "%*s" "attr->type    = %d\n",   offset, "", attr->type);
     fprintf(stream, "%*s" "attr->class   = %d\n",   offset, "", attr->class);
-    fprintf(stream, "%*s" "attr->id      = %d\n",   offset, "", attr->id);
+    fprintf(stream, "%*s" "attr->type    = %d\n",   offset, "", attr->type);
     fprintf(stream, "%*s" "attr->index   = %zd\n",  offset, "", attr->index);
     fprintf(stream, "%*s" "attr->size    = %zd\n",  offset, "", attr->size);
     fprintf(stream, "%*s" "attr->val     = %p\n",   offset, "", attr->val);
@@ -327,7 +326,6 @@ int main(int argc, char* argv[]) {
 
     (void) argc;
 
-    //int ret;
     uuid_t uuid;
     custosReq_t*     req     = NULL;
     custosKey_t*     key     = NULL;
@@ -394,7 +392,7 @@ int main(int argc, char* argv[]) {
     }
 
     /* Add attr to request */
-    attr = custos_createAttr(CUS_ATTRTYPE_EXPLICIT, CUS_ATTRCLASS_DIRECT, CUS_ATTRID_PSK, 0,
+    attr = custos_createAttr(CUS_ATTRCLASS_EXPLICIT, CUS_ATTRTYPE_EXP_PSK, 0,
 			     (strlen(BAD_PSK) + 1), (uint8_t*) BAD_PSK);
     if(!attr) {
 	fprintf(stderr, "ERROR %s: custos_createAttr() failed\n", argv[0]);
@@ -445,7 +443,7 @@ int main(int argc, char* argv[]) {
 
     /* Update attr in request */
     if(custos_updateAttr(attr,
-			 CUS_ATTRTYPE_EXPLICIT, CUS_ATTRCLASS_DIRECT, CUS_ATTRID_PSK, 0,
+			 CUS_ATTRCLASS_EXPLICIT, CUS_ATTRTYPE_EXP_PSK, 0,
 			 (strlen(CUS_TEST_PSK_GOOD) + 1), (uint8_t*) CUS_TEST_PSK_GOOD) < 0) {
 	fprintf(stderr, "ERROR %s: custos_updateAttr() failed\n", argv[0]);
 	return EXIT_FAILURE;
