@@ -22,7 +22,7 @@
 
 #include "http-util.h"
 
-#define CUS_TEST_PSK_GOOD "password"
+#define CUS_TEST_PSK_GOOD "swordfish"
 
 #define CUS_MAX_ATTRS 100
 #define CUS_MAX_KEYS 100
