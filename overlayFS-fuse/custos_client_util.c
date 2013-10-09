@@ -132,10 +132,10 @@ int custos_printKey(custosKey_t* key, uint offset, FILE* stream) {
 
     uuid_unparse(key->uuid, uuidstr);
 
-    fprintf(stream, "%*s" "key->uuid    = %s\n",          offset, "", uuidstr);
-    fprintf(stream, "%*s" "key->version = %" PRIu64 "\n", offset, "", key->version);
-    fprintf(stream, "%*s" "key->size    = %zd\n",         offset, "", key->size);
-    fprintf(stream, "%*s" "key->val     = %p\n",          offset, "", key->val);
+    fprintf(stream, "%*s" "key->uuid     = %s\n",          offset, "", uuidstr);
+    fprintf(stream, "%*s" "key->revision = %" PRIu64 "\n", offset, "", key->revision);
+    fprintf(stream, "%*s" "key->size     = %zd\n",         offset, "", key->size);
+    fprintf(stream, "%*s" "key->val      = %p\n",          offset, "", key->val);
 
     return RETURN_SUCCESS;
 

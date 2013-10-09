@@ -244,7 +244,7 @@ extern int custos_updateAttr(custosAttr_t* attr,
 /********* custosKey Functions *********/
 
 extern custosKey_t* custos_createKey(const uuid_t uuid,
-				     const uint64_t version,
+				     const uint64_t revision,
 				     const size_t size, const uint8_t* val) {
 
     /* Local vars */
@@ -272,7 +272,7 @@ extern custosKey_t* custos_createKey(const uuid_t uuid,
 
     /* Populate */
     uuid_copy(key->uuid, uuid);
-    key->version = version;
+    key->revision = revision;
     key->size = size;
 
     if((key->size) > 0) {
@@ -351,10 +351,10 @@ extern custosKey_t* custos_duplicateKey(const custosKey_t* key, bool echo) {
     }
 
     if(echo) {
-	out = custos_createKey(key->uuid, key->version, key->size, key->val);
+	out = custos_createKey(key->uuid, key->revision, key->size, key->val);
     }
     else {
-	out = custos_createKey(key->uuid, key->version, 0, NULL);
+	out = custos_createKey(key->uuid, key->revision, 0, NULL);
     }
     if(!out) {
 #ifdef DEBUG
@@ -370,7 +370,7 @@ extern custosKey_t* custos_duplicateKey(const custosKey_t* key, bool echo) {
 
 extern int custos_updateKey(custosKey_t* key,
 			    const uuid_t uuid,
-			    const uint64_t version,
+			    const uint64_t revision,
 			    const size_t size, const uint8_t* val) {
 
     /* Input Invariant Check */
@@ -389,7 +389,7 @@ extern int custos_updateKey(custosKey_t* key,
 
     /* Update Meta Fields */
     uuid_copy(key->uuid, uuid);
-    key->version = version;
+    key->revision = revision;
 
     /* Free old value */
     if(key->val) {
@@ -1075,7 +1075,7 @@ extern custosRes_t* custos_getRes(const custosReq_t* req) {
 	   return NULL;
        }
        if(accept) {
-	   if(custos_updateKey(key, req->keys[i]->key->uuid, req->keys[i]->key->version,
+	   if(custos_updateKey(key, req->keys[i]->key->uuid, req->keys[i]->key->revision,
 			       (strlen(CUS_TEST_KEY) + 1), (uint8_t*) CUS_TEST_KEY) < 0) {
 #ifdef DEBUG
 	       fprintf(stderr, "ERROR custos_getRes: custos_updateKey() failed\n");
@@ -1085,7 +1085,7 @@ extern custosRes_t* custos_getRes(const custosReq_t* req) {
 	   keyres = custos_createKeyRes(CUS_KEYSTAT_ACCEPTED, req->keys[i]->echo);
        }
        else {
-	   if(custos_updateKey(key, req->keys[i]->key->uuid, req->keys[i]->key->version,
+	   if(custos_updateKey(key, req->keys[i]->key->uuid, req->keys[i]->key->revision,
 			       0, NULL) < 0) {
 #ifdef DEBUG
 	       fprintf(stderr, "ERROR custos_getRes: custos_updateKey() failed\n");

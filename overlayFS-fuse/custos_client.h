@@ -93,7 +93,7 @@ typedef struct custosAttrRes {
 
 typedef struct custosKey {
     uuid_t   uuid;
-    uint64_t version;
+    uint64_t revision;
     size_t   size;
     uint8_t* val;
 } custosKey_t;
@@ -146,13 +146,13 @@ extern int custos_updateAttr(custosAttr_t* attr,
 
 /* custosKey Functions */
 extern custosKey_t* custos_createKey(const uuid_t uuid,
-				     const uint64_t version,
+				     const uint64_t revision,
 				     const size_t size, const uint8_t* val);
 extern int custos_destroyKey(custosKey_t** keyp);
 extern custosKey_t* custos_duplicateKey(const custosKey_t* key, bool echo);
 extern int custos_updateKey(custosKey_t* key,
 			    const uuid_t uuid,
-			    const uint64_t version,
+			    const uint64_t revision,
 			    const size_t size, const uint8_t* val);
 
 /* custosAttrReq Functions */
