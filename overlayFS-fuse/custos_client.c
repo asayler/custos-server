@@ -11,9 +11,8 @@
 
 #define DEBUG
 
-#define TEST_KEY "myfakekey"
+#define TEST_KEY "This is my fake pre-shared key!"
 
-#define RETURN_FAILURE -1
 #define RETURN_SUCCESS  0
 
 /********* custosAttr Functions *********/
