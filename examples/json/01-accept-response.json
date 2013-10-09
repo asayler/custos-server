@@ -8,42 +8,39 @@
 	"ResponseStatus": "accepted",
 	"ResponseAuthAttrs": [
 	    {
-		"AttrType": "explicit",
-		"AttrClass": "direct_provide",
-		"AttrID": "psk",
-		"AttrIndex": 0,
-		"AttrEcho": false,
-		"AttrValue": "",
 		"AttrReceived": true,
-		"AttrStatus": "accepted"
+		"AttrStatus": "accepted",
+		"AttrEcho": false,
+		"AttrClass": "explicit",
+		"AttrType": "psk",
+		"AttrIndex": 0,
+		"AttrValue": ""
 	    },
 	    {
-		"AttrType": "implicit",
-		"AttrClass": "network_id",
-		"AttrID": "source_ip",
-		"AttrIndex": 0,
-		"AttrEcho": false,
-		"AttrValue": "",
 		"AttrReceived": true,
 		"AttrStatus": "ignored"
+		"AttrEcho": false,
+		"AttrClass": "implicit",
+		"AttrType": "source_ip",
+		"AttrIndex": 0,
+		"AttrValue": ""
 	    },
 	    {
-		"AttrType": "implicit",
-		"AttrClass": "ssl_id",
-		"AttrID": "client_cert",
-		"AttrIndex": 0,
-		"AttrEcho": false,
-		"AttrValue": "",
 		"AttrReceived": false,
-		"AttrStatus": "optional"
+		"AttrStatus": "optional",
+		"AttrEcho": false,
+		"AttrClass": "implicit",
+		"AttrType": "ssl_cert_client",
+		"AttrIndex": 0,
+		"AttrValue": ""
 	    }
 	],
 	"ResponseKey": [
 	    {
+		"KeyStatus": "accepted",
+		"KeyEcho": false,
 		"KeyUUID": "7af8c95d-479a-46fe-b5de-8574c6ca1369",
-		"KeyVersion": "",
 		"KeyRevision": "",
-		"KeySize": 17,
 		"KeyVal": "ThisIsNotARealKey"
 	    }
 	]

@@ -6,24 +6,23 @@
 	"RequestID": "",
 	"RequestAuthAttrs": [
 	    {
-		"AttrType": "explicit",
-		"AttrClass": "direct_provide",
-		"AttrID": "psk",
-		"AttrIndex": 0,
 		"AttrEcho": false,
+		"AttrClass": "explicit",
+		"AttrType": "psk",
+		"AttrIndex": 0,
 		"AttrValue": "CorrectHorseBatteryStaple"
 	    }
 	],
 	"RequestKeys": [
 	    {
+		"KeyEcho": false,
 		"KeyUUID": "7af8c95d-479a-46fe-b5de-8574c6ca1369",
-		"KeyVersion": "",
 		"KeyRevision": ""
 	    }
 	]
     },
     "Checksums": {
 	"md5" : "",
-	"sha1" : ""
+	"sha512" : ""
     }
 }
