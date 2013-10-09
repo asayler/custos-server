@@ -18,7 +18,7 @@
 	    },
 	    {
 		"AttrReceived": true,
-		"AttrStatus": "ignored"
+		"AttrStatus": "ignored",
 		"AttrEcho": false,
 		"AttrClass": "implicit",
 		"AttrType": "source_ip",
