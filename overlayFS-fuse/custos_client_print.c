@@ -11,31 +11,64 @@
 
 #define DEBUG
 
-#define RETURN_FAILURE -1
 #define RETURN_SUCCESS  0
 
-char* custos_stringifyVal(size_t size, uint8_t* val) {
+int custos_printVal(size_t size, uint8_t* val, uint offset, FILE* stream) {
 
-    char* out = NULL;
+    int i;
+    size_t valitr = 0;
 
-    if(!size) {
-	out = strdup("");
-	return out;
-    }
-
-    if(!val) {
+    if(size && !val) {
 #ifdef DEBUG
-	fprintf(stderr, "ERROR custos_printAttr: 'val' must not be NULL\n");
+	fprintf(stderr, "ERROR custos_printAttr: 'val' must not be NULL when size > 0\n");
 #endif
-	errno = EINVAL;
-	return NULL;
+	return -EINVAL;
     }
 
-    return out;
+    while(valitr < size) {
+	fprintf(stream, "%*s",   offset, "");
+	fprintf(stream, "%4zd |", valitr);
+	for(i = 0; i < CUS_PRINT_VAL_LINELEN; i++) {
+	    if((valitr % CUS_PRINT_VAL_LINEGAP) == 0) {
+		fprintf(stream, " ");
+	    }
+	    if(valitr < size) {
+		fprintf(stream, "%2.2" PRIx8  " ", val[valitr]);
+	    }
+	    else {
+		fprintf(stream, "   ");
+	    }
+	    valitr += 1;
+	}
+	valitr -= CUS_PRINT_VAL_LINELEN;
+	fprintf(stream, "|");
+	for(i = 0; i < CUS_PRINT_VAL_LINELEN; i++) {
+	    if((valitr % CUS_PRINT_VAL_LINEGAP) == 0) {
+		fprintf(stream, " ");
+	    }
+	    if(valitr < size) {
+		if(isprint(val[valitr])) {
+		    fprintf(stream, "%c", (char) val[valitr]);
+		}
+		else {
+		    fprintf(stream, ".");
+		}
+	    }
+	    else {
+		fprintf(stream, " ");
+	    }
+	    valitr += 1;
+	}
+	fprintf(stream, "\n");
+    }
+
+    return RETURN_SUCCESS;
 
 }
 
 int custos_printAttr(custosAttr_t* attr, uint offset, FILE* stream) {
+
+    int ret;
 
     if(!attr) {
 #ifdef DEBUG
@@ -49,8 +82,17 @@ int custos_printAttr(custosAttr_t* attr, uint offset, FILE* stream) {
     fprintf(stream, "%*s" "attr->index   = %zd\n",  offset, "", attr->index);
     fprintf(stream, "%*s" "attr->size    = %zd\n",  offset, "", attr->size);
     fprintf(stream, "%*s" "attr->val     = %p\n",   offset, "", attr->val);
+    if(attr->val) {
+	ret = custos_printVal(attr->size, attr->val, (offset + CUS_PRINT_OFFSET), stream);
+	if(ret < 0) {
+#ifdef DEBUG
+	    fprintf(stderr, "ERROR custos_printAttr: custos_printVal() failed\n");
+#endif
+	    return ret;
+	}
+    }
 
-return RETURN_SUCCESS;
+    return RETURN_SUCCESS;
 
 }
 
@@ -113,6 +155,7 @@ int custos_printAttrRes(custosAttrRes_t* attrres, uint offset, FILE* stream) {
 
 int custos_printKey(custosKey_t* key, uint offset, FILE* stream) {
 
+    int ret;
     char uuidstr[37];
 
     if(!key) {
@@ -128,6 +171,15 @@ int custos_printKey(custosKey_t* key, uint offset, FILE* stream) {
     fprintf(stream, "%*s" "key->revision = %" PRIu64 "\n", offset, "", key->revision);
     fprintf(stream, "%*s" "key->size     = %zd\n",         offset, "", key->size);
     fprintf(stream, "%*s" "key->val      = %p\n",          offset, "", key->val);
+    if(key->val) {
+	ret = custos_printVal(key->size, key->val, (offset + CUS_PRINT_OFFSET), stream);
+	if(ret < 0) {
+#ifdef DEBUG
+	    fprintf(stderr, "ERROR custos_printAttr: custos_printVal() failed\n");
+#endif
+	    return ret;
+	}
+    }
 
     return RETURN_SUCCESS;
 

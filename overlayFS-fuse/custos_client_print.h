@@ -8,6 +8,7 @@
  */
 
 #include <inttypes.h>
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -17,8 +18,10 @@
 #include "custos_client.h"
 
 #define CUS_PRINT_OFFSET 4
+#define CUS_PRINT_VAL_LINELEN 8
+#define CUS_PRINT_VAL_LINEGAP 8
 
-char* custos_stringifyVal(size_t size, uint8_t* val);
+int custos_printVal(size_t size, uint8_t* val, uint offset, FILE* stream);
 
 int custos_printAttr(custosAttr_t* attr, uint offset, FILE* stream);
 int custos_printAttrReq(custosAttrReq_t* attrreq, uint offset, FILE* stream);
