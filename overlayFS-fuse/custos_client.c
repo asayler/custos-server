@@ -17,7 +17,7 @@
 
 
 /* Private Prototypes */
-extern json_object* custos_ReqToJson(const custosReq_t* req) {
+extern json_object* custos_reqToJson(const custosReq_t* req) {
 
     json_object* reqjson = NULL;
 

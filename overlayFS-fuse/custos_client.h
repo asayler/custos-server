@@ -180,6 +180,6 @@ extern int custos_updateResAddAttrRes(custosRes_t* res, custosAttrRes_t* attrres
 extern int custos_updateResAddKeyRes(custosRes_t* res, custosKeyRes_t* keyres);
 
 /* JSON */
-extern json_object* custos_ReqToJson(const custosReq_t* req);
+extern json_object* custos_reqToJson(const custosReq_t* req);
 
 #endif

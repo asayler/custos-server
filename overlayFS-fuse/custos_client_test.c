@@ -71,7 +71,7 @@ int main(int argc, char* argv[]) {
 
     /* Print Request Json */
     fprintf(stdout, "******* First  Request Json *******\n");
-    reqjson = custos_ReqToJson(req);
+    reqjson = custos_reqToJson(req);
     if(!reqjson) {
 	fprintf(stderr, "ERROR %s: custos_ReqToJson() failed\n", argv[0]);
 	return EXIT_FAILURE;
@@ -83,8 +83,6 @@ int main(int argc, char* argv[]) {
     }
     fprintf(stdout, "%s\n", reqstr);
     fprintf(stdout, "\n");
-    //free(reqstr);
-    reqstr = NULL;
     json_object_put(reqjson);
     reqjson = NULL;
 
