@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <stdbool.h>
 
 #include "http-util.h"
 
@@ -75,6 +76,14 @@ long httpGet(const char* uri, HttpData_t* res) {
     if(ret) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR httpGet: curl_easy_setopt(CURLOPT_URL) failed - %s\n",
+		curl_easy_strerror(ret));
+#endif
+	goto EXIT_1;
+    }
+    ret = curl_easy_setopt(curl, CURLOPT_HTTPGET, true);
+    if(ret) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR httpGet: curl_easy_setopt(CURLOPT_HTTPGET) failed - %s\n",
 		curl_easy_strerror(ret));
 #endif
 	goto EXIT_1;
