@@ -19,7 +19,9 @@
 /* Private Prototypes */
 extern json_object* custos_reqToJson(const custosReq_t* req) {
 
-    json_object* reqjson = NULL;
+    json_object* reqjson   = NULL;
+    json_object* reqobj    = NULL;
+    json_object* checkobj  = NULL;
 
    if(!req) {
 #ifdef DEBUG
@@ -43,7 +45,16 @@ extern json_object* custos_reqToJson(const custosReq_t* req) {
 	return NULL;
     }
 
-    json_object_object_add(reqjson, "RequestVersion", json_object_new_string(req->version));
+    reqobj = json_object_new_object();
+    json_object_object_add(reqobj, "Version", json_object_new_string(req->version));
+
+    checkobj = json_object_new_object();
+    json_object_object_add(checkobj, "md5", json_object_new_string(""));
+    json_object_object_add(checkobj, "sha256", json_object_new_string(""));
+    json_object_object_add(checkobj, "sha512", json_object_new_string(""));
+
+    json_object_object_add(reqjson, "Request", reqobj);
+    json_object_object_add(reqjson, "Checksums", checkobj);
 
     return reqjson;
 
