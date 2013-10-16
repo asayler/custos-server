@@ -71,7 +71,7 @@ int main(int argc, char* argv[]) {
 
     /* Print Request Json */
     fprintf(stdout, "******* First  Request Json *******\n");
-    reqjson = custos_reqToJson(req);
+    reqjson = custos_ReqToJson(req);
     if(!reqjson) {
 	fprintf(stderr, "ERROR %s: custos_ReqToJson() failed\n", argv[0]);
 	return EXIT_FAILURE;
@@ -136,6 +136,23 @@ int main(int argc, char* argv[]) {
     }
     fprintf(stdout, "\n");
 
+    /* Print Request Json */
+    fprintf(stdout, "******* First  Request Json *******\n");
+    reqjson = custos_ReqToJson(req);
+    if(!reqjson) {
+	fprintf(stderr, "ERROR %s: custos_ReqToJson() failed\n", argv[0]);
+	return EXIT_FAILURE;
+    }
+    reqstr = json_object_to_json_string(reqjson);
+    if(!reqstr) {
+	fprintf(stderr, "ERROR %s: json_object_to_json_string() failed\n", argv[0]);
+	return EXIT_FAILURE;
+    }
+    fprintf(stdout, "%s\n", reqstr);
+    fprintf(stdout, "\n");
+    json_object_put(reqjson);
+    reqjson = NULL;
+
     /* Get Response - 2nd Attempt - Fails */
     res = custos_getRes(req);
     if(!res) {
@@ -172,6 +189,23 @@ int main(int argc, char* argv[]) {
 	return EXIT_FAILURE;
     }
     fprintf(stdout, "\n");
+
+    /* Print Request Json */
+    fprintf(stdout, "******* First  Request Json *******\n");
+    reqjson = custos_ReqToJson(req);
+    if(!reqjson) {
+	fprintf(stderr, "ERROR %s: custos_ReqToJson() failed\n", argv[0]);
+	return EXIT_FAILURE;
+    }
+    reqstr = json_object_to_json_string(reqjson);
+    if(!reqstr) {
+	fprintf(stderr, "ERROR %s: json_object_to_json_string() failed\n", argv[0]);
+	return EXIT_FAILURE;
+    }
+    fprintf(stdout, "%s\n", reqstr);
+    fprintf(stdout, "\n");
+    json_object_put(reqjson);
+    reqjson = NULL;
 
    /* Get Response - 3rd Attempt - Succeeds */
     res = custos_getRes(req);

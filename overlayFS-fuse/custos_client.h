@@ -57,13 +57,18 @@ typedef enum custosAttrClass {
     CUS_ATTRCLASS_MAX
 } custosAttrClass_t;
 
+#define CUS_ATTRCLASS_IMPLICIT_STR "implicit"
+#define CUS_ATTRCLASS_EXPLICIT_STR "explicit"
+
 typedef enum custosAttrType {
     CUS_ATTRTYPE_EXP_PSK = 0,
     CUS_ATTRTYPE_EXP_MAX,
     CUS_ATTRTYPE_IMP_SOURCEIP = 0,
-    CUS_ATTRTYPE_IMP_CLIENTCERT,
     CUS_ATTRTYPE_IMP_MAX
 } custosAttrType_t;
+
+#define CUS_ATTRTYPE_EXP_PSK_STR        "psk"
+#define CUS_ATTRTYPE_IMP_SOURCEIP_STR   "ip_source"
 
 typedef struct custosAttr {
     custosAttrClass_t  class;
@@ -135,6 +140,10 @@ extern int custos_updateAttr(custosAttr_t* attr,
 			     const size_t index,
 			     const size_t size, const uint8_t* val);
 
+extern const char* custos_AttrClassToStr(const custosAttrClass_t class);
+extern const char* custos_AttrTypeToStr(const custosAttrClass_t class,
+					const custosAttrType_t type);
+
 /* custosKey Functions */
 extern custosKey_t* custos_createKey(const uuid_t uuid,
 				     const uint64_t revision,
@@ -180,6 +189,8 @@ extern int custos_updateResAddAttrRes(custosRes_t* res, custosAttrRes_t* attrres
 extern int custos_updateResAddKeyRes(custosRes_t* res, custosKeyRes_t* keyres);
 
 /* JSON */
-extern json_object* custos_reqToJson(const custosReq_t* req);
+extern json_object* custos_ReqToJson(const custosReq_t* req);
+extern json_object* custos_KeyReqToJson(const custosKeyReq_t* keyreq);
+extern json_object* custos_AttrReqToJson(const custosAttrReq_t* attrreq);
 
 #endif

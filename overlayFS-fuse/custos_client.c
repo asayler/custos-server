@@ -15,48 +15,190 @@
 
 #define RETURN_SUCCESS  0
 
+/********* JSON Functions *********/
 
-/* Private Prototypes */
-extern json_object* custos_reqToJson(const custosReq_t* req) {
+extern json_object* custos_AttrReqToJson(const custosAttrReq_t* attrreq) {
 
-    json_object* reqjson   = NULL;
-    json_object* reqobj    = NULL;
-    json_object* checkobj  = NULL;
+    json_object* json = NULL;
+    const char* classStr = NULL;
+    const char* typeStr = NULL;
 
-   if(!req) {
+    /* Validate Input */
+    if(!attrreq) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_AttrReqToJson: 'attrreq' must not be NULL\n");
+#endif
+	return NULL;
+    }
+    if(!(attrreq->attr)) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_AttrReqToJson: 'attrreq->key' must not be NULL\n");
+#endif
+	return NULL;
+    }
+
+    /* Process Top Level Object */
+    json = json_object_new_object();
+    if(!json) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_AttrReqToJson: json_object_new_object() failed\n");
+#endif
+	return NULL;
+    }
+    json_object_object_add(json, "Echo",  json_object_new_boolean(attrreq->echo));
+    classStr = custos_AttrClassToStr(attrreq->attr->class);
+    json_object_object_add(json, "Class", json_object_new_string(classStr));
+    typeStr = custos_AttrTypeToStr(attrreq->attr->class, attrreq->attr->type);
+    json_object_object_add(json, "Type",  json_object_new_string(typeStr));
+    json_object_object_add(json, "Index", json_object_new_int64(attrreq->attr->index));
+    json_object_object_add(json, "Val",   json_object_new_string(""));
+
+    return json;
+}
+
+extern json_object* custos_KeyReqToJson(const custosKeyReq_t* keyreq) {
+
+    json_object* json = NULL;
+    char uuidstr[37]  = "";
+
+    /* Validate Input */
+    if(!keyreq) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_KeyReqToJson: 'keyreq' must not be NULL\n");
+#endif
+	return NULL;
+    }
+    if(!(keyreq->key)) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_KeyReqToJson: 'keyreq->key' must not be NULL\n");
+#endif
+	return NULL;
+    }
+
+    /* Process Top Level Object */
+    json = json_object_new_object();
+    if(!json) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_KeyReqToJson: json_object_new_object() failed\n");
+#endif
+	return NULL;
+    }
+    json_object_object_add(json, "Echo", json_object_new_boolean(keyreq->echo));
+    uuid_unparse(keyreq->key->uuid, uuidstr);
+    json_object_object_add(json, "UUID", json_object_new_string(uuidstr));
+    json_object_object_add(json, "Revision", json_object_new_int64(keyreq->key->revision));
+    json_object_object_add(json, "Val", json_object_new_string(""));
+
+    return json;
+}
+
+extern json_object* custos_ReqToJson(const custosReq_t* req) {
+
+    size_t i;
+    json_object* keyreqobj  = NULL;
+    json_object* keysobj    = NULL;
+    json_object* attrreqobj = NULL;
+    json_object* attrsobj   = NULL;
+    json_object* reqobj     = NULL;
+    json_object* checkobj   = NULL;
+    json_object* json       = NULL;
+
+    /* Validate Args */
+    if(!req) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_ReqToJson: 'req' must not be NULL\n");
 #endif
 	return NULL;
-   }
-
-   if(!(req->version)) {
+    }
+    if(!(req->version)) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_ReqToJson: 'req->version' must not be NULL\n");
+#endif
+	return NULL;
+    }
+    if(!(req->target)) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_ReqToJson: 'req->version' must not be NULL\n");
 #endif
 	return NULL;
    }
 
-    reqjson = json_object_new_object();
-    if(!reqjson) {
+    /* Process Attrs */
+    attrsobj = json_object_new_array();
+    if(!attrsobj) {
 #ifdef DEBUG
-	fprintf(stderr, "ERROR custos_makeReqJson: json_object_new_object() failed\n");
+	fprintf(stderr, "ERROR custos_ReqToJson: json_object_new_array() failed\n");
 #endif
 	return NULL;
     }
+    for(i = 0; i < req->num_attrs; i++) {
+	attrreqobj = custos_AttrReqToJson(req->attrs[i]);
+	if(!attrreqobj) {
+#ifdef DEBUG
+	    fprintf(stderr, "ERROR custos_ReqToJson: custos_AttrReqToJson() failed\n");
+#endif
+	    return NULL;
+	}
+	json_object_array_add(attrsobj, attrreqobj);
+    }
 
+    /* Process Keys */
+    keysobj = json_object_new_array();
+    if(!keysobj) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_ReqToJson: json_object_new_array() failed\n");
+#endif
+	return NULL;
+    }
+    for(i = 0; i < req->num_keys; i++) {
+	keyreqobj = custos_KeyReqToJson(req->keys[i]);
+	if(!keyreqobj) {
+#ifdef DEBUG
+	    fprintf(stderr, "ERROR custos_ReqToJson: custos_KeyReqToJson() failed\n");
+#endif
+	    return NULL;
+	}
+	json_object_array_add(keysobj, keyreqobj);
+    }
+
+    /* Process Request */
     reqobj = json_object_new_object();
+    if(!reqobj) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_ReqToJson: json_object_new_object() failed\n");
+#endif
+	return NULL;
+    }
+    json_object_object_add(reqobj, "Target",  json_object_new_string(req->target));
     json_object_object_add(reqobj, "Version", json_object_new_string(req->version));
+    json_object_object_add(reqobj, "ReqID",   json_object_new_string(""));
+    json_object_object_add(reqobj, "Attrs",   attrsobj);
+    json_object_object_add(reqobj, "Keys",    keysobj);
 
+    /* Process Checksums */
     checkobj = json_object_new_object();
+    if(!checkobj) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_ReqToJson: json_object_new_object() failed\n");
+#endif
+	return NULL;
+    }
     json_object_object_add(checkobj, "md5", json_object_new_string(""));
     json_object_object_add(checkobj, "sha256", json_object_new_string(""));
     json_object_object_add(checkobj, "sha512", json_object_new_string(""));
 
-    json_object_object_add(reqjson, "Request", reqobj);
-    json_object_object_add(reqjson, "Checksums", checkobj);
+    /* Process Top Level Object */
+    json = json_object_new_object();
+    if(!json) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_ReqToJson: json_object_new_object() failed\n");
+#endif
+	return NULL;
+    }
+    json_object_object_add(json, "Request", reqobj);
+    json_object_object_add(json, "Checksums", checkobj);
 
-    return reqjson;
+    return json;
 
 }
 
@@ -265,6 +407,54 @@ extern int custos_updateAttr(custosAttr_t* attr,
 
 }
 
+extern const char* custos_AttrClassToStr(const custosAttrClass_t class) {
+
+    switch(class) {
+    case CUS_ATTRCLASS_IMPLICIT:
+	return CUS_ATTRCLASS_IMPLICIT_STR;
+    case CUS_ATTRCLASS_EXPLICIT:
+	return CUS_ATTRCLASS_EXPLICIT_STR;
+    default:
+#ifdef DEBUG
+	    fprintf(stderr, "ERROR custos_AttrClassToStr: Unrecognized class\n");
+#endif
+	return NULL;
+    }
+
+}
+
+extern const char* custos_AttrTypeToStr(const custosAttrClass_t class,
+					const custosAttrType_t type) {
+
+    switch(class) {
+    case CUS_ATTRCLASS_IMPLICIT:
+	switch(type) {
+	case CUS_ATTRTYPE_IMP_SOURCEIP:
+	    return CUS_ATTRTYPE_IMP_SOURCEIP_STR;
+	default:
+#ifdef DEBUG
+	    fprintf(stderr, "ERROR custos_AttrClassToStr: Unrecognized implicit type\n");
+#endif
+	    return NULL;
+	}
+    case CUS_ATTRCLASS_EXPLICIT:
+	switch(type) {
+	case CUS_ATTRTYPE_EXP_PSK:
+	    return CUS_ATTRTYPE_EXP_PSK_STR;
+	default:
+#ifdef DEBUG
+	    fprintf(stderr, "ERROR custos_AttrClassToStr: Unrecognized explicit type\n");
+#endif
+	    return NULL;
+	}
+    default:
+#ifdef DEBUG
+	    fprintf(stderr, "ERROR custos_AttrClassToStr: Unrecognized class\n");
+#endif
+	return NULL;
+    }
+
+}
 
 /********* custosKey Functions *********/
 
