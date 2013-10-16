@@ -15,6 +15,40 @@
 
 #define RETURN_SUCCESS  0
 
+
+/* Private Prototypes */
+extern json_object* custos_ReqToJson(const custosReq_t* req) {
+
+    json_object* reqjson = NULL;
+
+   if(!req) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_ReqToJson: 'req' must not be NULL\n");
+#endif
+	return NULL;
+   }
+
+   if(!(req->version)) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_ReqToJson: 'req->version' must not be NULL\n");
+#endif
+	return NULL;
+   }
+
+    reqjson = json_object_new_object();
+    if(!reqjson) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_makeReqJson: json_object_new_object() failed\n");
+#endif
+	return NULL;
+    }
+
+    json_object_object_add(reqjson, "RequestVersion", json_object_new_string(req->version));
+
+    return reqjson;
+
+}
+
 /********* custosAttr Functions *********/
 
 extern custosAttr_t* custos_createAttr(const custosAttrClass_t class,

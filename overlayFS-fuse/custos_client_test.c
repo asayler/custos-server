@@ -30,6 +30,8 @@ int main(int argc, char* argv[]) {
     custosAttr_t*    attr    = NULL;
     custosAttrReq_t* attrreq = NULL;
     custosRes_t*     res     = NULL;
+    json_object*     reqjson = NULL;
+    const char*      reqstr  = NULL;
 
     /* Setup a new request */
     req = custos_createReq("http://test.com");
@@ -66,6 +68,25 @@ int main(int argc, char* argv[]) {
 	return EXIT_FAILURE;
     }
     fprintf(stdout, "\n");
+
+    /* Print Request Json */
+    fprintf(stdout, "******* First  Request Json *******\n");
+    reqjson = custos_ReqToJson(req);
+    if(!reqjson) {
+	fprintf(stderr, "ERROR %s: custos_ReqToJson() failed\n", argv[0]);
+	return EXIT_FAILURE;
+    }
+    reqstr = json_object_to_json_string(reqjson);
+    if(!reqstr) {
+	fprintf(stderr, "ERROR %s: json_object_to_json_string() failed\n", argv[0]);
+	return EXIT_FAILURE;
+    }
+    fprintf(stdout, "%s\n", reqstr);
+    fprintf(stdout, "\n");
+    //free(reqstr);
+    reqstr = NULL;
+    json_object_put(reqjson);
+    reqjson = NULL;
 
     /* Get Response - 1st Attempt - Fails */
     res = custos_getRes(req);

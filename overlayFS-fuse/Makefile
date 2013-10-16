@@ -78,7 +78,7 @@ aes-crypt-util: aes-crypt-util.o aes-crypt.o
 	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSOPENSSL)
 
 custos_client_test: custos_client_test.o custos_client.o custos_client_print.o
-	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSUUID)
+	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSCURL) $(LLIBSJSON) $(LLIBSUUID)
 
 http-test: http-test.o http-util.o
 	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSCURL)
