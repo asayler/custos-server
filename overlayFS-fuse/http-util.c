@@ -12,35 +12,44 @@
 
 size_t writeCurlData(char* input, size_t size, size_t nmemb, void* output);
 
-long httpGet(const char* uri, HttpData_t* res) {
+int httpInit() {
 
-    CURL* curl;
     CURLcode ret;
-    long resCode;
 
-    if(uri == NULL) {
-#ifdef DEBUG
-	fprintf(stderr, "ERROR httpGet: uri may not be NULL\n");
-#endif
-	return -EINVAL;
-    }
-
-    /* Initialize Curl */
+/* Initialize Curl */
+/* Not thread safe */
     ret = curl_global_init(CURL_GLOBAL_SSL);
     if(ret) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR httpGet: curl_global_init failed - %s\n",
 		curl_easy_strerror(ret));
 #endif
-	goto EXIT_0;
+	return RETURN_FAILURE;
     }
+
+    return RETURN_SUCCESS;
+
+}
+
+long httpGet(const char* uri, HttpData_t* res) {
+
+    CURLcode ret;
+    CURL* curl;
+    long resCode;
+
     curl = curl_easy_init();
     if(!curl) {
 #ifdef DEBUG
-	fprintf(stderr, "ERROR httpGet: curl_easy_init failed - %s\n",
-		curl_easy_strerror(ret));
-#endif      
+	fprintf(stderr, "ERROR httpGet: curl_easy_init failed\n");
+#endif
  	goto EXIT_0;
+    }
+
+    if(uri == NULL) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR httpGet: uri may not be NULL\n");
+#endif
+	return -EINVAL;
     }
 
     /* Set Callback Options */
@@ -51,7 +60,7 @@ long httpGet(const char* uri, HttpData_t* res) {
 		curl_easy_strerror(ret));
 #endif
 	goto EXIT_1;
-    }    
+    }
     ret = curl_easy_setopt(curl, CURLOPT_WRITEDATA, res);
     if(ret) {
 #ifdef DEBUG
@@ -59,7 +68,7 @@ long httpGet(const char* uri, HttpData_t* res) {
 		curl_easy_strerror(ret));
 #endif
 	goto EXIT_1;
-    }    
+    }
 
     /* Set Request Options */
     ret = curl_easy_setopt(curl, CURLOPT_URL, uri);
@@ -130,16 +139,16 @@ long httpGet(const char* uri, HttpData_t* res) {
 
  EXIT_1:
 
-    curl_easy_cleanup(curl);    
+    curl_easy_cleanup(curl);
 
  EXIT_0:
-    
+
     return RETURN_FAILURE;
 
 }
 
 size_t writeCurlData(char* input, size_t size, size_t nmemb, void* output) {
-    
+
     HttpData_t* outData = output;
     size_t fullSize = size * nmemb;
 
@@ -149,7 +158,7 @@ size_t writeCurlData(char* input, size_t size, size_t nmemb, void* output) {
 	perror(         "------------------->");
 	return 0;
     }
-    
+
     memcpy(&(outData->data[outData->size]), input, fullSize);
     outData->size += fullSize;
 

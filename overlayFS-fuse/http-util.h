@@ -9,4 +9,5 @@ typedef struct HttpData {
     size_t size;
 } HttpData_t;
 
+int httpInit();
 long httpGet(const char* uri, HttpData_t* res);

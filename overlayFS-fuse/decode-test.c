@@ -26,6 +26,12 @@ int main(int argc, char* argv[]) {
     tok = NULL;
     jobj = NULL;
 
+    /* Initialize Libs */
+    if(httpInit() < 0) {
+	fprintf(stderr, "httpInit() failed\n");
+	exit(EXIT_FAILURE);
+    }
+
     /* Make Request */
     resCode = httpGet(URI, &res);
     if(resCode != 200) {
