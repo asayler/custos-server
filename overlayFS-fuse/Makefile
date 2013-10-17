@@ -78,10 +78,10 @@ xattr-util: xattr-util.o
 aes-crypt-util: aes-crypt-util.o aes-crypt.o
 	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSOPENSSL)
 
-custos_client_test: custos_client_test.o custos_client.o custos_client_print.o
-	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSCURL) $(LLIBSJSON) $(LLIBSUUID)
+custos_client_test: custos_client_test.o custos_client.o custos_client_print.o http-util.o json-util.o ../libb64-1.2.1/src/libb64.a
+	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSCURL) $(LLIBSJSON) $(LLIBSUUID) $(LLIBSB64)
 
-http-test: http-test.o http-util.o
+http-test: http-test.o http-util.o ../libb64-1.2.1/src/libb64.a
 	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSCURL) $(LLIBSB64)
 
 curl-test: curl-test.o
@@ -90,8 +90,8 @@ curl-test: curl-test.o
 json-test: json-test.o json-util.o
 	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSJSON)
 
-decode-test: decode-test.o json-util.o http-util.o
-	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSJSON) $(LLIBSCURL)
+decode-test: decode-test.o json-util.o http-util.o ../libb64-1.2.1/src/libb64.a
+	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSJSON) $(LLIBSCURL) $(LLIBSB64)
 
 fusehello.o: fusehello.c
 	$(CC) $(CFLAGS) $(CFLAGSFUSE) $<
@@ -148,7 +148,7 @@ decode-test.o: decode-test.c json-util.h http-util.h
 	$(CC) $(CFLAGS) $(CFLAGSJSON) $<
 
 ../libb64-1.2.1/src/libb64.a:
-	$(MAKE) -C ../libb64-1.2.1
+	$(MAKE) -C ../libb64-1.2.1 all_src
 
 clean:
 	rm -f $(ENCFS)
@@ -167,3 +167,4 @@ clean:
 	rm -f handout/*.log
 	rm -f handout/*.aux
 	rm -f handout/*.out
+	$(MAKE) -C ../libb64-1.2.1 clean_src
