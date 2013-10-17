@@ -146,6 +146,9 @@ json-test.o: json-test.c json-util.h
 decode-test.o: decode-test.c json-util.h http-util.h
 	$(CC) $(CFLAGS) $(CFLAGSJSON) $<
 
+../libb64-1.2.1/src/libb64.a:
+	$(MAKE) -C ../libb64-1.2.1
+
 clean:
 	rm -f $(ENCFS)
 	rm -f $(MIRFS)
