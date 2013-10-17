@@ -1,2 +1,10 @@
+# C Cruft
 *.a
 *.o
+
+# Output Files
+base64/base64
+examples/c-example1
+examples/c-example2
+examples/decoded.txt
+examples/encoded.txt
