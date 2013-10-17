@@ -1,15 +1,104 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <errno.h>
-#include <stdbool.h>
-
 #include "http-util.h"
 
 #define DEBUG
 
 #define RETURN_FAILURE -1
 #define RETURN_SUCCESS  0
+
+#define B64_LINE_LENGTH 72
+
+int encodeBase64(const char* data, const size_t dataSize,
+		 char** text, size_t* textSize) {
+
+    int    cnt      = 0;
+    size_t total    = 0;
+    char*  itr      = NULL;
+    size_t padSize  = (dataSize % 3) ? (3 - (dataSize % 3)) : (0);
+    size_t ceilSize = dataSize + padSize;
+    size_t encSize  = (ceilSize * 4) / 3;
+    size_t eolSize  = (encSize / B64_LINE_LENGTH) + 1;
+    base64_encodestate s;
+
+    *textSize = encSize + eolSize + 1;
+    *text = itr = malloc(*textSize);
+    if(!(*text)) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR encodeBase64: malloc() failed\n");
+	perror(         "------------------>");
+#endif
+	return -errno;
+    }
+
+    /*---------- START ENCODING ----------*/
+    /* initialise the encoder state */
+    base64_init_encodestate(&s);
+    /* gather data from the input and send it to the output */
+    cnt = base64_encode_block(data, dataSize, itr, &s);
+    if(cnt < 0) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR encodeBase64: base64_encode_block() failed\n");
+#endif
+	return RETURN_FAILURE;
+    }
+    itr += cnt;
+    total += cnt;
+    /* Finalise the encoding */
+    cnt = base64_encode_blockend(itr, &s);
+    if(cnt < 0) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR encodeBase64: base64_encode_blockend() failed\n");
+#endif
+	return RETURN_FAILURE;
+    }
+    itr += cnt;
+    total += cnt;
+    /*---------- STOP ENCODING  ----------*/
+
+    /* Add Null Terminator */
+    *itr = '\0';
+    total += 1;
+
+    return total;
+
+}
+
+int decodeBase64(const char* text, const size_t textSize,
+		 char** data, size_t* dataSize) {
+
+    int    cnt      = 0;
+    size_t total    = 0;
+    char*  itr      = NULL;
+    size_t decSize  = (textSize * 3) / 4;
+    base64_decodestate s;
+
+    *dataSize = decSize;
+    *data = itr = malloc(*dataSize);
+    if(!(*data)) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR decodeBase64: malloc() failed\n");
+	perror(         "------------------>");
+#endif
+	return -errno;
+    }
+
+    /*---------- START DECODING ----------*/
+    /* initialise the decoder state */
+    base64_init_decodestate(&s);
+    /* Decode data */
+    cnt = base64_decode_block(text, textSize, itr, &s);
+    if(cnt < 0) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR decodeBase64: base64_decode_block() failed\n");
+#endif
+	return RETURN_FAILURE;
+    }
+    itr += cnt;
+    total += cnt;
+    /*---------- STOP ENCODING  ----------*/
+
+    return total;
+
+}
 
 size_t writeCurlData(char* input, size_t size, size_t nmemb, void* output);
 
@@ -163,8 +252,10 @@ size_t writeCurlData(char* input, size_t size, size_t nmemb, void* output) {
 
     outData->data = realloc(outData->data, (outData->size + fullSize));
     if(!(outData->data)) {
+#ifdef DEBUG
 	fprintf(stderr, "ERROR writeCurlData: realloc failed\n");
 	perror(         "------------------->");
+#endif
 	return 0;
     }
 

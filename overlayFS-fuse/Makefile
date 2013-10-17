@@ -15,6 +15,7 @@ CFLAGSCURL    = `pkg-config libcurl --cflags`
 LLIBSCURL     = `pkg-config libcurl --libs`
 CFLAGSJSON    = `pkg-config json --cflags`
 LLIBSJSON     = `pkg-config json --libs`
+LLIBSB64      = ../libb64-1.2.1/src/libb64.a
 
 CFLAGS = -c -g -Wall -Wextra -Werror
 LFLAGS = -g -Wall -Wextra -Werror
@@ -81,7 +82,7 @@ custos_client_test: custos_client_test.o custos_client.o custos_client_print.o
 	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSCURL) $(LLIBSJSON) $(LLIBSUUID)
 
 http-test: http-test.o http-util.o
-	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSCURL)
+	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSCURL) $(LLIBSB64)
 
 curl-test: curl-test.o
 	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSCURL)
