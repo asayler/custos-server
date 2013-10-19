@@ -13,11 +13,12 @@ int main(int argc, char* argv[]) {
     HttpData_t res;
     long resCode;
 
-    char input[] = "This is a test. This is another test. This is a third test.";
-    char* text = NULL;
-    size_t textSize = 0;
-    char* data = NULL;
-    size_t dataSize = 0;
+    char base64Input[] = "This is a test. This is another test. This is a third test.";
+    char urlInput[] = "{\"Target\": \"http:\\/\\/test.com\", \"Version\": \"0.1-dev\"}";
+    char* encoded = NULL;
+    size_t encodedSize = 0;
+    char* decoded = NULL;
+    size_t decodedSize = 0;
     int ret;
 
     /* Initialize Data */
@@ -39,46 +40,104 @@ int main(int argc, char* argv[]) {
     	free(res.data);
     }
 
-    /* Base 64 Encode */
+    /* Base64 Encode */
     fprintf(stdout, "\n*** Test encodeBase64() ***\n");
-    fprintf(stdout, "input:\n%s\n", input);
-    ret = encodeBase64(input, sizeof(input), &text, &textSize);
+    fprintf(stdout, "input:\n%s\n", base64Input);
+    ret = encodeBase64(base64Input, sizeof(base64Input), &encoded, &encodedSize);
     if (ret < 0) {
-	fprintf(stderr, "encodeBase64 failed\n");
-	exit(EXIT_FAILURE);
+    	fprintf(stderr, "encodeBase64 failed\n");
+    	exit(EXIT_FAILURE);
     }
-    fprintf(stdout, "ret      = %d\n",   ret);
-    fprintf(stdout, "textSize = %zd\n",  textSize);
-    fprintf(stdout, "text:\n%s", text);
+    fprintf(stdout, "ret         = %d\n",   ret);
+    fprintf(stdout, "encodedSize = %zd\n",  encodedSize);
+    fprintf(stdout, "encoded:\n%s",         encoded);
 
-    /* Base 64 Decode */
+    /* Base64 Decode */
     fprintf(stdout, "\n*** Test decodeBase64() ***\n");
-    fprintf(stdout, "input:\n%s", text);
-    ret = decodeBase64(text, textSize, &data, &dataSize);
+    fprintf(stdout, "input:\n%s", encoded);
+    ret = decodeBase64(encoded, encodedSize, &decoded, &decodedSize);
     if (ret < 0) {
-	fprintf(stderr, "decodeBase64 failed\n");
-	exit(EXIT_FAILURE);
+    	fprintf(stderr, "decodeBase64 failed\n");
+    	exit(EXIT_FAILURE);
     }
-    fprintf(stdout, "ret      = %d\n",   ret);
-    fprintf(stdout, "dataSize = %zd\n",  dataSize);
-    fprintf(stdout, "data:\n%s\n", data);
+    fprintf(stdout, "ret         = %d\n",  ret);
+    fprintf(stdout, "decodedSize = %zd\n", decodedSize);
+    fprintf(stdout, "decoded:\n%s\n"     , decoded);
 
-    if(ret != sizeof(input)) {
-	fprintf(stderr, "Base64 input size does not match Base64 output size!\n");
-	exit(EXIT_FAILURE);
+    /* Base64 Check */
+    if(ret != sizeof(base64Input)) {
+    	fprintf(stderr, "Base64 input size does not match Base64 output size!\n");
+    	exit(EXIT_FAILURE);
+    }
+    if(strncmp(base64Input, decoded, decodedSize)) {
+    	fprintf(stderr, "Base64 input content does not match Base64 output content!\n");
+    	exit(EXIT_FAILURE);
     }
 
-    if(strncmp(input, data, dataSize)) {
-	fprintf(stderr, "Base64 input content does not match Base64 output content!\n");
-	exit(EXIT_FAILURE);
+    /* Clean Up Base64 */
+    if(encoded) {
+    	if(freeBase64(&encoded) < 0) {
+	    fprintf(stderr, "freeBase64() failed!\n");
+	    exit(EXIT_FAILURE);
+	}
+    	encodedSize = 0;
+    }
+    if(decoded) {
+    	if(freeBase64(&decoded) < 0) {
+	    fprintf(stderr, "freeBase64() failed!\n");
+	    exit(EXIT_FAILURE);
+	}
+    	decodedSize = 0;
     }
 
-    /* Clean Up */
-    if(text) {
-	free(text);
+    /* URL Encode */
+    fprintf(stdout, "\n*** Test encodeURL64() ***\n");
+    fprintf(stdout, "input:\n%s\n", urlInput);
+    ret = encodeURL(urlInput, strlen(urlInput), &encoded, &encodedSize);
+    if (ret < 0) {
+    	fprintf(stderr, "encodeURL failed\n");
+    	exit(EXIT_FAILURE);
     }
-    if(data) {
-	free(data);
+    fprintf(stdout, "ret         = %d\n",   ret);
+    fprintf(stdout, "encodedSize = %zd\n",  encodedSize);
+    fprintf(stdout, "encoded:\n%s\n",       encoded);
+
+    /* URL Decode */
+    fprintf(stdout, "\n*** Test decodeURL64() ***\n");
+    fprintf(stdout, "input:\n%s\n", encoded);
+    ret = decodeURL(encoded, encodedSize, &decoded, &decodedSize);
+    if (ret < 0) {
+    	fprintf(stderr, "decodeURL failed\n");
+    	exit(EXIT_FAILURE);
+    }
+    fprintf(stdout, "ret         = %d\n",   ret);
+    fprintf(stdout, "decodedSize = %zd\n",  decodedSize);
+    fprintf(stdout, "decoded:\n%s\n",       decoded);
+
+    /* URL Check */
+    if(ret != (int) strlen(urlInput)) {
+    	fprintf(stderr, "URL input size does not match URL output size!\n");
+    	exit(EXIT_FAILURE);
+    }
+    if(strncmp(urlInput, decoded, decodedSize)) {
+    	fprintf(stderr, "URL input content does not match URL output content!\n");
+    	exit(EXIT_FAILURE);
+    }
+
+    /* Clean Up URL */
+    if(encoded) {
+    	if(freeURL(&encoded) < 0) {
+	    fprintf(stderr, "freeURL() failed!\n");
+	    exit(EXIT_FAILURE);
+	}
+    	encodedSize = 0;
+    }
+    if(decoded) {
+    	if(freeURL(&decoded) < 0) {
+	    fprintf(stderr, "freeURL() failed!\n");
+	    exit(EXIT_FAILURE);
+	}
+    	decodedSize = 0;
     }
 
     return EXIT_SUCCESS;

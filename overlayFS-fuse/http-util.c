@@ -264,7 +264,9 @@ int encodeURL(const char* decoded, const size_t decodedSize,
 
     *encodedSize = strlen(*encoded);
 
-    return RETURN_SUCCESS;
+    curl_easy_cleanup(curl);
+
+    return *encodedSize;
 
 }
 
@@ -329,7 +331,9 @@ int decodeURL(const char* encoded, const size_t encodedSize,
 	return RETURN_FAILURE;
     }
 
-    return RETURN_SUCCESS;
+    curl_easy_cleanup(curl);
+
+    return *decodedSize;
 
 }
 
