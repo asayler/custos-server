@@ -17,7 +17,7 @@
 
 /********* JSON Functions *********/
 
-extern json_object* custos_AttrReqToJson(const custosAttrReq_t* attrreq) {
+extern json_object* custos_AttrToJson(const custosAttr_t* attr) {
 
     json_object* json = NULL;
     const char* classStr = NULL;
@@ -26,15 +26,9 @@ extern json_object* custos_AttrReqToJson(const custosAttrReq_t* attrreq) {
     size_t b64Size = 0;
 
     /* Validate Input */
-    if(!attrreq) {
+    if(!attr) {
 #ifdef DEBUG
-	fprintf(stderr, "ERROR custos_AttrReqToJson: 'attrreq' must not be NULL\n");
-#endif
-	return NULL;
-    }
-    if(!(attrreq->attr)) {
-#ifdef DEBUG
-	fprintf(stderr, "ERROR custos_AttrReqToJson: 'attrreq->key' must not be NULL\n");
+	fprintf(stderr, "ERROR custos_AttrToJson: 'attr' must not be NULL\n");
 #endif
 	return NULL;
     }
@@ -43,35 +37,28 @@ extern json_object* custos_AttrReqToJson(const custosAttrReq_t* attrreq) {
     json = json_object_new_object();
     if(!json) {
 #ifdef DEBUG
-	fprintf(stderr, "ERROR custos_AttrReqToJson: json_object_new_object() failed\n");
+	fprintf(stderr, "ERROR custos_AttrToJson: json_object_new_object() failed\n");
 #endif
 	return NULL;
     }
-    json_object_object_add(json, "Echo",  json_object_new_boolean(attrreq->echo));
-    classStr = custos_AttrClassToStr(attrreq->attr->class);
+    classStr = custos_AttrClassToStr(attr->class);
     json_object_object_add(json, "Class", json_object_new_string(classStr));
-    typeStr = custos_AttrTypeToStr(attrreq->attr->class, attrreq->attr->type);
+    typeStr = custos_AttrTypeToStr(attr->class, attr->type);
     json_object_object_add(json, "Type",  json_object_new_string(typeStr));
-    json_object_object_add(json, "Index", json_object_new_int64(attrreq->attr->index));
+    json_object_object_add(json, "Index", json_object_new_int64(attr->index));
 
     /* Process Value */
-    if(attrreq->attr->size) {
-	if(encodeBase64((char*) attrreq->attr->val, attrreq->attr->size, &b64Data, &b64Size) < 0) {
+    if(attr->size) {
+	if(encodeBase64((char*) attr->val, attr->size, &b64Data, &b64Size) < 0) {
 #ifdef DEBUG
-	    fprintf(stderr, "ERROR custos_AttrReqToJson: encodeBase64() failed\n");
+	    fprintf(stderr, "ERROR custos_AttrToJson: encodeBase64() failed\n");
 #endif
 	    return NULL;
 	}
     }
     else {
 	b64Data = strdup("");
-	if(!b64Data) {
-#ifdef DEBUG
-	    fprintf(stderr, "ERROR custos_AttrReqToJson: strdup() failed\n");
-#endif
-	    return NULL;
-	}
-	b64Size = strlen(b64Data);
+	b64Size = sizeof("");
     }
     if(b64Data) {
 	json_object_object_add(json, "Val", json_object_new_string(b64Data));
@@ -79,7 +66,88 @@ extern json_object* custos_AttrReqToJson(const custosAttrReq_t* attrreq) {
     }
     else {
 #ifdef DEBUG
-	    fprintf(stderr, "ERROR custos_AttrReqToJson: b64Data must not be NULL\n");
+	    fprintf(stderr, "ERROR custos_AttrToJson: b64Data must not be NULL\n");
+#endif
+	    return NULL;
+    }
+
+    return json;
+
+}
+
+extern json_object* custos_AttrReqToJson(const custosAttrReq_t* attrreq) {
+
+    json_object* json = NULL;
+
+    /* Validate Input */
+    if(!attrreq) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_AttrReqToJson: 'attrreq' must not be NULL\n");
+#endif
+	return NULL;
+    }
+
+    /* Process Top Level Object */
+    json = custos_AttrToJson(attrreq->attr);
+    if(!json) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_AttrReqToJson: custos_AttrToJson() failed\n");
+#endif
+	return NULL;
+    }
+    json_object_object_add(json, "Echo",  json_object_new_boolean(attrreq->echo));
+
+    return json;
+
+}
+
+extern json_object* custos_KeyToJson(const custosKey_t* key) {
+
+    json_object* json = NULL;
+    char uuidstr[37]  = "";
+    char*  b64Data = NULL;
+    size_t b64Size = 0;
+
+    /* Validate Input */
+    if(!key) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_KeyToJson: 'key' must not be NULL\n");
+#endif
+	return NULL;
+    }
+
+    /* Process Top Level Object */
+    json = json_object_new_object();
+    if(!json) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_KeyToJson: json_object_new_object() failed\n");
+#endif
+	return NULL;
+    }
+    uuid_unparse(key->uuid, uuidstr);
+    json_object_object_add(json, "UUID", json_object_new_string(uuidstr));
+    json_object_object_add(json, "Revision", json_object_new_int64(key->revision));
+
+    /* Process Value */
+    if(key->size) {
+	if(encodeBase64((char*) key->val, key->size, &b64Data, &b64Size) < 0) {
+#ifdef DEBUG
+	    fprintf(stderr, "ERROR custos_KeyToJson: encodeBase64() failed\n");
+#endif
+	    return NULL;
+	}
+    }
+    else {
+	b64Data = strdup("");
+	b64Size = sizeof("");
+    }
+    if(b64Data) {
+	json_object_object_add(json, "Val", json_object_new_string(b64Data));
+	free(b64Data);
+    }
+    else {
+#ifdef DEBUG
+	    fprintf(stderr, "ERROR custos_KeyToJson: b64Data must not be NULL\n");
 #endif
 	    return NULL;
     }
@@ -91,9 +159,6 @@ extern json_object* custos_AttrReqToJson(const custosAttrReq_t* attrreq) {
 extern json_object* custos_KeyReqToJson(const custosKeyReq_t* keyreq) {
 
     json_object* json = NULL;
-    char uuidstr[37]  = "";
-    char*  b64Data = NULL;
-    size_t b64Size = 0;
 
     /* Validate Input */
     if(!keyreq) {
@@ -102,55 +167,16 @@ extern json_object* custos_KeyReqToJson(const custosKeyReq_t* keyreq) {
 #endif
 	return NULL;
     }
-    if(!(keyreq->key)) {
-#ifdef DEBUG
-	fprintf(stderr, "ERROR custos_KeyReqToJson: 'keyreq->key' must not be NULL\n");
-#endif
-	return NULL;
-    }
 
     /* Process Top Level Object */
-    json = json_object_new_object();
+    json = custos_KeyToJson(keyreq->key);
     if(!json) {
 #ifdef DEBUG
-	fprintf(stderr, "ERROR custos_KeyReqToJson: json_object_new_object() failed\n");
+	fprintf(stderr, "ERROR custos_KeyReqToJson: custos_KeyToJson() failed\n");
 #endif
 	return NULL;
     }
     json_object_object_add(json, "Echo", json_object_new_boolean(keyreq->echo));
-    uuid_unparse(keyreq->key->uuid, uuidstr);
-    json_object_object_add(json, "UUID", json_object_new_string(uuidstr));
-    json_object_object_add(json, "Revision", json_object_new_int64(keyreq->key->revision));
-
-    /* Process Value */
-    if(keyreq->key->size) {
-	if(encodeBase64((char*) keyreq->key->val, keyreq->key->size, &b64Data, &b64Size) < 0) {
-#ifdef DEBUG
-	    fprintf(stderr, "ERROR custos_KeyReqToJson: encodeBase64() failed\n");
-#endif
-	    return NULL;
-	}
-    }
-    else {
-	b64Data = strdup("");
-	if(!b64Data) {
-#ifdef DEBUG
-	    fprintf(stderr, "ERROR custos_KeyReqToJson: strdup() failed\n");
-#endif
-	    return NULL;
-	}
-	b64Size = strlen(b64Data);
-    }
-    if(b64Data) {
-	json_object_object_add(json, "Val", json_object_new_string(b64Data));
-	free(b64Data);
-    }
-    else {
-#ifdef DEBUG
-	    fprintf(stderr, "ERROR custos_KeyReqToJson: b64Data must not be NULL\n");
-#endif
-	    return NULL;
-    }
 
     return json;
 

@@ -189,8 +189,12 @@ extern int custos_updateResAddAttrRes(custosRes_t* res, custosAttrRes_t* attrres
 extern int custos_updateResAddKeyRes(custosRes_t* res, custosKeyRes_t* keyres);
 
 /* JSON */
-extern json_object* custos_ReqToJson(const custosReq_t* req);
-extern json_object* custos_KeyReqToJson(const custosKeyReq_t* keyreq);
+extern json_object* custos_AttrToJson(const custosAttr_t* attr);
+extern json_object* custos_KeyToJson(const custosKey_t* key);
+
 extern json_object* custos_AttrReqToJson(const custosAttrReq_t* attrreq);
+extern json_object* custos_KeyReqToJson(const custosKeyReq_t* keyreq);
+
+extern json_object* custos_ReqToJson(const custosReq_t* req);
 
 #endif
