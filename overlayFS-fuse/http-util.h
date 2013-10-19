@@ -18,5 +18,10 @@ typedef struct HttpData {
 int httpInit();
 long httpGet(const char* uri, HttpData_t* res);
 
-int encodeBase64(const char* data, const size_t data_size, char** text, size_t* text_size);
-int decodeBase64(const char* text, const size_t text_size, char** data, size_t* data_size);
+int encodeBase64(const char* decoded, const size_t decodedSize, char** encoded, size_t* encodedSize);
+int decodeBase64(const char* encoded, const size_t encodedSize, char** decoded, size_t* decodedSize);
+int freeBase64(char** value);
+
+int encodeURL(const char* decoded, const size_t decodedSize, char** encoded, size_t* encodedSize);
+int decodeURL(const char* encoded, const size_t encodedSize, char** decoded, size_t* decodedSize);
+int freeURL(char** value);

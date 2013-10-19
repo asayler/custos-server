@@ -62,7 +62,7 @@ extern json_object* custos_AttrToJson(const custosAttr_t* attr) {
     }
     if(b64Data) {
 	json_object_object_add(json, "Val", json_object_new_string(b64Data));
-	free(b64Data);
+	freeBase64(&b64Data);
     }
     else {
 #ifdef DEBUG
@@ -143,7 +143,7 @@ extern json_object* custos_KeyToJson(const custosKey_t* key) {
     }
     if(b64Data) {
 	json_object_object_add(json, "Val", json_object_new_string(b64Data));
-	free(b64Data);
+	freeBase64(&b64Data);
     }
     else {
 #ifdef DEBUG
