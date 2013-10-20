@@ -116,6 +116,7 @@ int encodeBase64(const char* decoded, const size_t decodedSize,
     size_t ceilSize = decodedSize + padSize;
     size_t encSize  = (ceilSize * 4) / 3;
     size_t eolSize  = (encSize / B64_LINE_LENGTH) + 1;
+    size_t outSize  = encSize + eolSize + 1;
     base64_encodestate s;
 
     /* Verify Required Arguments */
@@ -131,17 +132,13 @@ int encodeBase64(const char* decoded, const size_t decodedSize,
 #endif
 	return -EINVAL;
     }
-    if(!encodedSize) {
+    if(encodedSize) {
+	if(*encodedSize) {
 #ifdef DEBUG
-	fprintf(stderr, "ERROR encodeBase64: 'encodedSize' must not be NULL\n");
+	    fprintf(stderr, "ERROR encodeBase64: '*encodedSize' must be 0\n");
 #endif
-	return -EINVAL;
-    }
-    if(*encodedSize) {
-#ifdef DEBUG
-	fprintf(stderr, "ERROR encodeBase64: '*encodedSize' must be 0\n");
-#endif
-	return -EINVAL;
+	    return -EINVAL;
+	}
     }
 
     /* Handle Null Case */
@@ -158,8 +155,7 @@ int encodeBase64(const char* decoded, const size_t decodedSize,
     }
 
     /* Malloc Space */
-    *encodedSize = encSize + eolSize + 1;
-    *encoded = itr = malloc(*encodedSize);
+    *encoded = itr = malloc(outSize);
     if(!(*encoded)) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR encodeBase64: malloc() failed\n");
@@ -193,6 +189,11 @@ int encodeBase64(const char* decoded, const size_t decodedSize,
     *itr = '\0';
     total += 1;
 
+    /* Set encodedSize if provided */
+    if(encodedSize) {
+	*encodedSize = outSize;
+    }
+
     return total;
 
 }
@@ -205,6 +206,7 @@ int decodeBase64(const char* encoded, const size_t encodedSize,
     size_t total    = 0;
     char*  itr      = NULL;
     size_t decSize  = (encodedSize * 3) / 4;
+    size_t outSize  = decSize;
     base64_decodestate s;
 
     /* Verify Required Arguments */
@@ -220,17 +222,13 @@ int decodeBase64(const char* encoded, const size_t encodedSize,
 #endif
 	return -EINVAL;
     }
-    if(!decodedSize) {
+    if(decodedSize) {
+	if(*decodedSize) {
 #ifdef DEBUG
-	fprintf(stderr, "ERROR decodeBase64: 'decodedSize' must not be NULL\n");
+	    fprintf(stderr, "ERROR decodeBase64: '*decodedSize' must be 0\n");
 #endif
-	return -EINVAL;
-    }
-    if(*decodedSize) {
-#ifdef DEBUG
-	fprintf(stderr, "ERROR decodeBase64: '*decodedSize' must be 0\n");
-#endif
-	return -EINVAL;
+	    return -EINVAL;
+	}
     }
 
     /* Handle Null Case */
@@ -247,8 +245,7 @@ int decodeBase64(const char* encoded, const size_t encodedSize,
     }
 
     /* Malloc Space */
-    *decodedSize = decSize;
-    *decoded = itr = malloc(*decodedSize);
+    *decoded = itr = malloc(outSize);
     if(!(*decoded)) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR decodeBase64: malloc() failed\n");
@@ -268,6 +265,11 @@ int decodeBase64(const char* encoded, const size_t encodedSize,
     }
     itr += cnt;
     total += cnt;
+
+    /* Set decodedSize if provided */
+    if(decodedSize) {
+	*decodedSize = outSize;
+    }
 
     return total;
 
@@ -302,6 +304,7 @@ int encodeURL(const char* decoded, const size_t decodedSize,
 
     /* Local Args and Inits */
     CURL* curl;
+    int outSize = 0;
 
     /* Verify Required Arguments */
     if(!encoded) {
@@ -316,17 +319,13 @@ int encodeURL(const char* decoded, const size_t decodedSize,
 #endif
 	return -EINVAL;
     }
-    if(!encodedSize) {
+    if(encodedSize) {
+	if(*encodedSize) {
 #ifdef DEBUG
-	fprintf(stderr, "ERROR encodeURL: 'encodedSize' must not be NULL\n");
+	    fprintf(stderr, "ERROR encodeURL: '*encodedSize' must be 0\n");
 #endif
-	return -EINVAL;
-    }
-    if(*encodedSize) {
-#ifdef DEBUG
-	fprintf(stderr, "ERROR encodeURL: '*encodedSize' must be 0\n");
-#endif
-	return -EINVAL;
+	    return -EINVAL;
+	}
     }
 
     /* Handle Null Case */
@@ -357,12 +356,15 @@ int encodeURL(const char* decoded, const size_t decodedSize,
 #endif
 	return RETURN_FAILURE;
     }
+    outSize = strlen(*encoded);
 
-    *encodedSize = strlen(*encoded);
+    if(encodedSize) {
+	*encodedSize = outSize;
+    }
 
     curl_easy_cleanup(curl);
 
-    return *encodedSize;
+    return outSize;
 
 }
 
@@ -371,6 +373,7 @@ int decodeURL(const char* encoded, const size_t encodedSize,
 
     /* Local Args and Inits */
     CURL* curl;
+    int outSize = 0;
 
     /* Verify Required Arguments */
     if(!decoded) {
@@ -385,17 +388,13 @@ int decodeURL(const char* encoded, const size_t encodedSize,
 #endif
 	return -EINVAL;
     }
-    if(!decodedSize) {
+    if(decodedSize) {
+	if(*decodedSize) {
 #ifdef DEBUG
-	fprintf(stderr, "ERROR decodeURL: 'decodedSize' must not be NULL\n");
+	    fprintf(stderr, "ERROR decodeURL: '*decodedSize' must be 0\n");
 #endif
-	return -EINVAL;
-    }
-    if(*decodedSize) {
-#ifdef DEBUG
-	fprintf(stderr, "ERROR decodeURL: '*decodedSize' must be 0\n");
-#endif
-	return -EINVAL;
+	    return -EINVAL;
+	}
     }
 
     /* Handle Null Case */
@@ -419,7 +418,7 @@ int decodeURL(const char* encoded, const size_t encodedSize,
 	return RETURN_FAILURE;
     }
 
-    *decoded = curl_easy_unescape(curl, encoded, encodedSize, (int*) decodedSize);
+    *decoded = curl_easy_unescape(curl, encoded, encodedSize, &outSize);
     if(!*(decoded)) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR decodeURL: curl_easy_escape() failed\n");
@@ -429,7 +428,11 @@ int decodeURL(const char* encoded, const size_t encodedSize,
 
     curl_easy_cleanup(curl);
 
-    return *decodedSize;
+    if(decodedSize) {
+	*decodedSize = outSize;
+    }
+
+    return outSize;
 
 }
 
