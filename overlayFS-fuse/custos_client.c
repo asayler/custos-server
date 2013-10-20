@@ -1271,6 +1271,9 @@ extern custosRes_t* custos_getRes(const custosReq_t* req) {
    size_t i = 0;
    bool psk = false;
    bool accept = false;
+   json_object* reqJson = NULL;
+   char* reqJsonStr = NULL;
+   char* reqUrlStr = NULL;
 
    if(!req) {
 #ifdef DEBUG
@@ -1286,6 +1289,33 @@ extern custosRes_t* custos_getRes(const custosReq_t* req) {
 	return NULL;
    }
 
+   /* Setup HTTP Get Request */
+   reqJson = custos_ReqToJson(req);
+   if(!reqJson) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_getRes: custos_ReqToJson() failed\n");
+#endif
+	return NULL;
+   }
+   reqJsonStr = strdup(json_object_to_json_string(reqJson));
+   if(!reqJsonStr) {
+#ifdef DEBUG
+       fprintf(stderr, "ERROR custos_getRes: strdup() failed\n");
+#endif
+       return NULL;
+   }
+   json_object_put(reqJson);
+   reqJson = NULL;
+   if(encodeURL(reqJsonStr, strlen(reqJsonStr), &reqUrlStr, NULL) < 0) {
+#ifdef DEBUG
+       fprintf(stderr, "ERROR custos_getRes: encodeURL() failed\n");
+#endif
+       return NULL;
+   }
+   free(reqJsonStr);
+   reqJsonStr = NULL;
+   free(reqUrlStr);
+   reqUrlStr = NULL;
    /* ToDo: Make request to custos server */
 
    /* Start Dummy Response */
