@@ -192,6 +192,7 @@ extern json_object* custos_ReqToJson(const custosReq_t* req) {
     json_object* reqobj     = NULL;
     json_object* checkobj   = NULL;
     json_object* json       = NULL;
+    char*        md5sum     = NULL;
 
     /* Validate Args */
     if(!req) {
@@ -273,9 +274,9 @@ extern json_object* custos_ReqToJson(const custosReq_t* req) {
 #endif
 	return NULL;
     }
-    json_object_object_add(checkobj, "md5", json_object_new_string(""));
-    json_object_object_add(checkobj, "sha256", json_object_new_string(""));
-    json_object_object_add(checkobj, "sha512", json_object_new_string(""));
+    md5sum = hashMD5(json_object_to_json_string(reqobj), 0);
+    json_object_object_add(checkobj, "md5", json_object_new_string(md5sum));
+    freeHash(&md5sum);
 
     /* Process Top Level Object */
     json = json_object_new_object();
