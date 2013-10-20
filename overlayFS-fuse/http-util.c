@@ -9,6 +9,102 @@
 
 size_t writeCurlData(char* input, size_t size, size_t nmemb, void* output);
 
+char* hashMD5(const char* value, const size_t size) {
+
+    MHASH td;
+    int i = 0;
+    int valSize = 0;
+    int hashSize = 0;
+    char* hashStr = NULL;
+    unsigned char* hash = NULL;
+
+    /* Validate Args */
+    if(!value) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR hashMD5: 'value' must not be NULL\n");
+#endif
+	errno = EINVAL;
+	return NULL;
+    }
+
+    hashSize = mhash_get_block_size(MHASH_MD5);
+    hash = malloc(hashSize);
+    if(!hash) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR hashMD5: malloc() failed\n");
+	perror(         "------------->");
+#endif
+	return NULL;
+    }
+
+    hashStr = malloc((hashSize * 2) + 1);
+    if(!hashStr) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR hashMD5: malloc() failed\n");
+	perror(         "------------->");
+#endif
+	return NULL;
+    }
+
+    if(!size) {
+	valSize = strlen(value);
+    }
+    else {
+	valSize = size;
+    }
+
+    td = mhash_init(MHASH_MD5);
+    if(td == MHASH_FAILED) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR hashMD5: mhash_init() failed\n");
+#endif
+	return NULL;
+    }
+
+    if(mhash(td, value, valSize) < 0) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR hashMD5: mhash() failed\n");
+#endif
+	return NULL;
+    }
+
+    mhash_deinit(td, hash);
+
+    for (i = 0; i < hashSize; i++) {
+	sprintf(&(hashStr[i*2]), "%.2x", hash[i]);
+    }
+
+    free(hash);
+    hash = NULL;
+
+    return hashStr;
+
+}
+
+int freeHash(char** value) {
+
+    /* Verify Required Arguments */
+    if(!value) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR freeHash: value must not be NULL\n");
+#endif
+	return -EINVAL;
+    }
+    if(!(*value)) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR freeHash: *value must not be NULL\n");
+#endif
+	return -EINVAL;
+    }
+
+    /* Free Data */
+    free(*value);
+    *value = NULL;
+
+    return EXIT_SUCCESS;
+
+}
+
 int encodeBase64(const char* decoded, const size_t decodedSize,
 		 char** encoded, size_t* encodedSize) {
 

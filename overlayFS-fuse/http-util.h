@@ -3,7 +3,9 @@
 #include <string.h>
 #include <errno.h>
 #include <stdbool.h>
+
 #include <curl/curl.h>
+#include <mhash.h>
 
 #include "b64/cdecode.h"
 #include "b64/cencode.h"
@@ -25,3 +27,6 @@ int freeBase64(char** value);
 int encodeURL(const char* decoded, const size_t decodedSize, char** encoded, size_t* encodedSize);
 int decodeURL(const char* encoded, const size_t encodedSize, char** decoded, size_t* decodedSize);
 int freeURL(char** value);
+
+char* hashMD5(const char* value, const size_t size);
+int freeHash(char** value);

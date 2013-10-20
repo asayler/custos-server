@@ -16,6 +16,7 @@ LLIBSCURL     = `pkg-config libcurl --libs`
 CFLAGSJSON    = `pkg-config json --cflags`
 LLIBSJSON     = `pkg-config json --libs`
 LLIBSB64      = ../libb64-1.2.1/src/libb64.a
+LLIBSMHASH    = -lmhash
 
 CFLAGS = -c -g -Wall -Wextra -Werror
 LFLAGS = -g -Wall -Wextra -Werror
@@ -78,11 +79,12 @@ xattr-util: xattr-util.o
 aes-crypt-util: aes-crypt-util.o aes-crypt.o
 	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSOPENSSL)
 
-custos_client_test: custos_client_test.o custos_client.o custos_client_print.o http-util.o json-util.o ../libb64-1.2.1/src/libb64.a
-	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSCURL) $(LLIBSJSON) $(LLIBSUUID) $(LLIBSB64)
+custos_client_test: custos_client_test.o custos_client.o custos_client_print.o \
+	http-util.o json-util.o ../libb64-1.2.1/src/libb64.a
+	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSCURL) $(LLIBSJSON) $(LLIBSUUID) $(LLIBSB64) $(LLIBSMHASH)
 
 http-test: http-test.o http-util.o ../libb64-1.2.1/src/libb64.a
-	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSCURL) $(LLIBSB64)
+	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSCURL) $(LLIBSB64) $(LLIBSMHASH)
 
 curl-test: curl-test.o
 	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSCURL)
@@ -91,7 +93,7 @@ json-test: json-test.o json-util.o
 	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSJSON)
 
 decode-test: decode-test.o json-util.o http-util.o ../libb64-1.2.1/src/libb64.a
-	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSJSON) $(LLIBSCURL) $(LLIBSB64)
+	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSJSON) $(LLIBSCURL) $(LLIBSB64) $(LLIBSMHASH)
 
 fusehello.o: fusehello.c
 	$(CC) $(CFLAGS) $(CFLAGSFUSE) $<
