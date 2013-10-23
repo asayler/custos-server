@@ -1,47 +1,47 @@
 {
     "Response": {
-	"ResponseSource": "condor.andysayler.com",
-	"ResponseTarget": "",
-	"ResponseVersion": "0.1-dev",
-	"ResponseID": "",
-	"ResponseRequestID": "",
-	"ResponseStatus": "accepted",
-	"ResponseAuthAttrs": [
+	"Source": "http://condor.andysayler.com",
+	"Target": "",
+	"Version": "0.1-dev",
+	"ResID": "",
+	"ReqID": "",
+	"Status": "accepted",
+	"Attrs": [
 	    {
-		"AttrReceived": true,
-		"AttrStatus": "accepted",
-		"AttrEcho": false,
-		"AttrClass": "explicit",
-		"AttrType": "psk",
-		"AttrIndex": 0,
-		"AttrValue": ""
+		"Received": true,
+		"Status": "accepted",
+		"Echo": false,
+		"Class": "explicit",
+		"Type": "psk",
+		"Index": 0,
+		"Value": ""
 	    },
 	    {
-		"AttrReceived": true,
-		"AttrStatus": "ignored",
-		"AttrEcho": false,
-		"AttrClass": "implicit",
-		"AttrType": "source_ip",
-		"AttrIndex": 0,
-		"AttrValue": ""
+		"Received": true,
+		"Status": "ignored",
+		"Echo": false,
+		"Class": "implicit",
+		"Type": "source_ip",
+		"Index": 0,
+		"Value": ""
 	    },
 	    {
-		"AttrReceived": false,
-		"AttrStatus": "optional",
-		"AttrEcho": false,
-		"AttrClass": "implicit",
-		"AttrType": "ssl_cert_client",
-		"AttrIndex": 0,
-		"AttrValue": ""
+		"Received": false,
+		"Status": "optional",
+		"Echo": false,
+		"Class": "implicit",
+		"Type": "ssl_cert_client",
+		"Index": 0,
+		"Value": ""
 	    }
 	],
-	"ResponseKey": [
+	"Keys": [
 	    {
-		"KeyStatus": "accepted",
-		"KeyEcho": false,
-		"KeyUUID": "7af8c95d-479a-46fe-b5de-8574c6ca1369",
-		"KeyRevision": "",
-		"KeyVal": "ThisIsNotARealKey"
+		"Status": "accepted",
+		"Echo": false,
+		"UUID": "7af8c95d-479a-46fe-b5de-8574c6ca1369",
+		"Revision": "",
+		"Val": "ThisIsNotARealKey"
 	    }
 	]
     },
