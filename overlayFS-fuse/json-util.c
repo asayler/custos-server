@@ -12,7 +12,7 @@ void json_print(json_object* jobj, int offset) {
     const char* sType = json_type_to_name(type);
     printf("%*s" "type: %s\n", offset, "", sType);
     printf("%*s" "val:  ", offset, "");
-    
+
     switch(type) {
     case json_type_boolean:
 	{

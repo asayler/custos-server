@@ -46,7 +46,7 @@ int main(int argc, char* argv[]) {
     /* Decode JSON */
     tok = json_tokener_new();
     if(!tok) {
-	fprintf(stderr, "Failed to create tokinizer");
+	fprintf(stderr, "Failed to create tokinizer\n");
 	exit(EXIT_FAILURE);
     }
     jobj = json_tokener_parse_ex(tok, res.data, strlen(res.data));

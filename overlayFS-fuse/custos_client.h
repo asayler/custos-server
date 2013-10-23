@@ -21,6 +21,7 @@
 #include <json/json.h>
 
 #include "http-util.h"
+#include "json-util.h"
 
 #define CUS_TEST_PSK_GOOD "I am a swordfish?"
 
@@ -30,7 +31,7 @@
 #define CUS_VERSION "0.1-dev"
 
 // #define CUSTOS_ENDPOINT_KEYS "/keys"
-#define CUSTOS_ENDPOINT_KEYS "/custos/01-accept-request.json"
+#define CUSTOS_ENDPOINT_KEYS "/custos/01-accept-response.json"
 #define CUSTOS_ENDPOINT_KEYS_REQ "req"
 
 typedef enum custosResStatus {
@@ -200,5 +201,7 @@ extern json_object* custos_AttrReqToJson(const custosAttrReq_t* attrreq);
 extern json_object* custos_KeyReqToJson(const custosKeyReq_t* keyreq);
 
 extern json_object* custos_ReqToJson(const custosReq_t* req);
+
+extern custosRes_t* custos_JsonToRes(json_object* resjson);
 
 #endif

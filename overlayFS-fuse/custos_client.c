@@ -293,6 +293,69 @@ extern json_object* custos_ReqToJson(const custosReq_t* req) {
 
 }
 
+extern custosRes_t* custos_JsonToRes(json_object* resjson) {
+
+    json_object* resobj     = NULL;
+    json_object* checkobj   = NULL;
+    json_object* tempobj    = NULL;
+    custosRes_t* res        = NULL;
+    char*        source     = NULL;
+
+    /* Process Top Level JSON */
+    if(!json_object_is_type(resjson, json_type_object)) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_JsonToRes: resjson must be a json object\n");
+#endif
+	return NULL;
+    }
+    if(!json_object_object_get_ex(resjson, "Response", &resobj)) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_JsonToRes: Missing 'Response' object\n");
+#endif
+	return NULL;
+    }
+    if(!json_object_object_get_ex(resjson, "Checksums", &checkobj)) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_JsonToRes: Missing 'Checksums' object\n");
+#endif
+	return NULL;
+    }
+
+    /* Process Response Json */
+    if(!json_object_is_type(resobj, json_type_object)) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_JsonToRes: 'Response' must be a json object\n");
+#endif
+	return NULL;
+    }
+    /* (string) Source */
+    if(!json_object_object_get_ex(resobj, "Source", &tempobj)) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_JsonToRes: Missing 'Source' object\n");
+#endif
+	return NULL;
+    }
+    if(!json_object_is_type(tempobj, json_type_string)) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_JsonToRes: 'Source' must be a json string\n");
+#endif
+	return NULL;
+    }
+    source = strdup(json_object_get_string(tempobj));
+    if(!source) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_JsonToRes: strdup(source) failed\n");
+#endif
+	return NULL;
+    }
+
+    res = custos_createRes(0, source);
+    free(source);
+
+    return res;
+
+}
+
 /********* custosAttr Functions *********/
 
 extern custosAttr_t* custos_createAttr(const custosAttrClass_t class,
@@ -1272,6 +1335,8 @@ extern custosRes_t* custos_getRes(const custosReq_t* req) {
     bool psk = false;
     bool accept = false;
     json_object* reqJson = NULL;
+    json_object* resJson = NULL;
+    json_tokener* tok = NULL;
     char* reqJsonStr = NULL;
     char* reqUrlStr = NULL;
     char* fullReqUrl = NULL;
@@ -1333,19 +1398,55 @@ extern custosRes_t* custos_getRes(const custosReq_t* req) {
 
     if(httpGet(fullReqUrl, &resHttp) != 200) {
 #ifdef DEBUG
-	fprintf(stderr, "ERROR custos_getRes: httpGet() failed\n");
+	fprintf(stderr, "ERROR custos_getRes: httpGet() returned non-200 code\n");
+#endif
+	return NULL;
+    }
+    if(!resHttp.data) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_getRes: httpGet() returned NULL\n");
 #endif
 	return NULL;
     }
     free(fullReqUrl);
     fullReqUrl = NULL;
 
-    if(resHttp.data) {
-    	fprintf(stdout, "resHttp.data:\n%s\n", resHttp.data);
-	free(resHttp.data);
+    tok = json_tokener_new();
+    if(!tok) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_getRes: json_tokener_new() failed\n");
+#endif
+	return NULL;
     }
+    resJson = json_tokener_parse_ex(tok, resHttp.data, strlen(resHttp.data));
+    if(!resJson) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_getRes: json_tokener_parse() failed\n");
+#endif
+	return NULL;
+    }
+    json_tokener_free(tok);
+    tok = NULL;
+    free(resHttp.data);
+    resHttp.data = NULL;
+    res = custos_JsonToRes(resJson);
+    if(!res) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_getRes: custos_JsonToRes() failed\n");
+#endif
+	return NULL;
+    }
+    json_object_put(resJson);
+    resJson = NULL;
 
-    /* ToDo: Make request to custos server */
+    /* ToDo: Process response from custos server */
+
+    if(custos_destroyRes(&res) < 0) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_getRes: custos_destroyRes() failed\n");
+#endif
+	return NULL;
+    }
 
     /* Start Dummy Response */
     res = custos_createRes(CUS_RESSTAT_ACCEPTED, req->target);
