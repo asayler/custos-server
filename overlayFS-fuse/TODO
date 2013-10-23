@@ -1,5 +1,8 @@
 TODO
 
+* 2013-10-22 0 ANDY - Make httpGet() more robust: currently crashes
+                      when data input is not initialized
+
 * 2013-04-28 - ANDY - Add proper memory clean-up on error and errno
                       pass through in fueenc_fh.c
 
