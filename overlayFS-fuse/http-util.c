@@ -7,7 +7,122 @@
 
 #define B64_LINE_LENGTH 72
 
+#define URL_COMP_MAX_LENGTH 5000
+#define URL_COMP_MAX 10
+
 size_t writeCurlData(char* input, size_t size, size_t nmemb, void* output);
+
+char* buildUrlGet(char* target, char* endpoint, ...) {
+
+    va_list args;
+    va_start(args, endpoint);
+
+    char* output = NULL;
+    char* key    = NULL;
+    char* val    = NULL;
+    size_t cnt   = 0;
+
+    if(!target) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR buildUrlGet(): 'target' must not be NULL\n");
+#endif
+	errno = EINVAL;
+	return NULL;
+    }
+    if(strnlen(target, URL_COMP_MAX_LENGTH) == URL_COMP_MAX_LENGTH) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR buildUrlGet(): 'target' too long\n");
+#endif
+	errno = EINVAL;
+	return NULL;
+    }
+    if(!endpoint) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR buildUrlGet(): 'endpoint' must not be NULL\n");
+#endif
+	errno = EINVAL;
+	return NULL;
+    }
+    if(strnlen(endpoint, URL_COMP_MAX_LENGTH) == URL_COMP_MAX_LENGTH) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR buildUrlGet(): 'endpoint' too long\n");
+#endif
+	errno = EINVAL;
+	return NULL;
+    }
+
+    output = malloc(strlen(target) + strlen(endpoint) + strlen("?") + 1);
+    if(!output) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR buildUrlGet: malloc() failed\n");
+#endif
+	return NULL;
+    }
+    strcpy(output, target);
+    strcat(output, endpoint);
+    strcat(output, "?");
+
+    while(cnt < URL_COMP_MAX) {
+
+	/* Extract Arg */
+	key = va_arg(args, char*);
+	if(!key) {
+	    break;
+	}
+	if(strnlen(key, URL_COMP_MAX_LENGTH) == URL_COMP_MAX_LENGTH) {
+#ifdef DEBUG
+	    fprintf(stderr, "ERROR buildUrlGet(): 'key' too long\n");
+#endif
+	    errno = EINVAL;
+	    return NULL;
+	}
+
+	/* Extract Val */
+	val = va_arg(args, char*);
+	if(!val) {
+#ifdef DEBUG
+	    fprintf(stderr, "ERROR buildUrlGet(): 'val' missing\n");
+#endif
+	    errno = EINVAL;
+	    return NULL;
+	}
+	if(strnlen(val, URL_COMP_MAX_LENGTH) == URL_COMP_MAX_LENGTH) {
+#ifdef DEBUG
+	    fprintf(stderr, "ERROR buildUrlGet(): 'val' too long\n");
+#endif
+	    errno = EINVAL;
+	    return NULL;
+	}
+
+	if(cnt == 0) {
+	    output = realloc(output, strlen(output) + strlen(key) + strlen(val) + 2);
+	    if(!output) {
+#ifdef DEBUG
+		fprintf(stderr, "ERROR buildUrlGet: realloc() failed\n");
+#endif
+		return NULL;
+	    }
+	}
+	else {
+	    output = realloc(output, strlen(output) + strlen(key) + strlen(val) + 3);
+	    if(!output) {
+#ifdef DEBUG
+		fprintf(stderr, "ERROR buildUrlGet: realloc() failed\n");
+#endif
+		return NULL;
+	    }
+	    strcat(output, "&");
+	}
+	strcat(output, key);
+	strcat(output, "=");
+	strcat(output, val);
+
+	cnt++;
+    }
+
+    return output;
+
+}
 
 char* hashMD5(const char* value, const size_t size) {
 

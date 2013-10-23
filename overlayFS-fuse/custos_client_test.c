@@ -34,7 +34,7 @@ int main(int argc, char* argv[]) {
     const char*      reqstr  = NULL;
 
     /* Setup a new request */
-    req = custos_createReq("http://test.com");
+    req = custos_createReq("http://condor.andysayler.com");
     if(!req) {
 	fprintf(stderr, "ERROR %s: custos_createKeyReq() failed\n", argv[0]);
 	return EXIT_FAILURE;

@@ -29,6 +29,10 @@
 
 #define CUS_VERSION "0.1-dev"
 
+// #define CUSTOS_ENDPOINT_KEYS "/keys"
+#define CUSTOS_ENDPOINT_KEYS "/custos/01-accept-request.json"
+#define CUSTOS_ENDPOINT_KEYS_REQ "req"
+
 typedef enum custosResStatus {
     CUS_RESSTAT_ACCEPTED = 0,
     CUS_RESSTAT_DENIED,

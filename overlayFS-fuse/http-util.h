@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdarg.h>
 #include <errno.h>
 #include <stdbool.h>
 
@@ -30,3 +31,5 @@ int freeURL(char** value);
 
 char* hashMD5(const char* value, const size_t size);
 int freeHash(char** value);
+
+char* buildUrlGet(char* target, char* endpoint, ...);

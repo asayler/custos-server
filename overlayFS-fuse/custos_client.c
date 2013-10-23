@@ -66,9 +66,9 @@ extern json_object* custos_AttrToJson(const custosAttr_t* attr) {
     }
     else {
 #ifdef DEBUG
-	    fprintf(stderr, "ERROR custos_AttrToJson: b64Data must not be NULL\n");
+	fprintf(stderr, "ERROR custos_AttrToJson: b64Data must not be NULL\n");
 #endif
-	    return NULL;
+	return NULL;
     }
 
     return json;
@@ -147,9 +147,9 @@ extern json_object* custos_KeyToJson(const custosKey_t* key) {
     }
     else {
 #ifdef DEBUG
-	    fprintf(stderr, "ERROR custos_KeyToJson: b64Data must not be NULL\n");
+	fprintf(stderr, "ERROR custos_KeyToJson: b64Data must not be NULL\n");
 #endif
-	    return NULL;
+	return NULL;
     }
 
     return json;
@@ -212,7 +212,7 @@ extern json_object* custos_ReqToJson(const custosReq_t* req) {
 	fprintf(stderr, "ERROR custos_ReqToJson: 'req->version' must not be NULL\n");
 #endif
 	return NULL;
-   }
+    }
 
     /* Process Attrs */
     attrsobj = json_object_new_array();
@@ -507,7 +507,7 @@ extern const char* custos_AttrClassToStr(const custosAttrClass_t class) {
 	return CUS_ATTRCLASS_EXPLICIT_STR;
     default:
 #ifdef DEBUG
-	    fprintf(stderr, "ERROR custos_AttrClassToStr: Unrecognized class\n");
+	fprintf(stderr, "ERROR custos_AttrClassToStr: Unrecognized class\n");
 #endif
 	return NULL;
     }
@@ -540,7 +540,7 @@ extern const char* custos_AttrTypeToStr(const custosAttrClass_t class,
 	}
     default:
 #ifdef DEBUG
-	    fprintf(stderr, "ERROR custos_AttrClassToStr: Unrecognized class\n");
+	fprintf(stderr, "ERROR custos_AttrClassToStr: Unrecognized class\n");
 #endif
 	return NULL;
     }
@@ -797,24 +797,24 @@ extern int custos_destroyAttrReq(custosAttrReq_t** attrreqp) {
 
 extern int custos_updateAttrReqAddAttr(custosAttrReq_t* attrreq, custosAttr_t* attr) {
 
-   /* Input Invariant Check */
-   if(!attrreq) {
+    /* Input Invariant Check */
+    if(!attrreq) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_updateAttrReqAddAttr: 'attrreq' must not be NULL\n");
 #endif
 	return -EINVAL;
-   }
-   if(!attr) {
+    }
+    if(!attr) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_updateAttrReqAddAttr: 'attr' must not be NULL\n");
 #endif
 	return -EINVAL;
-   }
+    }
 
-   /* Add Attr to Request*/
-   attrreq->attr = attr;
+    /* Add Attr to Request*/
+    attrreq->attr = attr;
 
-   return RETURN_SUCCESS;
+    return RETURN_SUCCESS;
 
 }
 
@@ -885,24 +885,24 @@ extern int custos_destroyKeyReq(custosKeyReq_t** keyreqp) {
 
 extern int custos_updateKeyReqAddKey(custosKeyReq_t* keyreq, custosKey_t* key) {
 
-   /* Input Invariant Check */
-   if(!keyreq) {
+    /* Input Invariant Check */
+    if(!keyreq) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_updateKeyReqAddKey: 'keyreq' must not be NULL\n");
 #endif
 	return -EINVAL;
-   }
-   if(!key) {
+    }
+    if(!key) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_updateKeyReqAddKey: 'key' must not be NULL\n");
 #endif
 	return -EINVAL;
-   }
+    }
 
-   /* Add Attr to Request*/
-   keyreq->key = key;
+    /* Add Attr to Request*/
+    keyreq->key = key;
 
-   return RETURN_SUCCESS;
+    return RETURN_SUCCESS;
 
 }
 
@@ -974,24 +974,24 @@ extern int custos_destroyAttrRes(custosAttrRes_t** attrresp) {
 
 extern int custos_updateAttrResAddAttr(custosAttrRes_t* attrres, custosAttr_t* attr) {
 
-   /* Input Invariant Check */
-   if(!attrres) {
+    /* Input Invariant Check */
+    if(!attrres) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_updateAttrResAddAttr: 'attrres' must not be NULL\n");
 #endif
 	return -EINVAL;
-   }
-   if(!attr) {
+    }
+    if(!attr) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_updateAttrResAddAttr: 'attr' must not be NULL\n");
 #endif
 	return -EINVAL;
-   }
+    }
 
-   /* Add Attr to Request*/
-   attrres->attr = attr;
+    /* Add Attr to Request*/
+    attrres->attr = attr;
 
-   return RETURN_SUCCESS;
+    return RETURN_SUCCESS;
 
 }
 
@@ -1063,24 +1063,24 @@ extern int custos_destroyKeyRes(custosKeyRes_t** keyresp) {
 
 extern int custos_updateKeyResAddKey(custosKeyRes_t* keyres, custosKey_t* key) {
 
-   /* Input Invariant Check */
-   if(!keyres) {
+    /* Input Invariant Check */
+    if(!keyres) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_updateKeyResAddKey: 'keyres' must not be NULL\n");
 #endif
 	return -EINVAL;
-   }
-   if(!key) {
+    }
+    if(!key) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_updateKeyResAddKey: 'key' must not be NULL\n");
 #endif
 	return -EINVAL;
-   }
+    }
 
-   /* Add Attr to Request*/
-   keyres->key = key;
+    /* Add Attr to Request*/
+    keyres->key = key;
 
-   return RETURN_SUCCESS;
+    return RETURN_SUCCESS;
 
 }
 
@@ -1088,106 +1088,106 @@ extern int custos_updateKeyResAddKey(custosKeyRes_t* keyres, custosKey_t* key) {
 
 extern custosReq_t* custos_createReq(const char* target) {
 
-   custosReq_t* req = NULL;
+    custosReq_t* req = NULL;
 
-   req = malloc(sizeof(*req));
-   if(!req) {
+    req = malloc(sizeof(*req));
+    if(!req) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_createReq: malloc(req) failed\n");
 	perror(         "---------------------->");
 #endif
 	return NULL;
-   }
-   memset(req, 0, sizeof(*req));
+    }
+    memset(req, 0, sizeof(*req));
 
-   req->target = strdup(target);
-   if(!(req->target)) {
+    req->target = strdup(target);
+    if(!(req->target)) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_createReq: strdup(target) failed\n");
 	perror(         "---------------------->");
 #endif
 	return NULL;
-   }
+    }
 
-   req->version = strdup(CUS_VERSION);
-   if(!(req->version)) {
+    req->version = strdup(CUS_VERSION);
+    if(!(req->version)) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_createReq: strdup(CUSTOS_VERSION) failed\n");
 	perror(         "---------------------->");
 #endif
 	return NULL;
-   }
-   req->num_attrs = 0;
-   req->num_keys = 0;
+    }
+    req->num_attrs = 0;
+    req->num_keys = 0;
 
-   return req;
+    return req;
 
 }
 
 extern int custos_destroyReq(custosReq_t** reqp) {
 
-   /* Local vars */
-   uint i;
-   custosReq_t* req;
+    /* Local vars */
+    uint i;
+    custosReq_t* req;
 
-   /* Input Invariant Check */
-   if(!reqp) {
+    /* Input Invariant Check */
+    if(!reqp) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_destroyReq: 'reqp' must not be NULL\n");
 #endif
 	return -EINVAL;
-   }
-   req = *reqp;
+    }
+    req = *reqp;
 
-   if(!req) {
+    if(!req) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_destroyReq: 'req' must not be NULL\n");
 #endif
 	return -EINVAL;
-   }
+    }
 
-   /* Check and Free Required Members */
-   if(!(req->target)) {
+    /* Check and Free Required Members */
+    if(!(req->target)) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_destroyReq: 'req->target' must not be NULL\n");
 #endif
-   }
-   free(req->target);
+    }
+    free(req->target);
 
-   if(!(req->version)) {
+    if(!(req->version)) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_destroyReq: 'req->version' must not be NULL\n");
 #endif
-   }
-   free(req->version);
+    }
+    free(req->version);
 
-   /* Check and Free Optional Members */
-   /* Free Attrs */
-   for(i = 0; i < req->num_attrs; i++) {
-       if(custos_destroyAttrReq(&(req->attrs[i])) < 0) {
+    /* Check and Free Optional Members */
+    /* Free Attrs */
+    for(i = 0; i < req->num_attrs; i++) {
+	if(custos_destroyAttrReq(&(req->attrs[i])) < 0) {
 #ifdef DEBUG
 	    fprintf(stderr, "ERROR custos_destroyReq: custos_destroyAttrReq() failed\n");
 #endif
 	}
-   }
-   req->num_attrs = 0;
+    }
+    req->num_attrs = 0;
 
-   /* Free Keys */
-   for(i = 0; i < req->num_keys; i++) {
-       if(custos_destroyKeyReq(&(req->keys[i])) < 0) {
+    /* Free Keys */
+    for(i = 0; i < req->num_keys; i++) {
+	if(custos_destroyKeyReq(&(req->keys[i])) < 0) {
 #ifdef DEBUG
 	    fprintf(stderr, "ERROR custos_destroyReq: custos_destroyKeyReq() failed\n");
 #endif
 	}
-   }
-   req->num_keys = 0;
+    }
+    req->num_keys = 0;
 
-   /* Free Struct */
-   free(req);
-   req = NULL;
-   *reqp = NULL;
+    /* Free Struct */
+    free(req);
+    req = NULL;
+    *reqp = NULL;
 
-   return RETURN_SUCCESS;
+    return RETURN_SUCCESS;
 
 }
 
@@ -1196,32 +1196,32 @@ extern int custos_updateReqAddAttrReq(custosReq_t* req, custosAttrReq_t* attrreq
     /* Local vars */
     int index = 0;
 
-   /* Input Invariant Check */
-   if(!req) {
+    /* Input Invariant Check */
+    if(!req) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_updateReqAddAttrReq: 'req' must not be NULL\n");
 #endif
 	return -EINVAL;
-   }
-   if(!attrreq) {
+    }
+    if(!attrreq) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_updateReqAddAttrReq: 'attrreq' must not be NULL\n");
 #endif
 	return -EINVAL;
-   }
+    }
 
-   /* Add Attr to Array */
-   index = req->num_attrs;
-   if(index >= CUS_MAX_ATTRS) {
+    /* Add Attr to Array */
+    index = req->num_attrs;
+    if(index >= CUS_MAX_ATTRS) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_updateReqAddAttrReq: Max num_attrs exceeded\n");
 #endif
 	return -ERANGE;
-   }
-   req->attrs[index] = attrreq;
-   req->num_attrs++;
+    }
+    req->attrs[index] = attrreq;
+    req->num_attrs++;
 
-   return index;
+    return index;
 
 }
 
@@ -1230,32 +1230,32 @@ extern int custos_updateReqAddKeyReq(custosReq_t* req, custosKeyReq_t* keyreq) {
     /* Local vars */
     int index = 0;
 
-   /* Input Invariant Check */
-   if(!req) {
+    /* Input Invariant Check */
+    if(!req) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_updateReqAddKeyReq: 'req' must not be NULL\n");
 #endif
 	return -EINVAL;
-   }
-   if(!keyreq) {
+    }
+    if(!keyreq) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_updateReqAddKeyReq: 'keyreq' must not be NULL\n");
 #endif
 	return -EINVAL;
-   }
+    }
 
-   /* Add Key to Array */
-   index = req->num_keys;
-   if(index >= CUS_MAX_KEYS) {
+    /* Add Key to Array */
+    index = req->num_keys;
+    if(index >= CUS_MAX_KEYS) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_updateReqAddKeyReq: Max num_keys exceeded\n");
 #endif
 	return -ERANGE;
-   }
-   req->keys[index] = keyreq;
-   req->num_keys++;
+    }
+    req->keys[index] = keyreq;
+    req->num_keys++;
 
-   return index;
+    return index;
 
 }
 
@@ -1263,310 +1263,339 @@ extern int custos_updateReqAddKeyReq(custosReq_t* req, custosKeyReq_t* keyreq) {
 
 extern custosRes_t* custos_getRes(const custosReq_t* req) {
 
-   custosRes_t* res = NULL;
-   custosAttr_t* attr = NULL;
-   custosAttrRes_t* attrres = NULL;
-   custosKey_t* key = NULL;
-   custosKeyRes_t* keyres = NULL;
-   size_t i = 0;
-   bool psk = false;
-   bool accept = false;
-   json_object* reqJson = NULL;
-   char* reqJsonStr = NULL;
-   char* reqUrlStr = NULL;
+    custosRes_t* res = NULL;
+    custosAttr_t* attr = NULL;
+    custosAttrRes_t* attrres = NULL;
+    custosKey_t* key = NULL;
+    custosKeyRes_t* keyres = NULL;
+    size_t i = 0;
+    bool psk = false;
+    bool accept = false;
+    json_object* reqJson = NULL;
+    char* reqJsonStr = NULL;
+    char* reqUrlStr = NULL;
+    char* fullReqUrl = NULL;
+    HttpData_t resHttp;
+    resHttp.size = 0;
+    resHttp.data = NULL;
 
-   if(!req) {
+    if(!req) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_getRes: 'req' must not be NULL\n");
 #endif
 	return NULL;
-   }
+    }
 
-   if(!(req->target)) {
+    if(!(req->target)) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_getRes: 'req->target' must not be NULL\n");
 #endif
 	return NULL;
-   }
+    }
 
-   /* Setup HTTP Get Request */
-   reqJson = custos_ReqToJson(req);
-   if(!reqJson) {
+    /* Setup HTTP Get Request */
+    reqJson = custos_ReqToJson(req);
+    if(!reqJson) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_getRes: custos_ReqToJson() failed\n");
 #endif
 	return NULL;
-   }
-   reqJsonStr = strdup(json_object_to_json_string(reqJson));
-   if(!reqJsonStr) {
+    }
+    reqJsonStr = strdup(json_object_to_json_string(reqJson));
+    if(!reqJsonStr) {
 #ifdef DEBUG
-       fprintf(stderr, "ERROR custos_getRes: strdup() failed\n");
+	fprintf(stderr, "ERROR custos_getRes: strdup() failed\n");
 #endif
-       return NULL;
-   }
-   json_object_put(reqJson);
-   reqJson = NULL;
-   if(encodeURL(reqJsonStr, strlen(reqJsonStr), &reqUrlStr, NULL) < 0) {
+	return NULL;
+    }
+    json_object_put(reqJson);
+    reqJson = NULL;
+    if(encodeURL(reqJsonStr, strlen(reqJsonStr), &reqUrlStr, NULL) < 0) {
 #ifdef DEBUG
-       fprintf(stderr, "ERROR custos_getRes: encodeURL() failed\n");
+	fprintf(stderr, "ERROR custos_getRes: encodeURL() failed\n");
 #endif
-       return NULL;
-   }
-   free(reqJsonStr);
-   reqJsonStr = NULL;
-   free(reqUrlStr);
-   reqUrlStr = NULL;
-   /* ToDo: Make request to custos server */
+	return NULL;
+    }
+    free(reqJsonStr);
+    reqJsonStr = NULL;
 
-   /* Start Dummy Response */
-   res = custos_createRes(CUS_RESSTAT_ACCEPTED, req->target);
-
-   /* Process Attributes */
-   for(i = 0; i < req->num_attrs; i++) {
-       attr = custos_duplicateAttr(req->attrs[i]->attr, req->attrs[i]->echo);
-       if(!attr) {
+    fullReqUrl = buildUrlGet(req->target, CUSTOS_ENDPOINT_KEYS,
+			     CUSTOS_ENDPOINT_KEYS_REQ, reqUrlStr,
+			     NULL);
+    if(!fullReqUrl) {
 #ifdef DEBUG
-	   fprintf(stderr, "ERROR custos_getRes: custos_duplicateAttr() failed\n");
+	fprintf(stderr, "ERROR custos_getRes: buildUrlGet() failed\n");
 #endif
-	   return NULL;
-       }
-       if(req->attrs[i]->attr->class == CUS_ATTRCLASS_EXPLICIT) {
-	   if(req->attrs[i]->attr->type == CUS_ATTRTYPE_EXP_PSK) {
-	       psk = true;
-	       if (strcmp((char*) req->attrs[i]->attr->val, CUS_TEST_PSK_GOOD) == 0) {
-		   attrres = custos_createAttrRes(CUS_ATTRSTAT_ACCEPTED, req->attrs[i]->echo);
-		   accept = true;
-	       }
-	       else {
-		   attrres = custos_createAttrRes(CUS_ATTRSTAT_DENIED, req->attrs[i]->echo);
-	       }
-	   }
-	   else {
-	       attrres = custos_createAttrRes(CUS_ATTRSTAT_IGNORED, req->attrs[i]->echo);
-	   }
-       }
-       else {
-	   attrres = custos_createAttrRes(CUS_ATTRSTAT_IGNORED, req->attrs[i]->echo);
-       }
+	return NULL;
+    }
+    free(reqUrlStr);
+    reqUrlStr = NULL;
 
-       if(!attrres) {
+    if(httpGet(fullReqUrl, &resHttp) != 200) {
 #ifdef DEBUG
-	   fprintf(stderr, "ERROR custos_getRes: custos_createAttrRes() failed\n");
+	fprintf(stderr, "ERROR custos_getRes: httpGet() failed\n");
 #endif
-	   return NULL;
-       }
+	return NULL;
+    }
+    free(fullReqUrl);
+    fullReqUrl = NULL;
 
-       if(custos_updateAttrResAddAttr(attrres, attr) < 0) {
+    if(resHttp.data) {
+    	fprintf(stdout, "resHttp.data:\n%s\n", resHttp.data);
+	free(resHttp.data);
+    }
+
+    /* ToDo: Make request to custos server */
+
+    /* Start Dummy Response */
+    res = custos_createRes(CUS_RESSTAT_ACCEPTED, req->target);
+
+    /* Process Attributes */
+    for(i = 0; i < req->num_attrs; i++) {
+	attr = custos_duplicateAttr(req->attrs[i]->attr, req->attrs[i]->echo);
+	if(!attr) {
 #ifdef DEBUG
-	   fprintf(stderr, "ERROR custos_getRes: custos_updateAttrResAddAttr() failed\n");
+	    fprintf(stderr, "ERROR custos_getRes: custos_duplicateAttr() failed\n");
 #endif
-	   return NULL;
-       }
+	    return NULL;
+	}
+	if(req->attrs[i]->attr->class == CUS_ATTRCLASS_EXPLICIT) {
+	    if(req->attrs[i]->attr->type == CUS_ATTRTYPE_EXP_PSK) {
+		psk = true;
+		if (strcmp((char*) req->attrs[i]->attr->val, CUS_TEST_PSK_GOOD) == 0) {
+		    attrres = custos_createAttrRes(CUS_ATTRSTAT_ACCEPTED, req->attrs[i]->echo);
+		    accept = true;
+		}
+		else {
+		    attrres = custos_createAttrRes(CUS_ATTRSTAT_DENIED, req->attrs[i]->echo);
+		}
+	    }
+	    else {
+		attrres = custos_createAttrRes(CUS_ATTRSTAT_IGNORED, req->attrs[i]->echo);
+	    }
+	}
+	else {
+	    attrres = custos_createAttrRes(CUS_ATTRSTAT_IGNORED, req->attrs[i]->echo);
+	}
 
-       if(custos_updateResAddAttrRes(res, attrres) < 0) {
+	if(!attrres) {
 #ifdef DEBUG
-	   fprintf(stderr, "ERROR custos_getRes: custos_updateResAddAttrRes() failed\n");
+	    fprintf(stderr, "ERROR custos_getRes: custos_createAttrRes() failed\n");
 #endif
-       }
+	    return NULL;
+	}
 
-   }
-
-   /* Add PSK Attribute if not sent */
-   if(!psk) {
-
-       attr = custos_createAttr(CUS_ATTRCLASS_EXPLICIT, CUS_ATTRTYPE_EXP_PSK,
-				0, 0, NULL);
-       if(!attr) {
+	if(custos_updateAttrResAddAttr(attrres, attr) < 0) {
 #ifdef DEBUG
-	   fprintf(stderr, "ERROR custos_getRes: custos_createAttr() failed\n");
+	    fprintf(stderr, "ERROR custos_getRes: custos_updateAttrResAddAttr() failed\n");
 #endif
-	   return NULL;
-       }
+	    return NULL;
+	}
 
-       attrres = custos_createAttrRes(CUS_ATTRSTAT_REQUIRED, false);
-       if(!attrres) {
+	if(custos_updateResAddAttrRes(res, attrres) < 0) {
 #ifdef DEBUG
-	   fprintf(stderr, "ERROR custos_getRes: custos_createAttrRes() failed\n");
+	    fprintf(stderr, "ERROR custos_getRes: custos_updateResAddAttrRes() failed\n");
 #endif
-	   return NULL;
-       }
+	}
 
-       if(custos_updateAttrResAddAttr(attrres, attr) < 0) {
+    }
+
+    /* Add PSK Attribute if not sent */
+    if(!psk) {
+
+	attr = custos_createAttr(CUS_ATTRCLASS_EXPLICIT, CUS_ATTRTYPE_EXP_PSK,
+				 0, 0, NULL);
+	if(!attr) {
 #ifdef DEBUG
-	   fprintf(stderr, "ERROR custos_getRes: custos_updateAttrResAddAttr() failed\n");
+	    fprintf(stderr, "ERROR custos_getRes: custos_createAttr() failed\n");
 #endif
-	   return NULL;
-       }
+	    return NULL;
+	}
 
-       if(custos_updateResAddAttrRes(res, attrres) < 0) {
+	attrres = custos_createAttrRes(CUS_ATTRSTAT_REQUIRED, false);
+	if(!attrres) {
 #ifdef DEBUG
-	   fprintf(stderr, "ERROR custos_getRes: custos_updateResAddAttrRes() failed\n");
+	    fprintf(stderr, "ERROR custos_getRes: custos_createAttrRes() failed\n");
 #endif
-       }
+	    return NULL;
+	}
 
-   }
-
-   /* Process Keys */
-   for(i = 0; i < req->num_keys; i++) {
-       key = custos_duplicateKey(req->keys[i]->key, req->keys[i]->echo);
-       if(!key) {
+	if(custos_updateAttrResAddAttr(attrres, attr) < 0) {
 #ifdef DEBUG
-	   fprintf(stderr, "ERROR custos_getRes: custos_duplicateKey() failed\n");
+	    fprintf(stderr, "ERROR custos_getRes: custos_updateAttrResAddAttr() failed\n");
 #endif
-	   return NULL;
-       }
-       if(accept) {
-	   if(custos_updateKey(key, req->keys[i]->key->uuid, req->keys[i]->key->revision,
-			       (strlen(TEST_KEY) + 1), (uint8_t*) TEST_KEY) < 0) {
+	    return NULL;
+	}
+
+	if(custos_updateResAddAttrRes(res, attrres) < 0) {
 #ifdef DEBUG
-	       fprintf(stderr, "ERROR custos_getRes: custos_updateKey() failed\n");
+	    fprintf(stderr, "ERROR custos_getRes: custos_updateResAddAttrRes() failed\n");
 #endif
-	       return NULL;
-	   }
-	   keyres = custos_createKeyRes(CUS_KEYSTAT_ACCEPTED, req->keys[i]->echo);
-       }
-       else {
-	   if(custos_updateKey(key, req->keys[i]->key->uuid, req->keys[i]->key->revision,
-			       0, NULL) < 0) {
+	}
+
+    }
+
+    /* Process Keys */
+    for(i = 0; i < req->num_keys; i++) {
+	key = custos_duplicateKey(req->keys[i]->key, req->keys[i]->echo);
+	if(!key) {
 #ifdef DEBUG
-	       fprintf(stderr, "ERROR custos_getRes: custos_updateKey() failed\n");
+	    fprintf(stderr, "ERROR custos_getRes: custos_duplicateKey() failed\n");
 #endif
-	       return NULL;
-	   }
-	   keyres = custos_createKeyRes(CUS_KEYSTAT_DENIED, false);
-       }
-
-       if(!keyres) {
+	    return NULL;
+	}
+	if(accept) {
+	    if(custos_updateKey(key, req->keys[i]->key->uuid, req->keys[i]->key->revision,
+				(strlen(TEST_KEY) + 1), (uint8_t*) TEST_KEY) < 0) {
 #ifdef DEBUG
-	   fprintf(stderr, "ERROR custos_getRes: custos_createKeyRes() failed\n");
+		fprintf(stderr, "ERROR custos_getRes: custos_updateKey() failed\n");
 #endif
-	   return NULL;
-       }
-
-       if(custos_updateKeyResAddKey(keyres, key) < 0) {
+		return NULL;
+	    }
+	    keyres = custos_createKeyRes(CUS_KEYSTAT_ACCEPTED, req->keys[i]->echo);
+	}
+	else {
+	    if(custos_updateKey(key, req->keys[i]->key->uuid, req->keys[i]->key->revision,
+				0, NULL) < 0) {
 #ifdef DEBUG
-	   fprintf(stderr, "ERROR custos_getRes: custos_updateKeyResAddKey() failed\n");
+		fprintf(stderr, "ERROR custos_getRes: custos_updateKey() failed\n");
 #endif
-	   return NULL;
-       }
+		return NULL;
+	    }
+	    keyres = custos_createKeyRes(CUS_KEYSTAT_DENIED, false);
+	}
 
-       if(custos_updateResAddKeyRes(res, keyres) < 0) {
+	if(!keyres) {
 #ifdef DEBUG
-	   fprintf(stderr, "ERROR custos_getRes: custos_updateResAddKeyRes() failed\n");
+	    fprintf(stderr, "ERROR custos_getRes: custos_createKeyRes() failed\n");
 #endif
-       }
+	    return NULL;
+	}
 
-   }
+	if(custos_updateKeyResAddKey(keyres, key) < 0) {
+#ifdef DEBUG
+	    fprintf(stderr, "ERROR custos_getRes: custos_updateKeyResAddKey() failed\n");
+#endif
+	    return NULL;
+	}
 
-   /* End Dummy Response */
+	if(custos_updateResAddKeyRes(res, keyres) < 0) {
+#ifdef DEBUG
+	    fprintf(stderr, "ERROR custos_getRes: custos_updateResAddKeyRes() failed\n");
+#endif
+	}
 
-   return res;
+    }
+
+    /* End Dummy Response */
+
+    return res;
 }
 
 extern custosRes_t* custos_createRes(const custosResStatus_t status, const char* source) {
 
-   custosRes_t* res = NULL;
+    custosRes_t* res = NULL;
 
-   res = malloc(sizeof(*res));
-   if(!res) {
+    res = malloc(sizeof(*res));
+    if(!res) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_createRes: malloc(res) failed\n");
 	perror(         "---------------------->");
 #endif
 	return NULL;
-   }
-   memset(res, 0, sizeof(*res));
+    }
+    memset(res, 0, sizeof(*res));
 
-   res->source = strdup(source);
-   if(!(res->source)) {
+    res->source = strdup(source);
+    if(!(res->source)) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_createRes: strdup(source) failed\n");
 	perror(         "---------------------->");
 #endif
 	return NULL;
-   }
+    }
 
-   res->version = strdup(CUS_VERSION);
-   if(!(res->version)) {
+    res->version = strdup(CUS_VERSION);
+    if(!(res->version)) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_createRes: strdup(CUSTOS_VERSION) failed\n");
 	perror(         "---------------------->");
 #endif
 	return NULL;
-   }
+    }
 
-   res->status = status;
-   res->num_attrs = 0;
-   res->num_keys = 0;
+    res->status = status;
+    res->num_attrs = 0;
+    res->num_keys = 0;
 
-   return res;
+    return res;
 
 }
 
 extern int custos_destroyRes(custosRes_t** resp) {
 
-   /* Local vars */
-   uint i;
-   custosRes_t* res;
+    /* Local vars */
+    uint i;
+    custosRes_t* res;
 
-   /* Input Invariant Check */
-   if(!resp) {
+    /* Input Invariant Check */
+    if(!resp) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_destroyRes: 'resp' must not be NULL\n");
 #endif
 	return -EINVAL;
-   }
-   res = *resp;
+    }
+    res = *resp;
 
-   if(!res) {
+    if(!res) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_destroyRes: 'res' must not be NULL\n");
 #endif
 	return -EINVAL;
-   }
+    }
 
-   /* Check and Free Required Members */
-   if(!(res->source)) {
+    /* Check and Free Required Members */
+    if(!(res->source)) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_destroyRes: 'res->source' must not be NULL\n");
 #endif
-   }
-   free(res->source);
+    }
+    free(res->source);
 
-   if(!(res->version)) {
+    if(!(res->version)) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_destroyRes: 'res->version' must not be NULL\n");
 #endif
-   }
-   free(res->version);
+    }
+    free(res->version);
 
-   /* Check and Free Optional Members */
-   /* Free Attrs */
-   for(i = 0; i < res->num_attrs; i++) {
-       if(custos_destroyAttrRes(&(res->attrs[i])) < 0) {
+    /* Check and Free Optional Members */
+    /* Free Attrs */
+    for(i = 0; i < res->num_attrs; i++) {
+	if(custos_destroyAttrRes(&(res->attrs[i])) < 0) {
 #ifdef DEBUG
 	    fprintf(stderr, "ERROR custos_destroyRes: custos_destroyAttrRes() failed\n");
 #endif
 	}
-   }
-   res->num_attrs = 0;
+    }
+    res->num_attrs = 0;
 
-   /* Free Keys */
-   for(i = 0; i < res->num_keys; i++) {
-       if(custos_destroyKeyRes(&(res->keys[i])) < 0) {
+    /* Free Keys */
+    for(i = 0; i < res->num_keys; i++) {
+	if(custos_destroyKeyRes(&(res->keys[i])) < 0) {
 #ifdef DEBUG
 	    fprintf(stderr, "ERROR custos_destroyRes: custos_destroyKeyRes() failed\n");
 #endif
 	}
-   }
-   res->num_keys = 0;
+    }
+    res->num_keys = 0;
 
-   /* Free Struct */
-   free(res);
-   res = NULL;
-   *resp = NULL;
+    /* Free Struct */
+    free(res);
+    res = NULL;
+    *resp = NULL;
 
-   return RETURN_SUCCESS;
+    return RETURN_SUCCESS;
 
 }
 
@@ -1575,32 +1604,32 @@ extern int custos_updateResAddAttrRes(custosRes_t* res, custosAttrRes_t* attrres
     /* Local vars */
     int index = 0;
 
-   /* Input Invariant Check */
-   if(!res) {
+    /* Input Invariant Check */
+    if(!res) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_updateResAddAttrRes: 'res' must not be NULL\n");
 #endif
 	return -EINVAL;
-   }
-   if(!attrres) {
+    }
+    if(!attrres) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_updateResAddAttrRes: 'attrres' must not be NULL\n");
 #endif
 	return -EINVAL;
-   }
+    }
 
-   /* Add Attr to Array */
-   index = res->num_attrs;
-   if(index >= CUS_MAX_ATTRS) {
+    /* Add Attr to Array */
+    index = res->num_attrs;
+    if(index >= CUS_MAX_ATTRS) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_updateResAddAttrRes: Max num_attrs exceeded\n");
 #endif
 	return -ERANGE;
-   }
-   res->attrs[index] = attrres;
-   res->num_attrs++;
+    }
+    res->attrs[index] = attrres;
+    res->num_attrs++;
 
-   return index;
+    return index;
 
 }
 
@@ -1609,31 +1638,31 @@ extern int custos_updateResAddKeyRes(custosRes_t* res, custosKeyRes_t* keyres) {
     /* Local vars */
     int index = 0;
 
-   /* Input Invariant Check */
-   if(!res) {
+    /* Input Invariant Check */
+    if(!res) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_updateResAddKeyRes: 'res' must not be NULL\n");
 #endif
 	return -EINVAL;
-   }
-   if(!keyres) {
+    }
+    if(!keyres) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_updateResAddKeyRes: 'keyres' must not be NULL\n");
 #endif
 	return -EINVAL;
-   }
+    }
 
-   /* Add Key to Array */
-   index = res->num_keys;
-   if(index >= CUS_MAX_KEYS) {
+    /* Add Key to Array */
+    index = res->num_keys;
+    if(index >= CUS_MAX_KEYS) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_updateResAddKeyRes: Max num_keys exceeded\n");
 #endif
 	return -ERANGE;
-   }
-   res->keys[index] = keyres;
-   res->num_keys++;
+    }
+    res->keys[index] = keyres;
+    res->num_keys++;
 
-   return index;
+    return index;
 
 }
