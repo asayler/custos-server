@@ -7,6 +7,9 @@
  *
  */
 
+#ifndef CUSTOS_CLIENT_PRINT_H
+#define CUSTOS_CLIENT_PRINT_H
+
 #include <inttypes.h>
 #include <ctype.h>
 #include <stdio.h>
@@ -33,3 +36,5 @@ int custos_printKeyRes(custosKeyRes_t* keyres, uint offset, FILE* stream);
 
 int custos_printReq(custosReq_t* req, uint offset, FILE* stream);
 int custos_printRes(custosRes_t* res, uint offset, FILE* stream);
+
+#endif

@@ -41,6 +41,10 @@ typedef enum custosResStatus {
     CUS_RESSTAT_MAX
 } custosResStatus_t;
 
+#define CUS_RESSTAT_ACCEPTED_STR "accepted"
+#define CUS_RESSTAT_DENIED_STR   "denied"
+#define CUS_RESSTAT_ERROR_STR    "error"
+
 typedef enum custosAttrResStatus {
     CUS_ATTRSTAT_ACCEPTED = 0,
     CUS_ATTRSTAT_DENIED,
@@ -50,11 +54,20 @@ typedef enum custosAttrResStatus {
     CUS_ATTRSTAT_MAX
 } custosAttrStatus_t;
 
+#define CUS_ATTRSTAT_ACCEPTED_STR "accepted"
+#define CUS_ATTRSTAT_DENIED_STR   "denied"
+#define CUS_ATTRSTAT_REQUIRED_STR "required"
+#define CUS_ATTRSTAT_OPTIONAL_STR "optional"
+#define CUS_ATTRSTAT_IGNORED_STR  "ignored"
+
 typedef enum custosKeyResStatus {
     CUS_KEYSTAT_ACCEPTED = 0,
     CUS_KEYSTAT_DENIED,
     CUS_KEYSTAT_MAX
 } custosKeyStatus_t;
+
+#define CUS_KEYSTAT_ACCEPTED_STR "accepted"
+#define CUS_KEYSTAT_DENIED_STR   "denied"
 
 typedef enum custosAttrClass {
     CUS_ATTRCLASS_IMPLICIT = 0,
@@ -146,8 +159,11 @@ extern int custos_updateAttr(custosAttr_t* attr,
 			     const size_t size, const uint8_t* val);
 
 extern const char* custos_AttrClassToStr(const custosAttrClass_t class);
+extern custosAttrClass_t custos_StrToAttrClass(const char* str);
 extern const char* custos_AttrTypeToStr(const custosAttrClass_t class,
 					const custosAttrType_t type);
+extern custosAttrType_t custos_StrToAttrType(const custosAttrClass_t class,
+					     const char* str);
 
 /* custosKey Functions */
 extern custosKey_t* custos_createKey(const uuid_t uuid,
@@ -192,6 +208,9 @@ extern custosRes_t* custos_createRes(const custosResStatus_t status, const char*
 extern int custos_destroyRes(custosRes_t** resp);
 extern int custos_updateResAddAttrRes(custosRes_t* res, custosAttrRes_t* attrres);
 extern int custos_updateResAddKeyRes(custosRes_t* res, custosKeyRes_t* keyres);
+
+extern const char* custos_ResStatusToStr(const custosResStatus_t status);
+extern custosResStatus_t custos_StrToResStatus(const char* str);
 
 /* JSON */
 extern json_object* custos_AttrToJson(const custosAttr_t* attr);

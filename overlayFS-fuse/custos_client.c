@@ -8,6 +8,7 @@
  */
 
 #include "custos_client.h"
+#include "custos_client_print.h"
 
 #define DEBUG
 
@@ -295,63 +296,85 @@ extern json_object* custos_ReqToJson(const custosReq_t* req) {
 
 extern custosRes_t* custos_JsonToRes(json_object* resjson) {
 
-    json_object* resobj     = NULL;
-    json_object* checkobj   = NULL;
-    json_object* tempobj    = NULL;
-    custosRes_t* res        = NULL;
-    char*        source     = NULL;
+    json_object*      resobj     = NULL;
+    json_object*      checkobj   = NULL;
+    char*             sourceStr  = NULL;
+    char*             versionStr = NULL;
+    char*             reqidStr   = NULL;
+    char*             residStr   = NULL;
+    char*             statusStr  = NULL;
+    custosResStatus_t status     = CUS_RESSTAT_MAX;
+    custosRes_t*      res        = NULL;
 
     /* Process Top Level JSON */
-    if(!json_object_is_type(resjson, json_type_object)) {
+    if(json_safe_get(resjson, json_type_object, "Response", &resobj) < 0) {
 #ifdef DEBUG
-	fprintf(stderr, "ERROR custos_JsonToRes: resjson must be a json object\n");
+	fprintf(stderr, "ERROR custos_JsonToRes: json_safe_get(Response) failed\n");
 #endif
 	return NULL;
     }
-    if(!json_object_object_get_ex(resjson, "Response", &resobj)) {
+    if(json_safe_get(resjson, json_type_object, "Checksums", &checkobj) < 0) {
 #ifdef DEBUG
-	fprintf(stderr, "ERROR custos_JsonToRes: Missing 'Response' object\n");
-#endif
-	return NULL;
-    }
-    if(!json_object_object_get_ex(resjson, "Checksums", &checkobj)) {
-#ifdef DEBUG
-	fprintf(stderr, "ERROR custos_JsonToRes: Missing 'Checksums' object\n");
+	fprintf(stderr, "ERROR custos_JsonToRes: json_safe_get(Checksums) failed\n");
 #endif
 	return NULL;
     }
 
-    /* Process Response Json */
-    if(!json_object_is_type(resobj, json_type_object)) {
+    /* Process Response Object */
+    if(json_safe_get(resobj, json_type_string, "Source", &sourceStr) < 0) {
 #ifdef DEBUG
-	fprintf(stderr, "ERROR custos_JsonToRes: 'Response' must be a json object\n");
+	fprintf(stderr, "ERROR custos_JsonToRes: json_safe_get(source) failed\n");
 #endif
 	return NULL;
     }
-    /* (string) Source */
-    if(!json_object_object_get_ex(resobj, "Source", &tempobj)) {
+    if(json_safe_get(resobj, json_type_string, "Version", &versionStr) < 0) {
 #ifdef DEBUG
-	fprintf(stderr, "ERROR custos_JsonToRes: Missing 'Source' object\n");
+	fprintf(stderr, "ERROR custos_JsonToRes: json_safe_get(version) failed\n");
 #endif
 	return NULL;
     }
-    if(!json_object_is_type(tempobj, json_type_string)) {
+    if(json_safe_get(resobj, json_type_string, "ResID", &residStr) < 0) {
 #ifdef DEBUG
-	fprintf(stderr, "ERROR custos_JsonToRes: 'Source' must be a json string\n");
+	fprintf(stderr, "ERROR custos_JsonToRes: json_safe_get(ResID) failed\n");
 #endif
 	return NULL;
     }
-    source = strdup(json_object_get_string(tempobj));
-    if(!source) {
+    if(json_safe_get(resobj, json_type_string, "ReqID", &reqidStr) < 0) {
 #ifdef DEBUG
-	fprintf(stderr, "ERROR custos_JsonToRes: strdup(source) failed\n");
+	fprintf(stderr, "ERROR custos_JsonToRes: json_safe_get(ReqID) failed\n");
+#endif
+	return NULL;
+    }
+    if(json_safe_get(resobj, json_type_string, "Status", &statusStr) < 0) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_JsonToRes: json_safe_get(Status) failed\n");
+#endif
+	return NULL;
+    }
+    if((status = custos_StrToResStatus(statusStr)) < 0) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_JsonToRes: custos_StrToResStatus() failed\n");
 #endif
 	return NULL;
     }
 
-    res = custos_createRes(0, source);
-    free(source);
+    /* Setup Response */
+    res = custos_createRes(status, sourceStr);
+    if(!res) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_JsonToRes: custos_createRes() failed\n");
+#endif
+	return NULL;
+    }
 
+    /* Cleanup */
+    free(sourceStr);
+    free(versionStr);
+    free(residStr);
+    free(reqidStr);
+    free(statusStr);
+
+    /* Return */
     return res;
 
 }
@@ -577,17 +600,41 @@ extern const char* custos_AttrClassToStr(const custosAttrClass_t class) {
 
 }
 
+extern custosAttrClass_t custos_StrToAttrClass(const char* str) {
+
+    if(!str) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_StrToAttrClass: 'str' must not be NULL\n");
+#endif
+	return -EINVAL;
+    }
+
+    if(strcmp(str, CUS_ATTRCLASS_IMPLICIT_STR) == 0) {
+	return CUS_ATTRCLASS_IMPLICIT;
+    }
+    else if (strcmp(str, CUS_ATTRCLASS_EXPLICIT_STR) == 0) {
+	return CUS_ATTRCLASS_EXPLICIT;
+    }
+    else {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_StrToAttrClass: unrecognized class\n");
+#endif
+	return -EPERM;
+    }
+
+}
+
 extern const char* custos_AttrTypeToStr(const custosAttrClass_t class,
 					const custosAttrType_t type) {
 
-    switch(class) {
-    case CUS_ATTRCLASS_IMPLICIT:
+	switch(class) {
+	case CUS_ATTRCLASS_IMPLICIT:
 	switch(type) {
 	case CUS_ATTRTYPE_IMP_SOURCEIP:
 	    return CUS_ATTRTYPE_IMP_SOURCEIP_STR;
 	default:
 #ifdef DEBUG
-	    fprintf(stderr, "ERROR custos_AttrClassToStr: Unrecognized implicit type\n");
+	    fprintf(stderr, "ERROR custos_AttrTypeToStr: unrecognized implicit type\n");
 #endif
 	    return NULL;
 	}
@@ -597,15 +644,55 @@ extern const char* custos_AttrTypeToStr(const custosAttrClass_t class,
 	    return CUS_ATTRTYPE_EXP_PSK_STR;
 	default:
 #ifdef DEBUG
-	    fprintf(stderr, "ERROR custos_AttrClassToStr: Unrecognized explicit type\n");
+	    fprintf(stderr, "ERROR custos_AttrTypeToStr: unrecognized explicit type\n");
 #endif
 	    return NULL;
 	}
     default:
 #ifdef DEBUG
-	fprintf(stderr, "ERROR custos_AttrClassToStr: Unrecognized class\n");
+	fprintf(stderr, "ERROR custos_AttrTypeToStr: unrecognized class\n");
 #endif
 	return NULL;
+    }
+
+    }
+
+extern custosAttrType_t custos_StrToAttrType(const custosAttrClass_t class,
+					     const char* str) {
+
+    if(!str) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_StrToAttrType: 'str' must not be NULL\n");
+#endif
+	return -EINVAL;
+    }
+
+    switch(class) {
+    case CUS_ATTRCLASS_IMPLICIT:
+	if(strcmp(str, CUS_ATTRTYPE_IMP_SOURCEIP_STR) == 0) {
+	    return CUS_ATTRTYPE_IMP_SOURCEIP;
+	}
+	else {
+#ifdef DEBUG
+	    fprintf(stderr, "ERROR custos_StrToAttrType: unrecognized implicit type\n");
+#endif
+	    return -EPERM;
+	}
+    case CUS_ATTRCLASS_EXPLICIT:
+	if(strcmp(str, CUS_ATTRTYPE_EXP_PSK_STR) == 0) {
+	    return CUS_ATTRTYPE_EXP_PSK;
+	}
+	else {
+#ifdef DEBUG
+	    fprintf(stderr, "ERROR custos_StrToAttrType: unrecognized explicit type\n");
+#endif
+	    return -EPERM;
+	}
+    default:
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_StrToAttrType: unrecognized class\n");
+#endif
+	return -EPERM;
     }
 
 }
@@ -1441,6 +1528,13 @@ extern custosRes_t* custos_getRes(const custosReq_t* req) {
 
     /* ToDo: Process response from custos server */
 
+    if(custos_printRes(res, 0, stderr) < 0) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_getRes: custos_printRes() failed\n");
+#endif
+	return NULL;
+    }
+
     if(custos_destroyRes(&res) < 0) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_getRes: custos_destroyRes() failed\n");
@@ -1765,5 +1859,50 @@ extern int custos_updateResAddKeyRes(custosRes_t* res, custosKeyRes_t* keyres) {
     res->num_keys++;
 
     return index;
+
+}
+
+extern const char* custos_ResStatusToStr(const custosResStatus_t status) {
+
+    switch(status) {
+    case CUS_RESSTAT_ACCEPTED:
+	return CUS_RESSTAT_ACCEPTED_STR;
+    case CUS_RESSTAT_DENIED:
+	return CUS_RESSTAT_DENIED_STR;
+    case CUS_RESSTAT_ERROR:
+	return CUS_RESSTAT_ERROR_STR;
+    default:
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_ResStatusToStr: unrecognized status\n");
+#endif
+	return NULL;
+    }
+
+}
+
+extern custosResStatus_t custos_StrToResStatus(const char* str) {
+
+    if(!str) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_StrToResStatus: 'str' must not be NULL\n");
+#endif
+	return -EINVAL;
+    }
+
+    if(strcmp(str, CUS_RESSTAT_ACCEPTED_STR) == 0) {
+	return CUS_RESSTAT_ACCEPTED;
+    }
+    else if (strcmp(str, CUS_RESSTAT_DENIED_STR) == 0) {
+	return CUS_RESSTAT_DENIED;
+    }
+    else if (strcmp(str, CUS_RESSTAT_ERROR_STR) == 0) {
+	return CUS_RESSTAT_ERROR;
+    }
+    else {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_StrToResStatus: unrecognized status\n");
+#endif
+	return -EPERM;
+    }
 
 }
