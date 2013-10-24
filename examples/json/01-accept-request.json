@@ -1,23 +1,23 @@
 {
     "Request": {
-	"RequestSource": "",
-	"RequestTarget": "condor.andysayler.com",
-	"RequestVersion": "0.1-dev",
-	"RequestID": "",
-	"RequestAuthAttrs": [
+	"Target": "condor.andysayler.com",
+	"Version": "0.1-dev",
+	"ReqID": "",
+	"Attrs": [
 	    {
-		"AttrEcho": false,
-		"AttrClass": "explicit",
-		"AttrType": "psk",
-		"AttrIndex": 0,
-		"AttrValue": "CorrectHorseBatteryStaple"
+		"Class": "explicit",
+		"Type": "psk",
+		"Index": 0,
+		"Value": "CorrectHorseBatteryStaple"
+		"Echo": false,
 	    }
 	],
-	"RequestKeys": [
+	"Keys": [
 	    {
-		"KeyEcho": false,
-		"KeyUUID": "7af8c95d-479a-46fe-b5de-8574c6ca1369",
-		"KeyRevision": ""
+		"UUID": "7af8c95d-479a-46fe-b5de-8574c6ca1369",
+		"Revision": ""
+		"Val": ""
+		"Echo": false,
 	    }
 	]
     },

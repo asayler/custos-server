@@ -1,7 +1,6 @@
 {
     "Response": {
 	"Source": "http://condor.andysayler.com",
-	"Target": "",
 	"Version": "0.1-dev",
 	"ResID": "",
 	"ReqID": "",
