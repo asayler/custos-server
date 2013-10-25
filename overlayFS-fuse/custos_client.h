@@ -45,7 +45,7 @@ typedef enum custosResStatus {
 #define CUS_RESSTAT_DENIED_STR   "denied"
 #define CUS_RESSTAT_ERROR_STR    "error"
 
-typedef enum custosAttrResStatus {
+typedef enum custosAttrStatus {
     CUS_ATTRSTAT_ACCEPTED = 0,
     CUS_ATTRSTAT_DENIED,
     CUS_ATTRSTAT_REQUIRED,
@@ -60,7 +60,7 @@ typedef enum custosAttrResStatus {
 #define CUS_ATTRSTAT_OPTIONAL_STR "optional"
 #define CUS_ATTRSTAT_IGNORED_STR  "ignored"
 
-typedef enum custosKeyResStatus {
+typedef enum custosKeyStatus {
     CUS_KEYSTAT_ACCEPTED = 0,
     CUS_KEYSTAT_DENIED,
     CUS_KEYSTAT_MAX
@@ -85,6 +85,7 @@ typedef enum custosAttrType {
     CUS_ATTRTYPE_IMP_MAX
 } custosAttrType_t;
 
+#define CUS_ATTRTYPE_MAX CUS_ATTRTYPE_IMP_MAX
 #define CUS_ATTRTYPE_EXP_PSK_STR        "psk"
 #define CUS_ATTRTYPE_IMP_SOURCEIP_STR   "ip_source"
 
@@ -191,6 +192,9 @@ extern custosAttrRes_t* custos_createAttrRes(const custosAttrStatus_t status, co
 extern int custos_destroyAttrRes(custosAttrRes_t** attrresp);
 extern int custos_updateAttrResAddAttr(custosAttrRes_t* attrres, custosAttr_t* attr);
 
+extern const char* custos_AttrStatusToStr(const custosAttrStatus_t status);
+extern custosAttrStatus_t custos_StrToAttrStatus(const char* str);
+
 /* custosKeyRes Functions */
 extern custosKeyRes_t* custos_createKeyRes(const custosKeyStatus_t status, const bool echo);
 extern int custos_destroyKeyRes(custosKeyRes_t** keyresp);
@@ -220,6 +224,10 @@ extern json_object* custos_AttrReqToJson(const custosAttrReq_t* attrreq);
 extern json_object* custos_KeyReqToJson(const custosKeyReq_t* keyreq);
 
 extern json_object* custos_ReqToJson(const custosReq_t* req);
+
+extern custosAttr_t* custos_JsonToAttr(json_object* attrjson);
+
+extern custosAttrRes_t* custos_JsonToAttrRes(json_object* attrresjson);
 
 extern custosRes_t* custos_JsonToRes(json_object* resjson);
 

@@ -296,13 +296,19 @@ extern json_object* custos_ReqToJson(const custosReq_t* req) {
 
 extern custosRes_t* custos_JsonToRes(json_object* resjson) {
 
+    int len;
+    int i;
     json_object*      resobj     = NULL;
     json_object*      checkobj   = NULL;
+    json_object*      attrsobj   = NULL;
+    json_object*      keysobj    = NULL;
+    json_object*      attrresobj = NULL;
     char*             sourceStr  = NULL;
     char*             versionStr = NULL;
     char*             reqidStr   = NULL;
     char*             residStr   = NULL;
     char*             statusStr  = NULL;
+    custosAttrRes_t*  attrres    = NULL;
     custosResStatus_t status     = CUS_RESSTAT_MAX;
     custosRes_t*      res        = NULL;
 
@@ -333,6 +339,12 @@ extern custosRes_t* custos_JsonToRes(json_object* resjson) {
 #endif
 	return NULL;
     }
+    if(strcmp(versionStr, CUS_VERSION) != 0) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_JsonToRes: version mismatch\n");
+#endif
+	return NULL;
+    }
     if(json_safe_get(resobj, json_type_string, "ResID", &residStr) < 0) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_JsonToRes: json_safe_get(ResID) failed\n");
@@ -345,6 +357,7 @@ extern custosRes_t* custos_JsonToRes(json_object* resjson) {
 #endif
 	return NULL;
     }
+    // TODO Validate ReqID
     if(json_safe_get(resobj, json_type_string, "Status", &statusStr) < 0) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_JsonToRes: json_safe_get(Status) failed\n");
@@ -354,6 +367,18 @@ extern custosRes_t* custos_JsonToRes(json_object* resjson) {
     if((status = custos_StrToResStatus(statusStr)) < 0) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_JsonToRes: custos_StrToResStatus() failed\n");
+#endif
+	return NULL;
+    }
+    if(json_safe_get(resobj, json_type_array, "Attrs", &attrsobj) < 0) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_JsonToRes: json_safe_get(Attrs) failed\n");
+#endif
+	return NULL;
+    }
+    if(json_safe_get(resobj, json_type_array, "Keys", &keysobj) < 0) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_JsonToRes: json_safe_get(Keys) failed\n");
 #endif
 	return NULL;
     }
@@ -367,6 +392,34 @@ extern custosRes_t* custos_JsonToRes(json_object* resjson) {
 	return NULL;
     }
 
+    /* Process Attrs */
+    len = json_object_array_length(attrsobj);
+    for(i=0; i < len; i++) {
+	/* Extract AttrRes */
+	attrresobj = json_object_array_get_idx(attrsobj, i);
+	if(!attrresobj) {
+#ifdef DEBUG
+	    fprintf(stderr, "ERROR custos_JsonToRes: json_object_array_get_idx() failed\n");
+#endif
+	    return NULL;
+	}
+	/* Process AttrRes */
+	attrres = custos_JsonToAttrRes(attrresobj);
+	if(!attrres) {
+#ifdef DEBUG
+	    fprintf(stderr, "ERROR custos_JsonToRes: custos_JsonToAttrRes() failed\n");
+#endif
+	    return NULL;
+	}
+	/* Add AttrRes */
+	if(custos_updateResAddAttrRes(res, attrres) < 0) {
+#ifdef DEBUG
+	    fprintf(stderr, "ERROR custos_JsonToRes: custos_updateResAddAttrRes() failed\n");
+#endif
+	    return NULL;
+	}
+    }
+
     /* Cleanup */
     free(sourceStr);
     free(versionStr);
@@ -376,6 +429,152 @@ extern custosRes_t* custos_JsonToRes(json_object* resjson) {
 
     /* Return */
     return res;
+
+}
+
+extern custosAttrRes_t* custos_JsonToAttrRes(json_object* attrresjson) {
+
+    json_object*       attrobj   = NULL;
+    char*              statusStr = NULL;
+    bool               echo      = false;
+    custosAttrStatus_t status    = CUS_ATTRSTAT_MAX;
+    custosAttr_t*      attr      = NULL;
+    custosAttrRes_t*   attrres   = NULL;
+
+    /* Process Top Level JSON */
+    if(json_safe_get(attrresjson, json_type_boolean, "Echo", &echo) < 0) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_JsonToAttrRes: json_safe_get(Echo) failed\n");
+#endif
+	return NULL;
+    }
+    if(json_safe_get(attrresjson, json_type_string, "Status", &statusStr) < 0) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_JsonToAttrRes: json_safe_get(Status) failed\n");
+#endif
+	return NULL;
+    }
+    if((status = custos_StrToAttrStatus(statusStr)) < 0) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_JsonToAttrRes: custos_StrToAttrResStatus() failed\n");
+#endif
+	return NULL;
+    }
+
+    /* Setup AttrRes */
+    attrres = custos_createAttrRes(status, echo);
+    if(!attrres) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_JsonToAttrRes: custos_createAttrRes() failed\n");
+#endif
+	return NULL;
+    }
+
+    /* Process Attr */
+    attrobj = attrresjson;
+    attr = custos_JsonToAttr(attrobj);
+    if(!attr) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_JsonToAttrRes: custos_JsonToAttr() failed\n");
+#endif
+	return NULL;
+    }
+
+    /* Add Attr */
+    if(custos_updateAttrResAddAttr(attrres, attr) < 0) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_JsonToAttrRes: custos_updateAttrResAddAttr() failed\n");
+#endif
+	return NULL;
+    }
+
+    /* Cleanup */
+    free(statusStr);
+
+    /* Return */
+    return attrres;
+
+}
+
+extern custosAttr_t* custos_JsonToAttr(json_object* attrjson) {
+
+    char*              classStr = NULL;
+    char*              typeStr  = NULL;
+    custosAttrClass_t  class    = CUS_ATTRCLASS_MAX;
+    custosAttrType_t   type     = CUS_ATTRTYPE_MAX;
+    int64_t            index    = 0;
+    char*              valueStr = NULL;
+    uint8_t*           value    = NULL;
+    size_t             size     = 0;
+    custosAttr_t*      attr     = NULL;
+
+    /* Process Top Level JSON */
+    if(json_safe_get(attrjson, json_type_string, "Class", &classStr) < 0) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_JsonToAttr: json_safe_get(Class) failed\n");
+#endif
+	return NULL;
+    }
+    if((class = custos_StrToAttrClass(classStr)) < 0) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_JsonToAttr: custos_StrToAttrClass() failed\n");
+#endif
+	return NULL;
+    }
+    if(json_safe_get(attrjson, json_type_string, "Type", &typeStr) < 0) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_JsonToAttr: json_safe_get(Type) failed\n");
+#endif
+	return NULL;
+    }
+    if((type = custos_StrToAttrType(class, typeStr)) < 0) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_JsonToAttr: custos_StrToAttrType() failed\n");
+#endif
+	return NULL;
+    }
+    if(json_safe_get(attrjson, json_type_int, "Index", &index) < 0) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_JsonToAttr: json_safe_get(Index) failed\n");
+#endif
+	return NULL;
+    }
+    if(json_safe_get(attrjson, json_type_string, "Value", &valueStr) < 0) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_JsonToAttr: json_safe_get(Value) failed\n");
+#endif
+	return NULL;
+    }
+    if(strcmp(valueStr, "") == 0) {
+	value = NULL;
+	size = 0;
+    }
+    else {
+	if(decodeBase64(valueStr, strlen(valueStr), (char**) &value, &size) < 0) {
+#ifdef DEBUG
+	    fprintf(stderr, "ERROR custos_JsonToAttr: decodeBase64() failed\n");
+#endif
+	    return NULL;
+	}
+    }
+
+    /* Setup Attr */
+    attr = custos_createAttr(class, type, index, size, value);
+    if(!attr) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_JsonToAttr: custos_createAttr() failed\n");
+#endif
+	return NULL;
+    }
+
+    /* Cleanup */
+    free(classStr);
+    free(typeStr);
+    free(valueStr);
+    freeBase64((char**) &value);
+
+    /* Return */
+    return attr;
 
 }
 
@@ -1142,6 +1341,61 @@ extern int custos_updateAttrResAddAttr(custosAttrRes_t* attrres, custosAttr_t* a
     attrres->attr = attr;
 
     return RETURN_SUCCESS;
+
+}
+
+extern const char* custos_AttrStatusToStr(const custosAttrStatus_t status) {
+
+    switch(status) {
+    case CUS_ATTRSTAT_ACCEPTED:
+	return CUS_ATTRSTAT_ACCEPTED_STR;
+    case CUS_ATTRSTAT_DENIED:
+	return CUS_ATTRSTAT_DENIED_STR;
+    case CUS_ATTRSTAT_REQUIRED:
+	return CUS_ATTRSTAT_REQUIRED_STR;
+    case CUS_ATTRSTAT_OPTIONAL:
+	return CUS_ATTRSTAT_OPTIONAL_STR;
+    case CUS_ATTRSTAT_IGNORED:
+	return CUS_ATTRSTAT_IGNORED_STR;
+    default:
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_AttrStatusToStr: unrecognized status\n");
+#endif
+	return NULL;
+    }
+
+}
+
+extern custosAttrStatus_t custos_StrToAttrStatus(const char* str) {
+
+    if(!str) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_StrToAttrStatus: 'str' must not be NULL\n");
+#endif
+	return -EINVAL;
+    }
+
+    if(strcmp(str, CUS_ATTRSTAT_ACCEPTED_STR) == 0) {
+	return CUS_ATTRSTAT_ACCEPTED;
+    }
+    else if (strcmp(str, CUS_ATTRSTAT_DENIED_STR) == 0) {
+	return CUS_ATTRSTAT_DENIED;
+    }
+    else if (strcmp(str, CUS_ATTRSTAT_REQUIRED_STR) == 0) {
+	return CUS_ATTRSTAT_REQUIRED;
+    }
+    else if (strcmp(str, CUS_ATTRSTAT_OPTIONAL_STR) == 0) {
+	return CUS_ATTRSTAT_OPTIONAL;
+    }
+    else if (strcmp(str, CUS_ATTRSTAT_IGNORED_STR) == 0) {
+	return CUS_ATTRSTAT_IGNORED;
+    }
+    else {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_StrToAttrStatus: unrecognized status\n");
+#endif
+	return -EPERM;
+    }
 
 }
 
