@@ -118,11 +118,18 @@ int json_safe_get(json_object* obj, json_type type, const char* key, void* val) 
     case json_type_null:
 	val = NULL;
 	break;
-    case json_type_object:
-	*((json_object**) val) = temp;
+    case json_type_boolean:
+	*((json_bool*) val) = json_object_get_boolean(temp);
+	break;
+    case json_type_double:
+	*((double*) val) = json_object_get_double(temp);
 	break;
     case json_type_int:
 	*((int64_t*) val) = json_object_get_int64(temp);
+	break;
+    case json_type_object:
+    case json_type_array:
+	*((json_object**) val) = temp;
 	break;
     case json_type_string:
 	*((char**) val) = strdup(json_object_get_string(temp));
