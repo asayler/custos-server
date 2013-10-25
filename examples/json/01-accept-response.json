@@ -20,19 +20,10 @@
 		"Status": "ignored",
 		"Echo": false,
 		"Class": "implicit",
-		"Type": "source_ip",
+		"Type": "ip_source",
 		"Index": 0,
 		"Value": ""
 	    },
-	    {
-		"Received": false,
-		"Status": "optional",
-		"Echo": false,
-		"Class": "implicit",
-		"Type": "ssl_cert_client",
-		"Index": 0,
-		"Value": ""
-	    }
 	],
 	"Keys": [
 	    {
