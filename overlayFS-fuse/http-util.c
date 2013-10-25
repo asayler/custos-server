@@ -306,10 +306,10 @@ int encodeBase64(const char* decoded, const size_t decodedSize,
 
     /* Set encodedSize if provided */
     if(encodedSize) {
-	*encodedSize = outSize;
+	*encodedSize = total;
     }
 
-    return total;
+    return outSize;
 
 }
 
@@ -383,10 +383,10 @@ int decodeBase64(const char* encoded, const size_t encodedSize,
 
     /* Set decodedSize if provided */
     if(decodedSize) {
-	*decodedSize = outSize;
+	*decodedSize = total;
     }
 
-    return total;
+    return outSize;
 
 }
 
