@@ -226,6 +226,7 @@ extern json_object* custos_KeyReqToJson(const custosKeyReq_t* keyreq);
 extern json_object* custos_ReqToJson(const custosReq_t* req);
 
 extern custosAttr_t* custos_JsonToAttr(json_object* attrjson);
+extern custosKey_t* custos_KeyToAttr(json_object* keyjson);
 
 extern custosAttrRes_t* custos_JsonToAttrRes(json_object* attrresjson);
 

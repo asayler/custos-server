@@ -595,6 +595,81 @@ extern custosAttr_t* custos_JsonToAttr(json_object* attrjson) {
 
 }
 
+extern custosKey_t* custos_JsonToKey(json_object* keyjson) {
+
+    char*        uuidStr  = NULL;
+    uuid_t       uuid;
+    int64_t      revision = 0;
+    char*        valueStr = NULL;
+    uint8_t*     value    = NULL;
+    size_t       size     = 0;
+    custosKey_t* key      = NULL;
+
+    /* Process Top Level JSON */
+    if(json_safe_get(keyjson, json_type_string, "UUID", &uuidStr) < 0) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_JsonToKey: json_safe_get(UUID) failed\n");
+#endif
+	return NULL;
+    }
+    if(uuid_parse(uuidStr, uuid) < 0) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_JsonToKey: uuid_parse() failed\n");
+#endif
+	return NULL;
+    }
+    free(uuidStr);
+    uuidStr = NULL;
+    if(json_safe_get(keyjson, json_type_int, "Revision", &revision) < 0) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_JsonToKey: json_safe_get(Revision) failed\n");
+#endif
+	return NULL;
+    }
+    if(json_safe_get(keyjson, json_type_string, "Value", &valueStr) < 0) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_JsonToKey: json_safe_get(Value) failed\n");
+#endif
+	return NULL;
+    }
+    if(strcmp(valueStr, "") == 0) {
+	value = NULL;
+	size = 0;
+    }
+    else {
+	if(decodeBase64(valueStr, strlen(valueStr), (char**) &value, &size) < 0) {
+#ifdef DEBUG
+	    fprintf(stderr, "ERROR custos_JsonToKey: decodeBase64() failed\n");
+#endif
+	    return NULL;
+	}
+    }
+    free(valueStr);
+    valueStr = NULL;
+
+    /* Setup Key */
+    key = custos_createKey(uuid, revision, size, value);
+    if(!key) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_JsonToKey: custos_createKey() failed\n");
+#endif
+	return NULL;
+    }
+
+    /* Cleanup */
+    if(value) {
+	if(freeBase64((char**) &value) < 0) {
+#ifdef DEBUG
+	    fprintf(stderr, "ERROR custos_JsonToKey: freeBase64() failed\n");
+#endif
+	}
+    }
+
+    /* Return */
+    return key;
+
+}
+
 /********* custosAttr Functions *********/
 
 extern custosAttr_t* custos_createAttr(const custosAttrClass_t class,
