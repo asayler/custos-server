@@ -63,7 +63,11 @@ extern json_object* custos_AttrToJson(const custosAttr_t* attr) {
     }
     if(b64Data) {
 	json_object_object_add(json, "Val", json_object_new_string(b64Data));
-	freeBase64(&b64Data);
+	if(freeBase64(&b64Data) < 0) {
+#ifdef DEBUG
+	    fprintf(stderr, "ERROR custos_AttrToJson: freeBase64() failed\n");
+#endif
+	}
     }
     else {
 #ifdef DEBUG
@@ -144,7 +148,11 @@ extern json_object* custos_KeyToJson(const custosKey_t* key) {
     }
     if(b64Data) {
 	json_object_object_add(json, "Val", json_object_new_string(b64Data));
-	freeBase64(&b64Data);
+	if(freeBase64(&b64Data) < 0) {
+#ifdef DEBUG
+	    fprintf(stderr, "ERROR custos_KeyToJson: freeBase64() failed\n");
+#endif
+	}
     }
     else {
 #ifdef DEBUG
@@ -571,7 +579,13 @@ extern custosAttr_t* custos_JsonToAttr(json_object* attrjson) {
     free(classStr);
     free(typeStr);
     free(valueStr);
-    freeBase64((char**) &value);
+    if(value) {
+	if(freeBase64((char**) &value) < 0) {
+#ifdef DEBUG
+	    fprintf(stderr, "ERROR custos_JsonToAttr: freeBase64() failed\n");
+#endif
+	}
+    }
 
     /* Return */
     return attr;
