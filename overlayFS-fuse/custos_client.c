@@ -62,7 +62,7 @@ extern json_object* custos_AttrToJson(const custosAttr_t* attr) {
 	b64Size = sizeof("");
     }
     if(b64Data) {
-	json_object_object_add(json, "Val", json_object_new_string(b64Data));
+	json_object_object_add(json, "Value", json_object_new_string(b64Data));
 	if(freeBase64(&b64Data) < 0) {
 #ifdef DEBUG
 	    fprintf(stderr, "ERROR custos_AttrToJson: freeBase64() failed\n");
@@ -147,7 +147,7 @@ extern json_object* custos_KeyToJson(const custosKey_t* key) {
 	b64Size = sizeof("");
     }
     if(b64Data) {
-	json_object_object_add(json, "Val", json_object_new_string(b64Data));
+	json_object_object_add(json, "Value", json_object_new_string(b64Data));
 	if(freeBase64(&b64Data) < 0) {
 #ifdef DEBUG
 	    fprintf(stderr, "ERROR custos_KeyToJson: freeBase64() failed\n");
@@ -307,17 +307,19 @@ extern custosRes_t* custos_JsonToRes(json_object* resjson) {
     int len;
     int i;
     json_object*      resobj     = NULL;
-    json_object*      checkobj   = NULL;
-    json_object*      attrsobj   = NULL;
-    json_object*      keysobj    = NULL;
-    json_object*      attrresobj = NULL;
     char*             sourceStr  = NULL;
     char*             versionStr = NULL;
     char*             reqidStr   = NULL;
     char*             residStr   = NULL;
     char*             statusStr  = NULL;
-    custosAttrRes_t*  attrres    = NULL;
     custosResStatus_t status     = CUS_RESSTAT_MAX;
+    json_object*      attrsobj   = NULL;
+    json_object*      attrresobj = NULL;
+    custosAttrRes_t*  attrres    = NULL;
+    json_object*      keysobj    = NULL;
+    json_object*      keyresobj  = NULL;
+    custosKeyRes_t*   keyres     = NULL;
+    json_object*      checkobj   = NULL;
     custosRes_t*      res        = NULL;
 
     /* Process Top Level JSON */
@@ -423,6 +425,34 @@ extern custosRes_t* custos_JsonToRes(json_object* resjson) {
 	if(custos_updateResAddAttrRes(res, attrres) < 0) {
 #ifdef DEBUG
 	    fprintf(stderr, "ERROR custos_JsonToRes: custos_updateResAddAttrRes() failed\n");
+#endif
+	    return NULL;
+	}
+    }
+
+    /* Process Keys */
+    len = json_object_array_length(keysobj);
+    for(i=0; i < len; i++) {
+	/* Extract KeyRes */
+	keyresobj = json_object_array_get_idx(keysobj, i);
+	if(!keyresobj) {
+#ifdef DEBUG
+	    fprintf(stderr, "ERROR custos_JsonToRes: json_object_array_get_idx() failed\n");
+#endif
+	    return NULL;
+	}
+	/* Process KeyRes */
+	keyres = custos_JsonToKeyRes(keyresobj);
+	if(!keyres) {
+#ifdef DEBUG
+	    fprintf(stderr, "ERROR custos_JsonToRes: custos_JsonToKeyRes() failed\n");
+#endif
+	    return NULL;
+	}
+	/* Add KeyRes */
+	if(custos_updateResAddKeyRes(res, keyres) < 0) {
+#ifdef DEBUG
+	    fprintf(stderr, "ERROR custos_JsonToRes: custos_updateResAddKeyRes() failed\n");
 #endif
 	    return NULL;
 	}
