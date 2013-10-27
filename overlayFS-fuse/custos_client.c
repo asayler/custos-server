@@ -529,6 +529,8 @@ extern custosAttr_t* custos_JsonToAttr(json_object* attrjson) {
 #endif
 	return NULL;
     }
+    free(classStr);
+    classStr = NULL;
     if(json_safe_get(attrjson, json_type_string, "Type", &typeStr) < 0) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_JsonToAttr: json_safe_get(Type) failed\n");
@@ -541,6 +543,8 @@ extern custosAttr_t* custos_JsonToAttr(json_object* attrjson) {
 #endif
 	return NULL;
     }
+    free(typeStr);
+    typeStr = NULL;
     if(json_safe_get(attrjson, json_type_int, "Index", &index) < 0) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_JsonToAttr: json_safe_get(Index) failed\n");
@@ -565,6 +569,8 @@ extern custosAttr_t* custos_JsonToAttr(json_object* attrjson) {
 	    return NULL;
 	}
     }
+    free(valueStr);
+    valueStr = NULL;
 
     /* Setup Attr */
     attr = custos_createAttr(class, type, index, size, value);
@@ -576,9 +582,6 @@ extern custosAttr_t* custos_JsonToAttr(json_object* attrjson) {
     }
 
     /* Cleanup */
-    free(classStr);
-    free(typeStr);
-    free(valueStr);
     if(value) {
 	if(freeBase64((char**) &value) < 0) {
 #ifdef DEBUG
