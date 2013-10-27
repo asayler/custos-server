@@ -320,7 +320,7 @@ int decodeBase64(const char* encoded, const size_t encodedSize,
     int    cnt      = 0;
     size_t total    = 0;
     char*  itr      = NULL;
-    size_t decSize  = (encodedSize * 3) / 4;
+    size_t decSize  = ((encodedSize * 3) / 4) + 1;
     size_t outSize  = decSize;
     base64_decodestate s;
 

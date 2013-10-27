@@ -18,6 +18,7 @@
 #include "custos_client_print.h"
 
 #define BAD_PSK "Nonsense"
+#define GOOD_PSK "It's A Trap!"
 
 int main(int argc, char* argv[]) {
 
@@ -137,7 +138,7 @@ int main(int argc, char* argv[]) {
     fprintf(stdout, "\n");
 
     /* Print Request Json */
-    fprintf(stdout, "******* First  Request Json *******\n");
+    fprintf(stdout, "******* Second  Request Json *******\n");
     reqjson = custos_ReqToJson(req);
     if(!reqjson) {
 	fprintf(stderr, "ERROR %s: custos_ReqToJson() failed\n", argv[0]);
@@ -177,7 +178,7 @@ int main(int argc, char* argv[]) {
     /* Update attr in request */
     if(custos_updateAttr(attr,
 			 CUS_ATTRCLASS_EXPLICIT, CUS_ATTRTYPE_EXP_PSK, 0,
-			 (strlen(CUS_TEST_PSK_GOOD) + 1), (uint8_t*) CUS_TEST_PSK_GOOD) < 0) {
+			 (strlen(GOOD_PSK) + 1), (uint8_t*) GOOD_PSK) < 0) {
 	fprintf(stderr, "ERROR %s: custos_updateAttr() failed\n", argv[0]);
 	return EXIT_FAILURE;
     }
@@ -191,7 +192,7 @@ int main(int argc, char* argv[]) {
     fprintf(stdout, "\n");
 
     /* Print Request Json */
-    fprintf(stdout, "******* First  Request Json *******\n");
+    fprintf(stdout, "******* Third  Request Json *******\n");
     reqjson = custos_ReqToJson(req);
     if(!reqjson) {
 	fprintf(stderr, "ERROR %s: custos_ReqToJson() failed\n", argv[0]);

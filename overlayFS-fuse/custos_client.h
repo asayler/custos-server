@@ -23,8 +23,6 @@
 #include "http-util.h"
 #include "json-util.h"
 
-#define CUS_TEST_PSK_GOOD "I am a swordfish?"
-
 #define CUS_MAX_ATTRS 100
 #define CUS_MAX_KEYS 100
 
