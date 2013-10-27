@@ -7,31 +7,29 @@
 	"Status": "accepted",
 	"Attrs": [
 	    {
-		"Received": true,
-		"Status": "accepted",
-		"Echo": false,
 		"Class": "explicit",
 		"Type": "psk",
 		"Index": 0,
-		"Value": ""
+		"Value": "",
+		"Echo": false,
+		"Status": "accepted"
 	    },
 	    {
-		"Received": true,
-		"Status": "ignored",
-		"Echo": true,
 		"Class": "implicit",
 		"Type": "ip_source",
 		"Index": 0,
-		"Value": "MTkyLjE2OC4wLjMzAA=="
+		"Value": "MTkyLjE2OC4wLjMzAA==",
+		"Echo": true,
+		"Status": "ignored"
 	    },
 	],
 	"Keys": [
 	    {
-		"Status": "accepted",
-		"Echo": false,
 		"UUID": "7af8c95d-479a-46fe-b5de-8574c6ca1369",
 		"Revision": 1,
-		"Val": "ThisIsNotARealKey"
+		"Value": "ThisIsNotARealKey",
+		"Echo": false,
+		"Status": "accepted"
 	    }
 	]
     },
