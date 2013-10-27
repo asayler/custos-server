@@ -504,6 +504,69 @@ extern custosAttrRes_t* custos_JsonToAttrRes(json_object* attrresjson) {
 
 }
 
+extern custosKeyRes_t* custos_JsonToKeyRes(json_object* keyresjson) {
+
+    json_object*      keyobj    = NULL;
+    char*             statusStr = NULL;
+    custosKeyStatus_t status    = CUS_ATTRSTAT_MAX;
+    bool              echo      = false;
+    custosKey_t*      key       = NULL;
+    custosKeyRes_t*   keyres    = NULL;
+
+    /* Process Top Level JSON */
+    if(json_safe_get(keyresjson, json_type_boolean, "Echo", &echo) < 0) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_JsonToKeyRes: json_safe_get(Echo) failed\n");
+#endif
+	return NULL;
+    }
+    if(json_safe_get(keyresjson, json_type_string, "Status", &statusStr) < 0) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_JsonToKeyRes: json_safe_get(Status) failed\n");
+#endif
+	return NULL;
+    }
+    if((status = custos_StrToKeyStatus(statusStr)) < 0) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_JsonToKeyRes: custos_StrToKeyResStatus() failed\n");
+#endif
+	return NULL;
+    }
+    free(statusStr);
+    statusStr = NULL;
+
+    /* Setup KeyRes */
+    keyres = custos_createKeyRes(status, echo);
+    if(!keyres) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_JsonToKeyRes: custos_createKeyRes() failed\n");
+#endif
+	return NULL;
+    }
+
+    /* Process Key */
+    keyobj = keyresjson;
+    key = custos_JsonToKey(keyobj);
+    if(!key) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_JsonToKeyRes: custos_JsonToKey() failed\n");
+#endif
+	return NULL;
+    }
+
+    /* Add Key */
+    if(custos_updateKeyResAddKey(keyres, key) < 0) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_JsonToKeyRes: custos_updateKeyResAddKey() failed\n");
+#endif
+	return NULL;
+    }
+
+    /* Return */
+    return keyres;
+
+}
+
 extern custosAttr_t* custos_JsonToAttr(json_object* attrjson) {
 
     char*              classStr = NULL;
@@ -1491,7 +1554,7 @@ extern custosAttrStatus_t custos_StrToAttrStatus(const char* str) {
 
 }
 
-/********* custosKeyReq Functions *********/
+/********* custosKeyRes Functions *********/
 
 extern custosKeyRes_t* custos_createKeyRes(const custosKeyStatus_t status, const bool echo) {
 
@@ -1577,6 +1640,46 @@ extern int custos_updateKeyResAddKey(custosKeyRes_t* keyres, custosKey_t* key) {
     keyres->key = key;
 
     return RETURN_SUCCESS;
+
+}
+
+extern const char* custos_KeyStatusToStr(const custosKeyStatus_t status) {
+
+    switch(status) {
+    case CUS_KEYSTAT_ACCEPTED:
+	return CUS_KEYSTAT_ACCEPTED_STR;
+    case CUS_KEYSTAT_DENIED:
+	return CUS_KEYSTAT_DENIED_STR;
+    default:
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_KeyStatusToStr: unrecognized status\n");
+#endif
+	return NULL;
+    }
+
+}
+
+extern custosKeyStatus_t custos_StrToKeyStatus(const char* str) {
+
+    if(!str) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_StrToKeyStatus: 'str' must not be NULL\n");
+#endif
+	return -EINVAL;
+    }
+
+    if(strcmp(str, CUS_KEYSTAT_ACCEPTED_STR) == 0) {
+	return CUS_KEYSTAT_ACCEPTED;
+    }
+    else if (strcmp(str, CUS_KEYSTAT_DENIED_STR) == 0) {
+	return CUS_KEYSTAT_DENIED;
+    }
+    else {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_StrToKeyStatus: unrecognized status\n");
+#endif
+	return -EPERM;
+    }
 
 }
 

@@ -200,6 +200,9 @@ extern custosKeyRes_t* custos_createKeyRes(const custosKeyStatus_t status, const
 extern int custos_destroyKeyRes(custosKeyRes_t** keyresp);
 extern int custos_updateKeyResAddKey(custosKeyRes_t* keyres, custosKey_t* key);
 
+extern const char* custos_KeyStatusToStr(const custosKeyStatus_t status);
+extern custosKeyStatus_t custos_StrToKeyStatus(const char* str);
+
 /* custosReq Functions */
 extern custosReq_t* custos_createReq(const char* target);
 extern int custos_destroyReq(custosReq_t** reqp);
@@ -226,9 +229,10 @@ extern json_object* custos_KeyReqToJson(const custosKeyReq_t* keyreq);
 extern json_object* custos_ReqToJson(const custosReq_t* req);
 
 extern custosAttr_t* custos_JsonToAttr(json_object* attrjson);
-extern custosKey_t* custos_KeyToAttr(json_object* keyjson);
+extern custosKey_t* custos_JsonToKey(json_object* keyjson);
 
 extern custosAttrRes_t* custos_JsonToAttrRes(json_object* attrresjson);
+extern custosKeyRes_t* custos_JsonToKeyRes(json_object* keyresjson);
 
 extern custosRes_t* custos_JsonToRes(json_object* resjson);
 
