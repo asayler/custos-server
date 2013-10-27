@@ -30,7 +30,7 @@
 		"Status": "accepted",
 		"Echo": false,
 		"UUID": "7af8c95d-479a-46fe-b5de-8574c6ca1369",
-		"Revision": "",
+		"Revision": 1,
 		"Val": "ThisIsNotARealKey"
 	    }
 	]

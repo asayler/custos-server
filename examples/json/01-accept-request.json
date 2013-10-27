@@ -8,15 +8,15 @@
 		"Class": "explicit",
 		"Type": "psk",
 		"Index": 0,
-		"Value": "CorrectHorseBatteryStaple"
+		"Value": "CorrectHorseBatteryStaple",
 		"Echo": false,
 	    }
 	],
 	"Keys": [
 	    {
 		"UUID": "7af8c95d-479a-46fe-b5de-8574c6ca1369",
-		"Revision": ""
-		"Val": ""
+		"Revision": 1,
+		"Val": "",
 		"Echo": false,
 	    }
 	]
