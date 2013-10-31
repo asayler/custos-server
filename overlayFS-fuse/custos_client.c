@@ -197,9 +197,6 @@ extern json_object* custos_ReqToJson(const custosReq_t* req) {
     json_object* attrreqobj = NULL;
     json_object* attrsobj   = NULL;
     json_object* reqobj     = NULL;
-    json_object* checkobj   = NULL;
-    json_object* json       = NULL;
-    char*        md5sum     = NULL;
 
     /* Validate Args */
     if(!req) {
@@ -273,38 +270,14 @@ extern json_object* custos_ReqToJson(const custosReq_t* req) {
     json_object_object_add(reqobj, "Attrs",   attrsobj);
     json_object_object_add(reqobj, "Keys",    keysobj);
 
-    /* Process Checksums */
-    checkobj = json_object_new_object();
-    if(!checkobj) {
-#ifdef DEBUG
-	fprintf(stderr, "ERROR custos_ReqToJson: json_object_new_object() failed\n");
-#endif
-	return NULL;
-    }
-    md5sum = hashMD5(json_object_to_json_string(reqobj), 0);
-    json_object_object_add(checkobj, "md5", json_object_new_string(md5sum));
-    freeHash(&md5sum);
-
-    /* Process Top Level Object */
-    json = json_object_new_object();
-    if(!json) {
-#ifdef DEBUG
-	fprintf(stderr, "ERROR custos_ReqToJson: json_object_new_object() failed\n");
-#endif
-	return NULL;
-    }
-    json_object_object_add(json, "Request", reqobj);
-    json_object_object_add(json, "Checksums", checkobj);
-
-    return json;
+    return reqobj;
 
 }
 
-extern custosRes_t* custos_JsonToRes(json_object* resjson) {
+extern custosRes_t* custos_JsonToRes(json_object* resobj) {
 
     int len;
     int i;
-    json_object*      resobj     = NULL;
     char*             sourceStr  = NULL;
     char*             versionStr = NULL;
     char*             reqidStr   = NULL;
@@ -317,22 +290,7 @@ extern custosRes_t* custos_JsonToRes(json_object* resjson) {
     json_object*      keysobj    = NULL;
     json_object*      keyresobj  = NULL;
     custosKeyRes_t*   keyres     = NULL;
-    json_object*      checkobj   = NULL;
     custosRes_t*      res        = NULL;
-
-    /* Process Top Level JSON */
-    if(json_safe_get(resjson, json_type_object, "Response", &resobj) < 0) {
-#ifdef DEBUG
-	fprintf(stderr, "ERROR custos_JsonToRes: json_safe_get(Response) failed\n");
-#endif
-	return NULL;
-    }
-    if(json_safe_get(resjson, json_type_object, "Checksums", &checkobj) < 0) {
-#ifdef DEBUG
-	fprintf(stderr, "ERROR custos_JsonToRes: json_safe_get(Checksums) failed\n");
-#endif
-	return NULL;
-    }
 
     /* Process Response Object */
     if(json_safe_get(resobj, json_type_string, "Source", &sourceStr) < 0) {
@@ -1892,10 +1850,14 @@ extern custosRes_t* custos_getRes(const custosReq_t* req) {
 
     custosRes_t* res = NULL;
     json_object* reqJson = NULL;
+    json_object* checkJson = NULL;
     json_object* resJson = NULL;
     json_tokener* tok = NULL;
     char* reqJsonStr = NULL;
+    char* checkJsonStr = NULL;
+    char* md5sum = NULL;
     char* reqUrlStr = NULL;
+    char* checkUrlStr = NULL;
     char* fullReqUrl = NULL;
     HttpData_t resHttp;
     resHttp.size = 0;
@@ -1923,6 +1885,7 @@ extern custosRes_t* custos_getRes(const custosReq_t* req) {
 #endif
 	return NULL;
     }
+
     reqJsonStr = strdup(json_object_to_json_string(reqJson));
     if(!reqJsonStr) {
 #ifdef DEBUG
@@ -1932,6 +1895,36 @@ extern custosRes_t* custos_getRes(const custosReq_t* req) {
     }
     json_object_put(reqJson);
     reqJson = NULL;
+
+    checkJson = json_object_new_object();
+    if(!checkJson) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_getRes: json_object_new_object() failed\n");
+#endif
+	return NULL;
+    }
+
+    md5sum = hashMD5(reqJsonStr, 0);
+    if(!md5sum) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_getRes: hashMD5() failed\n");
+#endif
+	return NULL;
+    }
+    json_object_object_add(checkJson, "md5", json_object_new_string(md5sum));
+    freeHash(&md5sum);
+    md5sum = NULL;
+
+    checkJsonStr = strdup(json_object_to_json_string(checkJson));
+    if(!checkJsonStr) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_getRes: strdup() failed\n");
+#endif
+	return NULL;
+    }
+    json_object_put(checkJson);
+    checkJson = NULL;
+
     if(encodeURL(reqJsonStr, strlen(reqJsonStr), &reqUrlStr, NULL) < 0) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_getRes: encodeURL() failed\n");
@@ -1941,8 +1934,18 @@ extern custosRes_t* custos_getRes(const custosReq_t* req) {
     free(reqJsonStr);
     reqJsonStr = NULL;
 
+    if(encodeURL(checkJsonStr, strlen(checkJsonStr), &checkUrlStr, NULL) < 0) {
+#ifdef DEBUG
+	fprintf(stderr, "ERROR custos_getRes: encodeURL() failed\n");
+#endif
+	return NULL;
+    }
+    free(checkJsonStr);
+    checkJsonStr = NULL;
+
     fullReqUrl = buildUrlGet(req->target, CUSTOS_ENDPOINT_KEYS,
 			     CUSTOS_ENDPOINT_KEYS_REQ, reqUrlStr,
+			     CUSTOS_ENDPOINT_KEYS_CHK, checkUrlStr,
 			     NULL);
     if(!fullReqUrl) {
 #ifdef DEBUG
@@ -1952,9 +1955,12 @@ extern custosRes_t* custos_getRes(const custosReq_t* req) {
     }
     free(reqUrlStr);
     reqUrlStr = NULL;
+    free(checkUrlStr);
+    reqUrlStr = NULL;
 
+    /* Make Get Request */
 #ifdef DEBUG
-    fprintf(stderr, "fullReqUrl = %s\n", fullReqUrl);
+    fprintf(stderr, "fullReqUrl = \n%s\n\n", fullReqUrl);
 #endif
     if(httpGet(fullReqUrl, &resHttp) != 200) {
 #ifdef DEBUG

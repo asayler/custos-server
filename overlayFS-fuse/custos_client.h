@@ -31,6 +31,7 @@
 // #define CUSTOS_ENDPOINT_KEYS "/keys"
 #define CUSTOS_ENDPOINT_KEYS "/custos/01-accept-response.json"
 #define CUSTOS_ENDPOINT_KEYS_REQ "req"
+#define CUSTOS_ENDPOINT_KEYS_CHK "chk"
 
 typedef enum custosResStatus {
     CUS_RESSTAT_ACCEPTED = 0,
