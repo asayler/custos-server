@@ -1891,13 +1891,6 @@ extern int custos_updateReqAddKeyReq(custosReq_t* req, custosKeyReq_t* keyreq) {
 extern custosRes_t* custos_getRes(const custosReq_t* req) {
 
     custosRes_t* res = NULL;
-    /* custosAttr_t* attr = NULL; */
-    /* custosAttrRes_t* attrres = NULL; */
-    /* custosKey_t* key = NULL; */
-    /* custosKeyRes_t* keyres = NULL; */
-    /* size_t i = 0; */
-    /* bool psk = false; */
-    /* bool accept = false; */
     json_object* reqJson = NULL;
     json_object* resJson = NULL;
     json_tokener* tok = NULL;
@@ -1960,6 +1953,9 @@ extern custosRes_t* custos_getRes(const custosReq_t* req) {
     free(reqUrlStr);
     reqUrlStr = NULL;
 
+#ifdef DEBUG
+    fprintf(stderr, "fullReqUrl = %s\n", fullReqUrl);
+#endif
     if(httpGet(fullReqUrl, &resHttp) != 200) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_getRes: httpGet() returned non-200 code\n");
