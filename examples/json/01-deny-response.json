@@ -1,52 +1,34 @@
 {
-    "Response": {
-	"ResponseSource": "condor.andysayler.com",
-	"ResponseTarget": "",
-	"ResponseVersion": "0.1-dev",
-	"ResponseID": "",
-	"ResponseRequestID": "",
-	"ResponseStatus": "denied",
-	"ResponseAuthAttrs": [
-	    {
-		"AttrReceived": true,
-		"AttrStatus": "denied",
-		"AttrEcho": false,
-		"AttrClass": "explicit",
-		"AttrType": "psk",
-		"AttrIndex": 0,
-		"AttrValue": ""
-	    },
-	    {
-		"AttrReceived": true,
-		"AttrStatus": "ignored",
-		"AttrEcho": false,
-		"AttrClass": "implicit",
-		"AttrType": "source_ip",
-		"AttrIndex": 0,
-		"AttrValue": ""
-	    },
-	    {
-		"AttrReceived": false,
-		"AttrStatus": "optional",
-		"AttrEcho": false,
-		"AttrClass": "implicit",
-		"AttrType": "ssl_cert_client",
-		"AttrIndex": 0,
-		"AttrValue": ""
-	    }
-	],
-	"ResponseKeys": [
-	    {
-		"KeyStatus" "denied",
-		"KeyEcho": false,
-		"KeyUUID": "7af8c95d-479a-46fe-b5de-8574c6ca1369",
-		"KeyRevision": "",
-		"KeyVal": ""
-	    }
-	]
-    },
-    "Checksums": {
-	"md5" : "",
-	"sha512" : ""
-    }
+    "Source": "http://condor.andysayler.com",
+    "Version": "0.1-dev",
+    "ResID": "",
+    "ReqID": "",
+    "Status": "denied",
+    "Attrs": [
+	{
+	    "Class": "explicit",
+	    "Type": "psk",
+	    "Index": 0,
+	    "Value": "",
+	    "Echo": false,
+	    "Status": "denied"
+	},
+	{
+	    "Class": "implicit",
+	    "Type": "source_ip",
+	    "Index": 0,
+	    "Value": "",
+	    "Echo": false,
+	    "Status": "ignored"
+	},
+    ],
+    "Keys": [
+	{
+	    "UUID": "7af8c95d-479a-46fe-b5de-8574c6ca1369",
+	    "Revision": "",
+	    "Val": "",
+	    "Echo": false,
+	    "Status" "denied"
+	}
+    ]
 }
