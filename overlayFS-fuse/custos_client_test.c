@@ -20,6 +20,9 @@
 #define BAD_PSK "Nonsense"
 #define GOOD_PSK "It's A Trap!"
 
+//#define SERVER_URL "http://condor.andysayler.com"
+#define SERVER_URL "http://localhost:5000"
+
 int main(int argc, char* argv[]) {
 
     (void) argc;
@@ -35,7 +38,7 @@ int main(int argc, char* argv[]) {
     const char*      reqstr  = NULL;
 
     /* Setup a new request */
-    req = custos_createReq("http://condor.andysayler.com");
+    req = custos_createReq(SERVER_URL);
     if(!req) {
 	fprintf(stderr, "ERROR %s: custos_createKeyReq() failed\n", argv[0]);
 	return EXIT_FAILURE;
