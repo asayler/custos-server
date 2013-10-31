@@ -5,6 +5,7 @@
 
 #Build Files#
 *.o
+*.a
 
 #Executable Files#
 fuseenc

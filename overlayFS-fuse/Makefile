@@ -2,7 +2,12 @@
 # By: Andy Sayler <www.andysayler.com>
 # Build Custos Filesystem Demo
 
-CC           = gcc
+AR            = ar
+CC            = gcc
+
+CFLAGS  = -c -g -Wall -Wextra -Werror
+LFLAGS  = -g -Wall -Wextra -Werror
+ARFLAGS = rcsv
 
 CFLAGSFUSE    = `pkg-config fuse --cflags`
 LLIBSFUSE     = `pkg-config fuse --libs`
@@ -18,9 +23,6 @@ LLIBSJSON     = `pkg-config json --libs`
 LLIBSB64      = ../libb64-1.2.1/src/libb64.a
 LLIBSMHASH    = -lmhash
 
-CFLAGS = -c -g -Wall -Wextra -Werror
-LFLAGS = -g -Wall -Wextra -Werror
-
 ENCFS            = fuseenc fuseenc_fh
 MIRFS            = fusemir_fh
 FUSE_EXAMPLES    = fusehello fusexmp fusexmp_fh
@@ -32,6 +34,8 @@ CURL_TEST        = curl-test
 JSON_TEST        = json-test
 DECODE_TEST      = decode-test
 CUSTOS_TEST      = custos_client_test
+
+CUSTOS_LIB       = libcustos.a
 
 .PHONY: all tests encfs mirfs \
 	fuse-examples xattr-examples openssl-examples \
@@ -82,6 +86,10 @@ aes-crypt-util: aes-crypt-util.o aes-crypt.o
 custos_client_test: custos_client_test.o custos_client.o custos_client_print.o \
 	http-util.o json-util.o ../libb64-1.2.1/src/libb64.a
 	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSCURL) $(LLIBSJSON) $(LLIBSUUID) $(LLIBSB64) $(LLIBSMHASH)
+
+$(CUSTOS_LIB): custos_client.o custos_client_print.o \
+	http-util.o json-util.o ../libb64-1.2.1/src/libb64.a
+	$(AR) $(ARFLAGS) $@ $^
 
 http-test: http-test.o http-util.o ../libb64-1.2.1/src/libb64.a
 	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSCURL) $(LLIBSB64) $(LLIBSMHASH)
@@ -163,10 +171,7 @@ clean:
 	rm -f $(CURL_TEST)
 	rm -f $(JSON_TEST)
 	rm -f $(DECODE_TEST)
+	rm -f $(CUSTOS_LIB)
 	rm -f *.o
 	rm -f *~
-	rm -f handout/*~
-	rm -f handout/*.log
-	rm -f handout/*.aux
-	rm -f handout/*.out
 	$(MAKE) -C ../libb64-1.2.1 clean_src
