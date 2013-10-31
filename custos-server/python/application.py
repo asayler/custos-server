@@ -1,7 +1,9 @@
-from flask import Flask, render_template, jsonify, request, g
+from flask import Flask, jsonify, request, g
 import json
 import copy
 import hashlib
+
+import custos
 
 app = Flask(__name__)
 app.debug = True
@@ -39,7 +41,15 @@ def endpoint_keys():
     args_req_json = request.args.get('req')
     args_chk_json = request.args.get('chk')
 
-    res = decode_json_req(args_req_json, args_chk_json)
+    req = decode_json_req(args_req_json, args_chk_json)
+
+    cxt = {}
+    cxt['source_ip'] = request.remote_addr
+    cxt['source_user'] = request.remote_user
+
+    src = request.url_root
+
+    res = custos.process_keys_get(req, context=cxt, source=src)
 
     return jsonify(res)
 
