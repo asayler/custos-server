@@ -1,1 +1,5 @@
+# Compiled Files
 *.pyc
+
+# Database Files
+keys

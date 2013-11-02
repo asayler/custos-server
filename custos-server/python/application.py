@@ -8,12 +8,14 @@ import custos
 app = Flask(__name__)
 app.debug = True
 
+_ENCODING = 'utf-8'
+
 def decode_json_req(json_req_in, json_chk_in):
 
     if (json_chk_in != None):
         chk = json.loads(json_chk_in)
         m = hashlib.md5()
-        m.update(json_req_in)
+        m.update(json_req_in.encode(_ENCODING))
         if(m.hexdigest() != chk['md5']):
             # TODO Raise/return real error
             print("ERROR: md5 Mismatch!")
