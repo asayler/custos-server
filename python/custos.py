@@ -78,8 +78,6 @@ def process_keys_get(req, context=None, source=None):
                         matched = True
                         val_a = base64.b64decode(attr['Value'])
                         val_b = base64.b64decode(attr_out['Value'])
-                        print("val_a = {:s}".format(val_a))
-                        print("val_b = {:s}".format(val_b))
                         if (val_a == val_b):
                             tested += ['pass']
                             attr_out['Status'] = _ATTR_STATUS_ACCEPTED
@@ -94,8 +92,6 @@ def process_keys_get(req, context=None, source=None):
                     attr['Status'] = _ATTR_STATUS_REQUIRED
                     res['Attrs'].append(attr)
             acls_tested += [tested]
-
-        print(acls_tested)
 
         grant = False
         for tested in acls_tested:
