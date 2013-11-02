@@ -3,7 +3,7 @@
 #include <string.h>
 
 #include "custos_http.h"
-#include "json-util.h"
+#include "custos_json.h"
 
 //#define URI "http://condor.andysayler.com/custos/01-deny-request.json"
 //#define URI "http://condor.andysayler.com/custos/01-deny-response.json"

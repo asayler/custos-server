@@ -10,18 +10,19 @@
 #ifndef CUSTOS_CLIENT_H
 #define CUSTOS_CLIENT_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <string.h>
 #include <errno.h>
 #include <inttypes.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include <uuid/uuid.h>
 #include <json/json.h>
 
 #include "custos_http.h"
-#include "json-util.h"
+#include "custos_json.h"
 
 #define CUS_MAX_ATTRS 100
 #define CUS_MAX_KEYS 100

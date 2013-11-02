@@ -1,9 +1,12 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdarg.h>
+#ifndef CUSTOS_HTTP_H
+#define CUSTOS_HTTP_H
+
 #include <errno.h>
+#include <stdarg.h>
 #include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include <curl/curl.h>
 #include <mhash.h>
@@ -33,3 +36,5 @@ char* hashMD5(const char* value, const size_t size);
 int freeHash(char** value);
 
 char* buildUrlGet(char* target, char* endpoint, ...);
+
+#endif

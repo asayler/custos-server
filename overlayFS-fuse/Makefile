@@ -17,9 +17,8 @@ XATTR_EXAMPLES     = xattr-util
 OPENSSL_EXAMPLES   = aes-crypt-util
 CUSTOS__UTIL       = custos_client_util
 CURL_TEST          = curl-test
-JSON_TEST          = json-test
 DECODE_TEST        = decode-test
-CUSTOS_TESTS       = custos_client_test custos_http_test
+CUSTOS_TESTS       = custos_client_test custos_http_test custos_json_test
 
 CUSTOS_LIB         = libcustos.a
 CUSTOS_LIB_OBJECTS =
@@ -40,16 +39,16 @@ LLIBSMHASH    = -lmhash
 .PHONY: all tests encfs mirfs \
 	fuse-examples xattr-examples openssl-examples \
 	custos_tests \
-	curl_test json_test decode_test \
+	curl_test decode_test \
 	clean
 
 all: encfs mirfs \
 	fuse-examples xattr-examples openssl-examples \
 	custos_tests \
-	curl_test json_test decode_test
+	curl_test decode_test
 
 tests: custos_tests \
-	curl_test json_test decode_test
+	curl_test decode_test
 
 encfs: $(ENCFS)
 mirfs: $(MIRFS)
@@ -57,7 +56,6 @@ fuse-examples: $(FUSE_EXAMPLES)
 xattr-examples: $(XATTR_EXAMPLES)
 openssl-examples: $(OPENSSL_EXAMPLES)
 curl_client_test: $(CURL_TEST)
-json_test: $(JSON_TEST)
 decode_test: $(DECODE_TEST)
 custos_tests: $(CUSTOS_TESTS)
 
@@ -88,22 +86,21 @@ aes-crypt-util: aes-crypt-util.o aes-crypt.o
 custos_client_test: custos_client_test.o $(CUSTOS_LIB)
 	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSCURL) $(LLIBSJSON) $(LLIBSUUID) $(LLIBSMHASH)
 
+custos_json_test: custos_json_test.o $(CUSTOS_LIB)
+	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSJSON)
+
+custos_http_test: custos_http_test.o $(CUSTOS_LIB)
+	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSCURL) $(LLIBSMHASH)
+
 $(CUSTOS_LIB): custos_client.o custos_client_print.o \
-	custos_http.o json-util.o \
+	custos_http.o custos_json.o \
 	../libb64-1.2.1/src/cdecode.o ../libb64-1.2.1/src/cencode.o
 	$(AR) $(ARFLAGS) $@ $^
-
-custos_http_test: custos_http_test.o custos_http.o \
-	../libb64-1.2.1/src/cdecode.o ../libb64-1.2.1/src/cencode.o
-	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSCURL) $(LLIBSMHASH)
 
 curl-test: curl-test.o
 	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSCURL)
 
-json-test: json-test.o json-util.o
-	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSJSON)
-
-decode-test: decode-test.o json-util.o custos_http.o \
+decode-test: decode-test.o custos_json.o custos_http.o \
 	../libb64-1.2.1/src/cdecode.o ../libb64-1.2.1/src/cencode.o
 	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSJSON) $(LLIBSCURL) $(LLIBSMHASH)
 
@@ -146,19 +143,19 @@ custos_client_print.o: custos_client_print.c custos_client_print.h custos_client
 custos_http.o: custos_http.c custos_http.h
 	$(CC) $(CFLAGS) $(CFLAGSCURL) $<
 
-json-util.o: json-util.c json-util.h
+custos_json.o: custos_json.c custos_json.h
 	$(CC) $(CFLAGS) $(CFLAGSJSON) $<
 
-http-test.o: http-test.c custos_http.h
+custos_http_test.o: custos_http_test.c custos_http.h
 	$(CC) $(CFLAGS) $(CFLAGSCURL) $<
 
 curl-test.o: curl-test.c
 	$(CC) $(CFLAGS) $(CFLAGSCURL) $<
 
-json-test.o: json-test.c json-util.h
+custos_json_test.o: custos_json_test.c custos_json.h
 	$(CC) $(CFLAGS) $(CFLAGSJSON) $<
 
-decode-test.o: decode-test.c json-util.h custos_http.h
+decode-test.o: decode-test.c custos_json.h custos_http.h
 	$(CC) $(CFLAGS) $(CFLAGSJSON) $<
 
 ../libb64-1.2.1/src/cdecode.o:
