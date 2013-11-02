@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "http-util.h"
+#include "custos_http.h"
 
 #define URI "http://condor.andysayler.com/custos/01-accept-response.json"
 

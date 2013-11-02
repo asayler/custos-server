@@ -20,7 +20,7 @@
 #include <uuid/uuid.h>
 #include <json/json.h>
 
-#include "http-util.h"
+#include "custos_http.h"
 #include "json-util.h"
 
 #define CUS_MAX_ATTRS 100
