@@ -77,8 +77,10 @@ int custos_printAttr(custosAttr_t* attr, uint offset, FILE* stream) {
 	return -EINVAL;
     }
 
-    fprintf(stream, "%*s" "attr->class   = %d\n",   offset, "", attr->class);
-    fprintf(stream, "%*s" "attr->type    = %d\n",   offset, "", attr->type);
+    fprintf(stream, "%*s" "attr->class   = %s\n",   offset, "",
+	    custos_AttrClassToStr(attr->class));
+    fprintf(stream, "%*s" "attr->type    = %s\n",   offset, "",
+	    custos_AttrTypeToStr(attr->class, attr->type));
     fprintf(stream, "%*s" "attr->index   = %zd\n",  offset, "", attr->index);
     fprintf(stream, "%*s" "attr->size    = %zd\n",  offset, "", attr->size);
     fprintf(stream, "%*s" "attr->val     = %p\n",   offset, "", attr->val);
@@ -135,7 +137,8 @@ int custos_printAttrRes(custosAttrRes_t* attrres, uint offset, FILE* stream) {
 	return -EINVAL;
     }
 
-    fprintf(stream, "%*s" "attrres->status = %d\n", offset, "", attrres->status);
+    fprintf(stream, "%*s" "attrres->status = %s\n", offset, "",
+	    custos_AttrStatusToStr(attrres->status));
     fprintf(stream, "%*s" "attrres->echo   = %s\n", offset, "",
 	    attrres->echo ? "true" : "false");
     fprintf(stream, "%*s" "attrres->attr   = %p\n", offset, "", attrres->attr);
@@ -224,7 +227,8 @@ int custos_printKeyRes(custosKeyRes_t* keyres, uint offset, FILE* stream) {
 	return -EINVAL;
     }
 
-    fprintf(stream, "%*s" "keyres->status  = %d\n", offset, "", keyres->status);
+    fprintf(stream, "%*s" "keyres->status  = %s\n", offset, "",
+	    custos_KeyStatusToStr(keyres->status));
     fprintf(stream, "%*s" "keyres->echo    = %s\n", offset, "",
 	    keyres->echo ? "true" : "false");
     fprintf(stream, "%*s" "keyres->key     = %p\n", offset, "", keyres->key);
@@ -327,7 +331,8 @@ int custos_printRes(custosRes_t* res, uint offset, FILE* stream) {
 	return -EINVAL;
     }
 
-    fprintf(stream, "%*s" "res->status    = %d\n",  offset, "", res->status);
+    fprintf(stream, "%*s" "res->status    = %s\n",  offset, "",
+	    custos_ResStatusToStr(res->status));
     fprintf(stream, "%*s" "res->source    = %s\n",  offset, "", res->source);
     fprintf(stream, "%*s" "res->version   = %s\n",  offset, "", res->version);
     fprintf(stream, "%*s" "res->num_attrs = %zd\n", offset, "", res->num_attrs);
