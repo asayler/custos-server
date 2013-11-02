@@ -14,11 +14,15 @@ _KEY_STATUS_DENIED = "denied"
 _KEY_STATUS_UNKNOWN = "unknown"
 
 _ATTR_STATUS_ACCEPTED = "accepted"
+_ATTR_STATUS_DENIED = "denied"
+_ATTR_STATUS_REQUIRED = "required"
 _ATTR_STATUS_IGNORED = "ignored"
 
 _NO_VAL = ""
 
 _DB_KEYS = "keys"
+_DB_ATTRS = "attrs"
+_DB_ACLS_READ = "acls_read"
 
 _ENCODING = 'utf-8'
 
@@ -38,8 +42,8 @@ def process_keys_get(req, context=None, source=None):
         attr_out['Class'] = attr_in['Class']
         attr_out['Type'] = attr_in['Type']
         attr_out['Index'] = attr_in['Index']
-        attr_out['Value'] = ""
-        attr_out['Echo'] = attr_in['Echo']
+        attr_out['Value'] = attr_in['Value']
+        attr_out['Echo'] = True
         attr_out['Status'] = _ATTR_STATUS_IGNORED
         res['Attrs'].append(attr_out)
 
@@ -60,24 +64,83 @@ def process_keys_get(req, context=None, source=None):
         key_out['Revision'] = key_in['Revision']
         key_out['Echo'] = key_in['Echo']
 
-        val = fetchKeyVal(key_out['UUID'].encode(_ENCODING))
-        if val:
-            key_out['Value'] = val
-            key_out['Status'] = _KEY_STATUS_ACCEPTED
+        acls = fetch_ACLS_read(key_out['UUID'].encode(_ENCODING))
+        acls_tested = []
+        for acl in acls:
+            tested = []
+            for attr_uuid in acl:
+                attr = fetch_attr_val(attr_uuid)
+                matched = False
+                for attr_out in res['Attrs']:
+                    if ((attr['Class'] == attr_out['Class']) and
+                        (attr['Type'] == attr_out['Type']) and
+                        (attr['Index'] == attr_out['Index'])):
+                        matched = True
+                        val_a = base64.b64decode(attr['Value'])
+                        val_b = base64.b64decode(attr_out['Value'])
+                        print("val_a = {:s}".format(val_a))
+                        print("val_b = {:s}".format(val_b))
+                        if (val_a == val_b):
+                            tested += ['pass']
+                            attr_out['Status'] = _ATTR_STATUS_ACCEPTED
+                        else:
+                            tested += ['fail']
+                            attr_out['Status'] = _ATTR_STATUS_DENIED
+                        break
+                if not matched:
+                    tested += ['fail']
+                    attr['Value'] = _NO_VAL
+                    attr['Echo'] = False
+                    attr['Status'] = _ATTR_STATUS_REQUIRED
+                    res['Attrs'].append(attr)
+            acls_tested += [tested]
+
+        print(acls_tested)
+
+        grant = False
+        for tested in acls_tested:
+            access = set(tested)
+            if ((len(access) == 1) and
+                ('pass' in access)):
+                grant = True
+                break
+
+        if grant:
+            val = fetch_key_val(key_out['UUID'].encode(_ENCODING))
+            if val:
+                key_out['Value'] = val
+                key_out['Status'] = _KEY_STATUS_ACCEPTED
+            else:
+                key_out['Value'] = _NO_VAL
+                key_out['Status'] = _KEY_STATUS_UNKNOWN
         else:
             key_out['Value'] = _NO_VAL
-            key_out['Status'] = _KEY_STATUS_UNKNOWN
+            key_out['Status'] = _KEY_STATUS_DENIED
 
         res['Keys'].append(key_out)
 
     return res
 
-def fetchKeyVal(uuid):
-
-    print(uuid)
+def fetch_key_val(uuid):
 
     with closing(shelve.open(_DB_KEYS, 'r')) as keys:
         if uuid in keys:
             return keys[uuid]
+        else:
+            return None
+
+def fetch_attr_val(uuid):
+
+    with closing(shelve.open(_DB_ATTRS, 'r')) as attrs:
+        if uuid in attrs:
+            return attrs[uuid]
+        else:
+            return None
+
+def fetch_ACLS_read(uuid):
+
+    with closing(shelve.open(_DB_ACLS_READ, 'r')) as acls:
+        if uuid in acls:
+            return acls[uuid]
         else:
             return None

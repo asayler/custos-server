@@ -3,3 +3,5 @@
 
 # Database Files
 keys
+attrs
+acls_read
