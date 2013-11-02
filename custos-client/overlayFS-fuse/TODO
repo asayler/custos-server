@@ -1,17 +1,11 @@
 TODO
 
-* 2013-10-22 0 ANDY - Make httpGet() more robust: currently crashes
-                      when data input is not initialized
-
 * 2013-04-28 - ANDY - Add proper memory clean-up on error and errno
-                      pass through in fueenc_fh.c
+                      pass through in fuseenc_fh.c
 
 * 2013-05-02 - ANDY - Deal with hiding decrypted temp files from stat, etc
 
 * 2013-05-02 - ANDY - Deal with multi-open files
-
-* 2013-05-04 - ANDY - Fix up custos unit8_t* vs void* vs char*
-                      (Maybe just fix all at char*)?
 
 * 2013-05-04 - ANDY - Move curl_global_init call to FUSE init
 

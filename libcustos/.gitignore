@@ -8,14 +8,6 @@
 *.a
 
 #Executable Files#
-fuseenc
-fuseenc_fh
-fusehello
-fusexmp
-fusexmp_fh
-fusemir_fh
-xattr-util
-aes-crypt-util
 curl_example
 custos_client_test
 custos_http_test
@@ -26,4 +18,3 @@ custos_decode_test
 
 
 #Output Files#
-test/*
