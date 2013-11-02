@@ -1,7 +1,7 @@
 import base64
 import uuid
-import shelve
-from contextlib import closing
+
+import custos_db as db
 
 _VERSION = '0.1-dev'
 
@@ -19,10 +19,6 @@ _ATTR_STATUS_REQUIRED = "required"
 _ATTR_STATUS_IGNORED = "ignored"
 
 _NO_VAL = ""
-
-_DB_KEYS = "keys"
-_DB_ATTRS = "attrs"
-_DB_ACLS_READ = "acls_read"
 
 _ENCODING = 'utf-8'
 
@@ -64,12 +60,12 @@ def process_keys_get(req, context=None, source=None):
         key_out['Revision'] = key_in['Revision']
         key_out['Echo'] = key_in['Echo']
 
-        acls = fetch_ACLS_read(key_out['UUID'].encode(_ENCODING))
+        acls = db.get_ACLS_read(key_out['UUID'].encode(_ENCODING))
         acls_tested = []
         for acl in acls:
             tested = []
             for attr_uuid in acl:
-                attr = fetch_attr_val(attr_uuid)
+                attr = db.get_attr_val(attr_uuid)
                 matched = False
                 for attr_out in res['Attrs']:
                     if ((attr['Class'] == attr_out['Class']) and
@@ -102,7 +98,7 @@ def process_keys_get(req, context=None, source=None):
                 break
 
         if grant:
-            val = fetch_key_val(key_out['UUID'].encode(_ENCODING))
+            val = db.get_key_val(key_out['UUID'].encode(_ENCODING))
             if val:
                 key_out['Value'] = val
                 key_out['Status'] = _KEY_STATUS_ACCEPTED
@@ -116,27 +112,3 @@ def process_keys_get(req, context=None, source=None):
         res['Keys'].append(key_out)
 
     return res
-
-def fetch_key_val(uuid):
-
-    with closing(shelve.open(_DB_KEYS, 'r')) as keys:
-        if uuid in keys:
-            return keys[uuid]
-        else:
-            return None
-
-def fetch_attr_val(uuid):
-
-    with closing(shelve.open(_DB_ATTRS, 'r')) as attrs:
-        if uuid in attrs:
-            return attrs[uuid]
-        else:
-            return None
-
-def fetch_ACLS_read(uuid):
-
-    with closing(shelve.open(_DB_ACLS_READ, 'r')) as acls:
-        if uuid in acls:
-            return acls[uuid]
-        else:
-            return None

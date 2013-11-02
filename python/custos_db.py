@@ -17,6 +17,31 @@ _KEY_UUID1 = "1b4e28ba-2fa1-11d2-883f-b9a761bde3fb"
 _KEY_VAL1  = "VGhpcyBpcyBhIHNlY3JldCBrZXkhAA=="
 _ACLS_READ1 = [[_ATTR_UUID1]]
 
+
+def get_key_val(uuid):
+
+    with closing(shelve.open(_DB_KEYS, 'r')) as keys:
+        if uuid in keys:
+            return keys[uuid]
+        else:
+            return None
+
+def get_attr_val(uuid):
+
+    with closing(shelve.open(_DB_ATTRS, 'r')) as attrs:
+        if uuid in attrs:
+            return attrs[uuid]
+        else:
+            return None
+
+def get_ACLS_read(uuid):
+
+    with closing(shelve.open(_DB_ACLS_READ, 'r')) as acls:
+        if uuid in acls:
+            return acls[uuid]
+        else:
+            return None
+
 if __name__ == "__main__":
     with closing(shelve.open(_DB_KEYS, 'c')) as keys:
         keys[_KEY_UUID1] = _KEY_VAL1
