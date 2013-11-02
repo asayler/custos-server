@@ -63,11 +63,13 @@ typedef enum custosAttrStatus {
 typedef enum custosKeyStatus {
     CUS_KEYSTAT_ACCEPTED = 0,
     CUS_KEYSTAT_DENIED,
+    CUS_KEYSTAT_UNKNOWN,
     CUS_KEYSTAT_MAX
 } custosKeyStatus_t;
 
 #define CUS_KEYSTAT_ACCEPTED_STR "accepted"
 #define CUS_KEYSTAT_DENIED_STR   "denied"
+#define CUS_KEYSTAT_UNKNOWN_STR   "unknown"
 
 typedef enum custosAttrClass {
     CUS_ATTRCLASS_IMPLICIT = 0,

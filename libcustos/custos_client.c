@@ -1636,6 +1636,8 @@ extern const char* custos_KeyStatusToStr(const custosKeyStatus_t status) {
 	return CUS_KEYSTAT_ACCEPTED_STR;
     case CUS_KEYSTAT_DENIED:
 	return CUS_KEYSTAT_DENIED_STR;
+    case CUS_KEYSTAT_UNKNOWN:
+	return CUS_KEYSTAT_UNKNOWN_STR;
     default:
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_KeyStatusToStr: unrecognized status\n");
@@ -1659,6 +1661,9 @@ extern custosKeyStatus_t custos_StrToKeyStatus(const char* str) {
     }
     else if (strcmp(str, CUS_KEYSTAT_DENIED_STR) == 0) {
 	return CUS_KEYSTAT_DENIED;
+    }
+    else if (strcmp(str, CUS_KEYSTAT_UNKNOWN_STR) == 0) {
+	return CUS_KEYSTAT_UNKNOWN;
     }
     else {
 #ifdef DEBUG
