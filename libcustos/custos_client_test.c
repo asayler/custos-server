@@ -19,6 +19,7 @@
 
 #define BAD_PSK "Nonsense"
 #define GOOD_PSK "It's A Trap!"
+#define UUID "1b4e28ba-2fa1-11d2-883f-b9a761bde3fb"
 
 //#define SERVER_URL "http://condor.andysayler.com"
 #define SERVER_URL "http://localhost:5000"
@@ -45,7 +46,10 @@ int main(int argc, char* argv[]) {
     }
 
     /* Add Key to Request */
-    uuid_generate(uuid);
+    if(uuid_parse(UUID, uuid) < 0) {
+	fprintf(stderr, "ERROR %s: uuid_parse() failed\n", argv[0]);
+	return EXIT_FAILURE;
+    }
     key = custos_createKey(uuid, 1, 0, NULL);
     if(!key) {
 	fprintf(stderr, "ERROR %s: custos_createKey() failed\n", argv[0]);
