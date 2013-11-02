@@ -1,14 +1,26 @@
 import base64
 import uuid
+import shelve
+from contextlib import closing
 
 _VERSION = '0.1-dev'
 
 _TEST_KEY = "This is only a test!"
 
 _RES_STATUS_ACCEPTED = "accepted"
+
 _KEY_STATUS_ACCEPTED = "accepted"
+_KEY_STATUS_DENIED = "denied"
+_KEY_STATUS_UNKNOWN = "unknown"
+
 _ATTR_STATUS_ACCEPTED = "accepted"
 _ATTR_STATUS_IGNORED = "ignored"
+
+_NO_VAL = ""
+
+_DB_KEYS = "keys"
+
+_ENCODING = 'utf-8'
 
 def process_keys_get(req, context=None, source=None):
 
@@ -42,12 +54,30 @@ def process_keys_get(req, context=None, source=None):
         res['Attrs'].append(attr_ip)
 
     for key_in in req['Keys']:
+
         key_out = {}
         key_out['UUID'] = key_in['UUID']
         key_out['Revision'] = key_in['Revision']
-        key_out['Value'] = base64.b64encode(_TEST_KEY + '\0')
         key_out['Echo'] = key_in['Echo']
-        key_out['Status'] = _KEY_STATUS_ACCEPTED
+
+        val = fetchKeyVal(key_out['UUID'].encode(_ENCODING))
+        if val:
+            key_out['Value'] = val
+            key_out['Status'] = _KEY_STATUS_ACCEPTED
+        else:
+            key_out['Value'] = _NO_VAL
+            key_out['Status'] = _KEY_STATUS_UNKNOWN
+
         res['Keys'].append(key_out)
 
     return res
+
+def fetchKeyVal(uuid):
+
+    print(uuid)
+
+    with closing(shelve.open(_DB_KEYS, 'r')) as keys:
+        if uuid in keys:
+            return keys[uuid]
+        else:
+            return None
