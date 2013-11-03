@@ -10,13 +10,17 @@ _TEST_KEY = "This is only a test!"
 _RES_STATUS_ACCEPTED = "accepted"
 
 _KEY_STATUS_ACCEPTED = "accepted"
-_KEY_STATUS_DENIED = "denied"
-_KEY_STATUS_UNKNOWN = "unknown"
+_KEY_STATUS_DENIED   = "denied"
+_KEY_STATUS_UNKNOWN  = "unknown"
 
 _ATTR_STATUS_ACCEPTED = "accepted"
-_ATTR_STATUS_DENIED = "denied"
+_ATTR_STATUS_DENIED   = "denied"
 _ATTR_STATUS_REQUIRED = "required"
-_ATTR_STATUS_IGNORED = "ignored"
+_ATTR_STATUS_IGNORED  = "ignored"
+_ATTR_STATUS_OPTIONAL = "optional"
+
+_ATTR_CLASS_EXPLICIT    = "explicit"
+_ATTR_TYPE_EXPLICIT_PSK = "psk"
 
 _NO_VAL = ""
 
@@ -30,19 +34,11 @@ def process_keys_get(req, context=None, source=None):
     res['ResID'] = str(uuid.uuid1())
     res['ReqID'] = req['ReqID']
     res['Status'] = _RES_STATUS_ACCEPTED
-    res['Attrs'] = []
-    res['Keys'] = []
 
-    for attr_in in req['Attrs']:
-        attr_out = {}
-        attr_out['Class'] = attr_in['Class']
-        attr_out['Type'] = attr_in['Type']
-        attr_out['Index'] = attr_in['Index']
-        attr_out['Value'] = attr_in['Value']
-        attr_out['Echo'] = True
-        attr_out['Status'] = _ATTR_STATUS_IGNORED
-        res['Attrs'].append(attr_out)
+    pvd_attrs = req['Attrs']
+    cxt_attrs = []
 
+    # Process Context
     if (context['source_ip'] != None):
         attr_ip = {}
         attr_ip['Class'] = 'implicit'
@@ -51,64 +47,180 @@ def process_keys_get(req, context=None, source=None):
         attr_ip['Value'] = base64.b64encode(context['source_ip'] + '\0')
         attr_ip['Echo'] = True
         attr_ip['Status'] = _ATTR_STATUS_IGNORED
-        res['Attrs'].append(attr_ip)
+        cxt_attrs.append(attr_ip)
 
-    for key_in in req['Keys']:
+    # Process Key for Read Access
+    res_attrs = []
+    res_keys = []
+    for key in req['Keys']:
 
         key_out = {}
-        key_out['UUID'] = key_in['UUID']
-        key_out['Revision'] = key_in['Revision']
-        key_out['Echo'] = key_in['Echo']
+        key_out['UUID'] = key['UUID']
+        key_out['Revision'] = key['Revision']
 
-        acls = db.get_ACLS_read(key_out['UUID'].encode(_ENCODING))
-        acls_tested = []
+        acls = db.get_ACLS_read(key['UUID'].encode(_ENCODING))
+
+        # Handel Missing Key
+        if acls is None:
+            key_out['Echo'] = False
+            key_out['Value'] = _NO_VAL
+            key_out['Status'] = _KEY_STATUS_UNKNOWN
+            continue
+
+        # Handle Missing ACLS
+        if (len(acls) == 0):
+            raise Exception("acls list must not be empty")
+
+        # Process ACLS
+        out_attrs_tups = []
         for acl in acls:
-            tested = []
+
+            if acl is None:
+                raise Exception("acl must not be None")
+
+            # Get Attrs from DB
+            rqd_attrs = []
             for attr_uuid in acl:
                 attr = db.get_attr_val(attr_uuid)
-                matched = False
-                for attr_out in res['Attrs']:
-                    if ((attr['Class'] == attr_out['Class']) and
-                        (attr['Type'] == attr_out['Type']) and
-                        (attr['Index'] == attr_out['Index'])):
-                        matched = True
-                        val_a = base64.b64decode(attr['Value'])
-                        val_b = base64.b64decode(attr_out['Value'])
-                        if (val_a == val_b):
-                            tested += ['pass']
-                            attr_out['Status'] = _ATTR_STATUS_ACCEPTED
-                        else:
-                            tested += ['fail']
-                            attr_out['Status'] = _ATTR_STATUS_DENIED
-                        break
-                if not matched:
-                    tested += ['fail']
-                    attr['Value'] = _NO_VAL
-                    attr['Echo'] = False
-                    attr['Status'] = _ATTR_STATUS_REQUIRED
-                    res['Attrs'].append(attr)
-            acls_tested += [tested]
+                if attr is None:
+                    raise Exception("missing attr value")
+                rqd_attrs.append(attr)
 
-        grant = False
-        for tested in acls_tested:
-            access = set(tested)
-            if ((len(access) == 1) and
-                ('pass' in access)):
-                grant = True
-                break
+            # Process Attrs
+            out_attrs = process_attrs(rqd_attrs, (pvd_attrs + cxt_attrs))
+            if out_attrs is None:
+                raise Exception("No attributes returned")
 
-        if grant:
-            val = db.get_key_val(key_out['UUID'].encode(_ENCODING))
-            if val:
-                key_out['Value'] = val
-                key_out['Status'] = _KEY_STATUS_ACCEPTED
+            # Find Chain Success
+            stats = set(attr['Status'] for attr in out_attrs)
+            if ((_ATTR_STATUS_DENIED in stats) or
+                (_ATTR_STATUS_REQUIRED in stats)):
+                success = False
             else:
-                key_out['Value'] = _NO_VAL
-                key_out['Status'] = _KEY_STATUS_UNKNOWN
+                success = True
+
+            # Find Chain Length
+            length = 0
+            for attr in out_attrs:
+                if (attr['Status'] == _ATTR_STATUS_ACCEPTED):
+                    length += 1
+                else:
+                    break
+
+            # Save
+            out_attrs_tups.append((out_attrs, success, length))
+
+        # Calculate Response
+        suc_tup = None
+        max_tup = out_attrs_tups[0]
+        for tup in out_attrs_tups:
+            if (tup[1] == True):
+                suc_tup = tup
+                break;
+            if (tup[2] > max_tup[2]):
+                max_tup = tup
+
+        # Process Response
+        if suc_tup is not None:
+            val = db.get_key_val(key['UUID'].encode(_ENCODING))
+            if val is None:
+                raise Exception("missing key value")
+            key_out['Echo'] = True
+            key_out['Value'] = val
+            key_out['Status'] = _KEY_STATUS_ACCEPTED
+            res_attrs.append(suc_tup[0])
         else:
+            key_out['Echo'] = False
             key_out['Value'] = _NO_VAL
             key_out['Status'] = _KEY_STATUS_DENIED
+            res_attrs.append(max_tup[0])
 
-        res['Keys'].append(key_out)
+        res_keys.append(key_out)
 
+    # TODO Merge res_attrs
+    res['Attrs'] = res_attrs[0]
+    res['Keys'] = res_keys
+
+    print(res)
     return res
+
+def process_attrs(requested, provided):
+
+    output = []
+    unused = provided
+    available = []
+
+    # Process requested
+    while (len(requested) > 0):
+        r = requested.pop(0)
+
+        # Search for match
+        match = False
+        available = unused + available
+        unused = []
+        while (len(available) > 0):
+            p = available.pop(0)
+            # Compare ID
+            if ((p['Class'] == r['Class']) and
+                (p['Type'] == r['Type']) and
+                (p['Index'] == r['Index'])):
+                # Match
+                match = True
+                if(test_attr(r['Class'], r['Type'],
+                             r['Value'], p['Value'])):
+                    # Valid
+                    stat = _ATTR_STATUS_ACCEPTED
+                else:
+                    # Invalid
+                    stat = _ATTR_STATUS_DENIED
+                out = create_attr_res(p, p['Echo'], stat)
+                output.append(out)
+                break;
+            else:
+                # No Match
+                unused.append(p)
+
+        # Add required
+        if not match:
+            stat = _ATTR_STATUS_REQUIRED
+            out = create_attr_res(r, False, stat)
+            output.append(out)
+
+    # Add ignored
+    available = unused + available
+    unused = []
+    while (len(available) > 0):
+        p = available.pop(0)
+        stat = _ATTR_STATUS_IGNORED
+        out = create_attr_res(p, p['Echo'], stat)
+        output.append(out)
+
+    return output
+
+def create_attr_res(attr, echo, stat):
+
+    out = {}
+    out['Class'] = attr['Class']
+    out['Type'] = attr['Type']
+    out['Index'] = attr['Index']
+    out['Echo'] = echo
+    if echo:
+        out['Value'] = attr['Value']
+    else:
+        out['Value'] = _NO_VAL
+    out['Status'] = stat
+
+    return out
+
+def test_attr(cls, typ, val_a, val_b):
+
+    a = base64.b64decode(val_a)
+    b = base64.b64decode(val_b)
+
+    if (cls == _ATTR_CLASS_EXPLICIT):
+        if (typ == _ATTR_TYPE_EXPLICIT_PSK):
+            return (a == b)
+        else:
+            raise Exception("Unknown attr type {:s} in class {:s}".format(cls, typ))
+    else:
+        raise Exception("Unknown attr class {:s}".format(cls))
