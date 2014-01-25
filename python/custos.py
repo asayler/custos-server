@@ -3,11 +3,20 @@ import uuid
 
 import custos_db as db
 
-_VERSION = '0.1-dev'
+_VERSION = '0.3-dev'
 
 _TEST_KEY = "This is only a test!"
 
-_RES_STATUS_ACCEPTED = "accepted"
+ARGS_AAS = "aas"
+ARGS_OVR = "ovr"
+
+STANZA_STAT = "Status"
+STANZA_GRPS = "Groups"
+STANZA_OBJS = "Objects"
+STANZA_AAS = "AccessAttributes"
+
+RES_STATUS_ACCEPTED = "accepted"
+RES_STATUS_DENIED = "denied"
 
 _KEY_STATUS_ACCEPTED = "accepted"
 _KEY_STATUS_DENIED   = "denied"
@@ -19,12 +28,157 @@ _ATTR_STATUS_REQUIRED = "required"
 _ATTR_STATUS_IGNORED  = "ignored"
 _ATTR_STATUS_OPTIONAL = "optional"
 
+_ATTR_CLASS_IMPLICIT       = "implicit"
+_ATTR_TYPE_IMPLICIT_IP_SRC = "ip_src"
+
 _ATTR_CLASS_EXPLICIT    = "explicit"
 _ATTR_TYPE_EXPLICIT_PSK = "psk"
 
-_NO_VAL = ""
+_PERM_PRE_SRV = "srv_"
+_PERM_PRE_GRP = "grp_"
+_PERM_PRE_OBJ = "obj_"
+
+CXT_IP_SRC = "ip_src"
+CXT_USER = "user"
+
+_NO_VAL = None
 
 _ENCODING = 'utf-8'
+
+
+def create_cxt_AAs(cxt, echo):
+
+    AAs_cxt = []
+
+    # IP Source
+    if cxt[CXT_IP_SRC] != None:
+        attr = { 'Class': _ATTR_CLASS_IMPLICIT,
+                 'Type': _ATTR_TYPE_IMPLICIT_IP_SRC,
+                 'Value': base64.b64encode(cxt[CXT_IP_SRC] + '\0'),
+                 'Echo': echo }
+        AAs_cxt.append(attr)
+
+    return AAs_cxt
+
+def check_perm(perm, AAs_in, uuid=None, ovr=False):
+
+    # Lookup ACS
+    if perm.startswith(_PERM_PRE_SRV):
+        acs = db.get_srv_ACS()
+    elif passperm.startswith(_PERM_PRE_GRP):
+        acs = db.get_grp_ACS(uuid)
+    elif passperm.startswith(_PERM_PRE_OBJ):
+        acs = db.get_obj_ACS(uuid)
+    else:
+        raise Exception("Unknown permission prefix")
+    if acs is None:
+        raise Exception("No ACS returned")
+
+    print("acs = {:s}".format(acs))
+    print("perm = {:s}".format(perm))
+
+    # Lookup ACC
+    acc = acs[perm]
+
+    # Check ACC
+    AAs_out = check_AAs(acc, AAs_in)
+    if AAs_out is None:
+        raise Exception("No attributes returned")
+
+    # Derive Pass/Fail
+    stats = set(attr['Status'] for attr in out_attrs)
+    if ((_ATTR_STATUS_DENIED in stats) or
+        (_ATTR_STATUS_REQUIRED in stats)):
+        success = False
+    else:
+        success = True
+
+    return (success, AAs_out)
+
+def check_AAs(requested, provided):
+
+    print("requested = {:s}".format(requested))
+    print("provided = {:s}".format(provided))
+
+    output = []
+    unused = provided
+    available = []
+
+    # Process requested
+    while (len(requested) > 0):
+        r = requested.pop(0)
+
+        # Search for match
+        match = False
+        available = unused + available
+        unused = []
+        while (len(available) > 0):
+            p = available.pop(0)
+            # Compare ID
+            if ((p['Class'] == r['Class']) and
+                (p['Type'] == r['Type'])):
+                # Match
+                match = True
+                if(test_attr(r['Class'], r['Type'],
+                             r['Value'], p['Value'])):
+                    # Valid
+                    stat = _ATTR_STATUS_ACCEPTED
+                else:
+                    # Invalid
+                    stat = _ATTR_STATUS_DENIED
+                out = create_attr_res(p, p['Echo'], stat)
+                output.append(out)
+                break;
+            else:
+                # No Match
+                unused.append(p)
+
+        # Add required
+        if not match:
+            stat = _ATTR_STATUS_REQUIRED
+            out = create_attr_res(r, False, stat)
+            output.append(out)
+
+    # Add ignored
+    available = unused + available
+    unused = []
+    while (len(available) > 0):
+        p = available.pop(0)
+        stat = _ATTR_STATUS_IGNORED
+        out = create_attr_res(p, p['Echo'], stat)
+        output.append(out)
+
+    return output
+
+
+def create_attr_res(attr, echo, stat):
+
+    out = {}
+    out['Class'] = attr['Class']
+    out['Type'] = attr['Type']
+    out['Echo'] = echo
+    if echo:
+        out['Value'] = attr['Value']
+    else:
+        out['Value'] = _NO_VAL
+    out['Status'] = stat
+
+    return out
+
+
+def test_attr(cls, typ, val_a, val_b):
+
+    a = base64.b64decode(val_a)
+    b = base64.b64decode(val_b)
+
+    if (cls == _ATTR_CLASS_EXPLICIT):
+        if (typ == _ATTR_TYPE_EXPLICIT_PSK):
+            return (a == b)
+        else:
+            raise Exception("Unknown attr type {:s} in class {:s}".format(cls, typ))
+    else:
+        raise Exception("Unknown attr class {:s}".format(cls))
+
 
 def process_keys_get(req, context=None, source=None):
 
@@ -143,84 +297,3 @@ def process_keys_get(req, context=None, source=None):
 
     print(res)
     return res
-
-def process_attrs(requested, provided):
-
-    output = []
-    unused = provided
-    available = []
-
-    # Process requested
-    while (len(requested) > 0):
-        r = requested.pop(0)
-
-        # Search for match
-        match = False
-        available = unused + available
-        unused = []
-        while (len(available) > 0):
-            p = available.pop(0)
-            # Compare ID
-            if ((p['Class'] == r['Class']) and
-                (p['Type'] == r['Type']) and
-                (p['Index'] == r['Index'])):
-                # Match
-                match = True
-                if(test_attr(r['Class'], r['Type'],
-                             r['Value'], p['Value'])):
-                    # Valid
-                    stat = _ATTR_STATUS_ACCEPTED
-                else:
-                    # Invalid
-                    stat = _ATTR_STATUS_DENIED
-                out = create_attr_res(p, p['Echo'], stat)
-                output.append(out)
-                break;
-            else:
-                # No Match
-                unused.append(p)
-
-        # Add required
-        if not match:
-            stat = _ATTR_STATUS_REQUIRED
-            out = create_attr_res(r, False, stat)
-            output.append(out)
-
-    # Add ignored
-    available = unused + available
-    unused = []
-    while (len(available) > 0):
-        p = available.pop(0)
-        stat = _ATTR_STATUS_IGNORED
-        out = create_attr_res(p, p['Echo'], stat)
-        output.append(out)
-
-    return output
-
-def create_attr_res(attr, echo, stat):
-
-    out = {}
-    out['Class'] = attr['Class']
-    out['Type'] = attr['Type']
-    out['Index'] = attr['Index']
-    out['Echo'] = echo
-    if echo:
-        out['Value'] = attr['Value']
-    else:
-        out['Value'] = _NO_VAL
-    out['Status'] = stat
-
-    return out
-
-def test_attr(cls, typ, val_a, val_b):
-
-    a = base64.b64decode(val_a)
-    b = base64.b64decode(val_b)
-
-    if (cls == _ATTR_CLASS_EXPLICIT):
-        if (typ == _ATTR_TYPE_EXPLICIT_PSK):
-            return (a == b)
-        else:
-            raise Exception("Unknown attr type {:s} in class {:s}".format(cls, typ))
-    else:
-        raise Exception("Unknown attr class {:s}".format(cls))
