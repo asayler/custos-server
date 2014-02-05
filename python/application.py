@@ -48,6 +48,8 @@ def endpoint_grp_get():
     args_aa_json = request.args.get(custos.ARGS_AAS)
     args_ovr_json = request.args.get(custos.ARGS_OVR)
 
+    print("args_aa_json = {:s}".format(args_aa_json))
+
     # Decode Args
     if args_aa_json != None:
         args_aa = decode_json_req(args_aa_json)

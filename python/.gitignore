@@ -2,9 +2,10 @@
 *.pyc
 
 # Database Files
+srv_acs
+srv_grps
+grp_acs
+obj_acs
 keys
 attrs
 acls_read
-grp_acs
-srv_acs
-obj_acs

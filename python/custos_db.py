@@ -9,6 +9,8 @@ _DB_SRV_ACS = "srv_acs"
 _DB_GRP_ACS = "grp_acs"
 _DB_OBJ_ACS = "obj_acs"
 
+_DB_SRV_GRPS = "srv_grps"
+
 _DB_KEYS = "keys"
 _DB_ATTRS = "attrs"
 _DB_ACLS_READ = "acls_read"
@@ -41,9 +43,19 @@ _GRP_ACS_1 = { "grp_obj_create": _ACL_1,
                "grp_acs_get": _ACL_1,
                "grp_acs_set": _ACL_1 }
 
+_SRV_GRPS_1 = [ _GRP_UUID_1 ]
+
 _KEY_UUID_1 = "1b4e28ba-2fa1-11d2-883f-b9a761bde3fb"
 _KEY_VAL_1  = "VGhpcyBpcyBhIHNlY3JldCBrZXkhAA=="
 
+
+def get_srv_grps():
+
+    with closing(shelve.open(_DB_SRV_GRPS, 'r')) as srv_grps:
+        if _SRV_UUID in srv_grps:
+            return srv_grps[_SRV_UUID]
+        else:
+            return None
 
 def get_srv_ACS():
 
@@ -98,6 +110,8 @@ if __name__ == "__main__":
 
     with closing(shelve.open(_DB_SRV_ACS, 'c')) as srv_acs:
         srv_acs[_SRV_UUID] = _SRV_ACS_1
+    with closing(shelve.open(_DB_SRV_GRPS, 'c')) as srv_grps:
+        srv_grps[_SRV_UUID] = _SRV_GRPS_1
     with closing(shelve.open(_DB_GRP_ACS, 'c')) as grp_acs:
         grp_acs[_GRP_UUID_1] = _GRP_ACS_1
     with closing(shelve.open(_DB_KEYS, 'c')) as keys:
