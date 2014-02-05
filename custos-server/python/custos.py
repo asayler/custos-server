@@ -45,6 +45,9 @@ _NO_VAL = None
 
 _ENCODING = 'utf-8'
 
+def grp_list():
+
+    return db.get_srv_grps()
 
 def create_cxt_AAs(cxt, echo):
 
@@ -60,7 +63,7 @@ def create_cxt_AAs(cxt, echo):
 
     return AAs_cxt
 
-def check_perm(perm, AAs_in, uuid=None, ovr=False):
+def check_perm(perm, AAs_pro, uuid=None, ovr=False):
 
     # Lookup ACS
     if perm.startswith(_PERM_PRE_SRV):
@@ -81,17 +84,22 @@ def check_perm(perm, AAs_in, uuid=None, ovr=False):
     acc = acs[perm]
 
     # Check ACC
-    AAs_out = check_AAs(acc, AAs_in)
-    if AAs_out is None:
-        raise Exception("No attributes returned")
+    # TODO Provide smarter mutli-chain checking
+    for chain in acc:
 
-    # Derive Pass/Fail
-    stats = set(attr['Status'] for attr in out_attrs)
-    if ((_ATTR_STATUS_DENIED in stats) or
-        (_ATTR_STATUS_REQUIRED in stats)):
-        success = False
-    else:
-        success = True
+        AAs_req = [ db.get_attr_val(aa) for aa in chain ]
+        AAs_out = check_AAs(AAs_req, AAs_pro)
+        if AAs_out is None:
+            raise Exception("No attributes returned")
+
+        # Derive Pass/Fail
+        stats = set([ aa['Status'] for aa in AAs_out ])
+        if ((_ATTR_STATUS_DENIED in stats) or
+            (_ATTR_STATUS_REQUIRED in stats)):
+            success = False
+        else:
+            success = True
+            break
 
     return (success, AAs_out)
 
@@ -214,7 +222,7 @@ def process_keys_get(req, context=None, source=None):
 
         acls = db.get_ACLS_read(key['UUID'].encode(_ENCODING))
 
-        # Handel Missing Key
+        # Handle Missing Key
         if acls is None:
             key_out['Echo'] = False
             key_out['Value'] = _NO_VAL
