@@ -13,26 +13,11 @@ app.debug = True
 _ENCODING = 'utf-8'
 
 _ENDPOINT_PERM = { u"grp_list": u"srv_grp_list",
-                   u"grp_post": u"srv_grp_create",
-                   u"grp_obj_list": u"grp_obj_list", }
+                   u"obj_list": u"grp_obj_list",
+                   u"obj_get":  u"obj_read" }
 
-def decode_json_req(json_req_in, json_chk_in=None):
 
-    if (json_chk_in != None):
-        chk = json.loads(json_chk_in)
-        m = hashlib.md5()
-        m.update(json_req_in.encode(_ENCODING))
-        if(m.hexdigest() != chk['md5']):
-            # TODO Raise/return real error
-            print("ERROR: md5 Mismatch!")
-            print("calc md5 = " + m.hexdigest())
-            print("sent md5 = " + chk['md5'])
-
-    req = json.loads(json_req_in)
-
-    return req
-
-def auth_request(req, endpoint, uuid=None, ovr=False):
+def _auth_request(req, endpoint, uuid=None, ovr=False):
 
     # Extract Args
     args_aa_json = req.args.get(custos.ARGS_AAS)
@@ -40,7 +25,7 @@ def auth_request(req, endpoint, uuid=None, ovr=False):
 
     # Decode Args
     if args_aa_json != None:
-        args_aa = decode_json_req(args_aa_json)
+        args_aa = json.loads(args_aa_json)
     else:
         args_aa = []
 
@@ -54,7 +39,6 @@ def auth_request(req, endpoint, uuid=None, ovr=False):
 
     # Check Permission
     return custos.check_perm(_ENDPOINT_PERM[endpoint], AAs_in, uuid, ovr)
-
 
 
 @app.before_request
@@ -75,7 +59,7 @@ def endpoint_grp_list():
     res = {}
 
     # Auth Request
-    success, AAs_out = auth_request(request, endpt)
+    success, AAs_out = _auth_request(request, endpt)
     res[custos.STANZA_AAS] = AAs_out
 
     # Process Request
@@ -90,14 +74,14 @@ def endpoint_grp_list():
 
 
 @app.route("/grp/<grp_uuid>/obj", methods=['GET'])
-def endpoint_grp_obj_list(grp_uuid):
-    endpt = 'grp_obj_list'
+def endpoint_obj_list(grp_uuid):
+    endpt = 'obj_list'
 
     # Setup Response
     res = {}
 
     # Auth Request
-    success, AAs_out = auth_request(request, endpt, grp_uuid)
+    success, AAs_out = _auth_request(request, endpt, grp_uuid)
     res[custos.STANZA_AAS] = AAs_out
 
     # Process Request
@@ -106,13 +90,34 @@ def endpoint_grp_obj_list(grp_uuid):
         res[custos.STANZA_OBJS] = custos.obj_list(grp_uuid)
     else:
         res[custos.STANZA_STAT] = custos.RES_STATUS_DENIED
-        res[custos.STANZA_GRPS] = None
+        res[custos.STANZA_OBJS] = None
 
     return jsonify(res)
 
-@app.route("/echo", methods=['GET'])
-def endpoint_echo():
-    pass
+
+@app.route("/grp/<grp_uuid>/obj/<obj_uuid>", methods=['GET'])
+def endpoint_obj_get(grp_uuid, obj_uuid):
+    endpt = 'obj_get'
+
+    # Setup Response
+    res = {}
+
+    # TODO Verify object in group
+
+    # Auth Request
+    success, AAs_out = _auth_request(request, endpt, obj_uuid)
+    res[custos.STANZA_AAS] = AAs_out
+
+    # Process Request
+    if success:
+        res[custos.STANZA_STAT] = custos.RES_STATUS_ACCEPTED
+        res[custos.STANZA_VAL] = custos.obj_get(obj_uuid)
+    else:
+        res[custos.STANZA_STAT] = custos.RES_STATUS_DENIED
+        res[custos.STANZA_VAL] = None
+
+    return jsonify(res)
+
 
 if __name__ == "__main__":
     app.run()

@@ -13,6 +13,7 @@ ARGS_OVR = u"ovr"
 STANZA_STAT = u"Status"
 STANZA_GRPS = u"Groups"
 STANZA_OBJS = u"Objects"
+STANZA_VAL = u"Value"
 STANZA_AAS = u"AccessAttributes"
 
 RES_STATUS_ACCEPTED = u"accepted"
@@ -50,6 +51,10 @@ def grp_list():
 def obj_list(grp_uuid):
 
     return db.list_grp_objs(grp_uuid)
+
+def obj_get(obj_uuid):
+
+    return db.get_obj_val(obj_uuid)
 
 def create_cxt_AAs(cxt, echo):
 
