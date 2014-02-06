@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from flask import Flask, jsonify, request, g
 import json
 import copy
@@ -10,8 +12,9 @@ app.debug = True
 
 _ENCODING = 'utf-8'
 
-_ENDPOINT_PERM = { "grp_get": "srv_grp_list",
-                   "grp_post": "srv_grp_create" }
+_ENDPOINT_PERM = { u"grp_list": u"srv_grp_list",
+                   u"grp_post": u"srv_grp_create",
+                   u"grp_obj_list": u"grp_obj_list", }
 
 def decode_json_req(json_req_in, json_chk_in=None):
 
@@ -29,26 +32,11 @@ def decode_json_req(json_req_in, json_chk_in=None):
 
     return req
 
-
-@app.before_request
-def before_request():
-    pass
-
-
-@app.route("/", methods=['GET'])
-def endpoint_root():
-    return "This is the python Custos server implementation."
-
-
-@app.route("/grp", methods=['GET'])
-def endpoint_grp_get():
-    fname = 'grp_get'
+def auth_request(req, endpoint, uuid=None, ovr=False):
 
     # Extract Args
-    args_aa_json = request.args.get(custos.ARGS_AAS)
-    args_ovr_json = request.args.get(custos.ARGS_OVR)
-
-    print("args_aa_json = {:s}".format(args_aa_json))
+    args_aa_json = req.args.get(custos.ARGS_AAS)
+    args_ovr_json = req.args.get(custos.ARGS_OVR)
 
     # Decode Args
     if args_aa_json != None:
@@ -64,11 +52,30 @@ def endpoint_grp_get():
     # Append Context
     AAs_in = args_aa + custos.create_cxt_AAs(cxt, True)
 
+    # Check Permission
+    return custos.check_perm(_ENDPOINT_PERM[endpoint], AAs_in, uuid, ovr)
+
+
+
+@app.before_request
+def before_request():
+    pass
+
+
+@app.route("/", methods=['GET'])
+def endpoint_root():
+    return "Python Custos Server Implementation Version {:s}".format(custos.VERSION)
+
+
+@app.route("/grp", methods=['GET'])
+def endpoint_grp_list():
+    endpt = 'grp_list'
+
     # Setup Response
     res = {}
 
-    # Check Permission
-    success, AAs_out = custos.check_perm(_ENDPOINT_PERM[fname], AAs_in)
+    # Auth Request
+    success, AAs_out = auth_request(request, endpt)
     res[custos.STANZA_AAS] = AAs_out
 
     # Process Request
@@ -82,35 +89,30 @@ def endpoint_grp_get():
     return jsonify(res)
 
 
-@app.route("/keys", methods=['GET'])
-def endpoint_keys():
+@app.route("/grp/<grp_uuid>/obj", methods=['GET'])
+def endpoint_grp_obj_list(grp_uuid):
+    endpt = 'grp_obj_list'
 
-    args_req_json = request.args.get('req')
-    args_chk_json = request.args.get('chk')
+    # Setup Response
+    res = {}
 
-    req = decode_json_req(args_req_json, args_chk_json)
+    # Auth Request
+    success, AAs_out = auth_request(request, endpt, grp_uuid)
+    res[custos.STANZA_AAS] = AAs_out
 
-    cxt = {}
-    cxt['source_ip'] = request.remote_addr
-    cxt['source_user'] = request.remote_user
-
-    src = request.url_root
-
-    res = custos.process_keys_get(req, context=cxt, source=src)
+    # Process Request
+    if success:
+        res[custos.STANZA_STAT] = custos.RES_STATUS_ACCEPTED
+        res[custos.STANZA_OBJS] = custos.obj_list(grp_uuid)
+    else:
+        res[custos.STANZA_STAT] = custos.RES_STATUS_DENIED
+        res[custos.STANZA_GRPS] = None
 
     return jsonify(res)
-
 
 @app.route("/echo", methods=['GET'])
 def endpoint_echo():
-
-    args_req_json = request.args.get('req')
-    args_chk_json = request.args.get('chk')
-
-    res = decode_json_req(args_req_json, args_chk_json)
-
-    return jsonify(res)
-
+    pass
 
 if __name__ == "__main__":
     app.run()

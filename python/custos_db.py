@@ -1,122 +1,118 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 import shelve
 from contextlib import closing
 
-_SRV_UUID = "30976aa2-fcf9-463e-a6ed-ba7e3ef6ebd4"
+_ENCODING = 'utf-8'
 
-_DB_SRV_ACS = "srv_acs"
-_DB_GRP_ACS = "grp_acs"
-_DB_OBJ_ACS = "obj_acs"
+_DB_SRV_ACS = "db_srv_acs"
+_DB_GRP_ACS = "db_grp_acs"
+_DB_OBJ_ACS = "db_obj_acs"
 
-_DB_SRV_GRPS = "srv_grps"
+_DB_SRV_GRPS = "db_srv_grps"
+_DB_GRP_OBJS = "db_grp_objs"
+_DB_OBJ_VALS = "db_obj_vals"
 
-_DB_KEYS = "keys"
-_DB_ATTRS = "attrs"
-_DB_ACLS_READ = "acls_read"
+_DB_AAS = "db_aas"
 
+_AA_1_UUID = u"9b386945-955e-4b7a-9668-641786843357"
+_AA_1_VAL = { u"Class": u"explicit",
+              u"Type": u"psk",
+              u"Value": u"SXQncyBBIFRyYXAhAA==" }
 
+_ACL_1 = [ [ _AA_1_UUID ] ]
 
-_ATTR_UUID_1 = "9b386945-955e-4b7a-9668-641786843357"
-_ATTR_VAL_1 = { "Class": "explicit",
-                "Type": "psk",
-                "Index": 0,
-                "Value": "SXQncyBBIFRyYXAhAA==" }
+_OBJ_1_UUID = u"1b4e28ba-2fa1-11d2-883f-b9a761bde3fb"
+_OBJ_1_VAL  = u"VGhpcyBpcyBhIHNlY3JldCBrZXkhAA=="
 
-_ACL_1 = [[_ATTR_UUID_1]]
+_GRP_1_UUID = u"ce7ec850-fa77-4aa8-8014-8abf04b077d5"
+_GRP_1_ACS = { u"grp_obj_create": _ACL_1,
+               u"grp_obj_list": _ACL_1,
+               u"grp_obj_ovr": _ACL_1,
+               u"grp_delete": _ACL_1,
+               u"grp_audit": _ACL_1,
+               u"grp_clean": _ACL_1,
+               u"grp_acs_get": _ACL_1,
+               u"grp_acs_set": _ACL_1 }
+_GRP_1_OBJS = [ _OBJ_1_UUID ]
 
-_SRV_ACS_1 = { "srv_grp_create": _ACL_1,
-               "srv_grp_list": _ACL_1,
-               "srv_grp_ovr": _ACL_1,
-               "srv_audit": _ACL_1,
-               "srv_clean": _ACL_1,
-               "srv_acs_get": _ACL_1,
-               "srv_acs_set": _ACL_1 }
+_SRV_1_UUID = u"30976aa2-fcf9-463e-a6ed-ba7e3ef6ebd4"
+_SRV_1_ACS = { u"srv_grp_create": _ACL_1,
+               u"srv_grp_list": _ACL_1,
+               u"srv_grp_ovr": _ACL_1,
+               u"srv_audit": _ACL_1,
+               u"srv_clean": _ACL_1,
+               u"srv_acs_get": _ACL_1,
+               u"srv_acs_set": _ACL_1 }
+_SRV_1_GRPS = [ _GRP_1_UUID ]
 
-_GRP_UUID_1 = "ce7ec850-fa77-4aa8-8014-8abf04b077d5"
-_GRP_ACS_1 = { "grp_obj_create": _ACL_1,
-               "grp_obj_list": _ACL_1,
-               "grp_obj_ovr": _ACL_1,
-               "grp_delete": _ACL_1,
-               "grp_audit": _ACL_1,
-               "grp_clean": _ACL_1,
-               "grp_acs_get": _ACL_1,
-               "grp_acs_set": _ACL_1 }
-
-_SRV_GRPS_1 = [ _GRP_UUID_1 ]
-
-_KEY_UUID_1 = "1b4e28ba-2fa1-11d2-883f-b9a761bde3fb"
-_KEY_VAL_1  = "VGhpcyBpcyBhIHNlY3JldCBrZXkhAA=="
-
-
-def get_srv_grps():
-
-    with closing(shelve.open(_DB_SRV_GRPS, 'r')) as srv_grps:
-        if _SRV_UUID in srv_grps:
-            return srv_grps[_SRV_UUID]
-        else:
-            return None
-
+# Get ACS
 def get_srv_ACS():
 
     with closing(shelve.open(_DB_SRV_ACS, 'r')) as srv_acs:
-        if _SRV_UUID in srv_acs:
-            return srv_acs[_SRV_UUID]
+        if _SRV_1_UUID.encode(_ENCODING) in srv_acs:
+            return srv_acs[_SRV_1_UUID.encode(_ENCODING)]
         else:
             return None
 
-def get_grp_ACS(uuid):
+def get_grp_ACS(grp_uuid):
 
     with closing(shelve.open(_DB_GRP_ACS, 'r')) as grp_acs:
-        if uuid in grp_acs:
-            return grp_acs[uuid]
+        if grp_uuid.encode(_ENCODING) in grp_acs:
+            return grp_acs[grp_uuid.encode(_ENCODING)]
         else:
             return None
 
-def get_obj_ACS(uuid):
+def get_obj_ACS(obj_uuid):
 
     with closing(shelve.open(_DB_OBJ_ACS, 'r')) as obj_acs:
-        if uuid in obj_acs:
-            return obj_acs[uuid]
+        if obj_uuid.encode(_ENCODING) in obj_acs:
+            return obj_acs[obj_uuid.encode(_ENCODING)]
         else:
             return None
 
+# List OUs
 
-def get_key_val(uuid):
+def list_srv_grps():
 
-    with closing(shelve.open(_DB_KEYS, 'r')) as keys:
-        if uuid in keys:
-            return keys[uuid]
+    with closing(shelve.open(_DB_SRV_GRPS, 'r')) as srv_grps:
+        if _SRV_1_UUID.encode(_ENCODING) in srv_grps:
+            return srv_grps[_SRV_1_UUID.encode(_ENCODING)]
         else:
             return None
 
-def get_attr_val(uuid):
+def list_grp_objs(grp_uuid):
 
-    with closing(shelve.open(_DB_ATTRS, 'r')) as attrs:
-        if uuid in attrs:
-            return attrs[uuid]
+    with closing(shelve.open(_DB_GRP_OBJS, 'r')) as grp_objs:
+        if grp_uuid.encode(_ENCODING) in grp_objs:
+            return grp_objs[grp_uuid.encode(_ENCODING)]
         else:
             return None
 
-def get_ACLS_read(uuid):
+# Get OUs
 
-    with closing(shelve.open(_DB_ACLS_READ, 'r')) as acls:
-        if uuid in acls:
-            return acls[uuid]
+def get_attr_val(aa_uuid):
+
+    with closing(shelve.open(_DB_AAS, 'r')) as aas:
+        if aa_uuid.encode(_ENCODING) in aas:
+            return aas[aa_uuid.encode(_ENCODING)]
         else:
             return None
+
+# Main: Setup DBs
 
 if __name__ == "__main__":
 
+    with closing(shelve.open(_DB_AAS, 'c')) as aas:
+        aas[_AA_1_UUID.encode(_ENCODING)] = _AA_1_VAL
+
     with closing(shelve.open(_DB_SRV_ACS, 'c')) as srv_acs:
-        srv_acs[_SRV_UUID] = _SRV_ACS_1
+        srv_acs[_SRV_1_UUID.encode(_ENCODING)] = _SRV_1_ACS
     with closing(shelve.open(_DB_SRV_GRPS, 'c')) as srv_grps:
-        srv_grps[_SRV_UUID] = _SRV_GRPS_1
+        srv_grps[_SRV_1_UUID.encode(_ENCODING)] = _SRV_1_GRPS
+
     with closing(shelve.open(_DB_GRP_ACS, 'c')) as grp_acs:
-        grp_acs[_GRP_UUID_1] = _GRP_ACS_1
-    with closing(shelve.open(_DB_KEYS, 'c')) as keys:
-        keys[_KEY_UUID_1] = _KEY_VAL_1
-    with closing(shelve.open(_DB_ATTRS, 'c')) as attrs:
-        attrs[_ATTR_UUID_1] = _ATTR_VAL_1
-    with closing(shelve.open(_DB_ACLS_READ, 'c')) as acls_read:
-        acls_read[_KEY_UUID_1] = _ACL_1
+        grp_acs[_GRP_1_UUID.encode(_ENCODING)] = _GRP_1_ACS
+    with closing(shelve.open(_DB_GRP_OBJS, 'c')) as grp_objs:
+        grp_objs[_GRP_1_UUID.encode(_ENCODING)] = _GRP_1_OBJS
