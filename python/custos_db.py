@@ -12,7 +12,7 @@ _DB_OBJ_ACS = "db_obj_acs"
 
 _DB_SRV_GRPS = "db_srv_grps"
 _DB_GRP_OBJS = "db_grp_objs"
-_DB_OBJ_VALS = "db_obj_vals"
+_DB_OBJ_VAL = "db_obj_val"
 
 _DB_AAS = "db_aas"
 
@@ -24,6 +24,13 @@ _AA_1_VAL = { u"Class": u"explicit",
 _ACL_1 = [ [ _AA_1_UUID ] ]
 
 _OBJ_1_UUID = u"1b4e28ba-2fa1-11d2-883f-b9a761bde3fb"
+_OBJ_1_ACS = { u"obj_delete": _ACL_1,
+               u"obj_read": _ACL_1,
+               u"obj_update": _ACL_1,
+               u"obj_audit": _ACL_1,
+               u"obj_clean": _ACL_1,
+               u"obj_acs_get": _ACL_1,
+               u"obj_acs_set": _ACL_1 }
 _OBJ_1_VAL  = u"VGhpcyBpcyBhIHNlY3JldCBrZXkhAA=="
 
 _GRP_1_UUID = u"ce7ec850-fa77-4aa8-8014-8abf04b077d5"
@@ -100,6 +107,14 @@ def get_attr_val(aa_uuid):
         else:
             return None
 
+def get_obj_val(obj_uuid):
+
+    with closing(shelve.open(_DB_OBJ_VAL, 'r')) as obj_val:
+        if obj_uuid.encode(_ENCODING) in obj_val:
+            return obj_val[obj_uuid.encode(_ENCODING)]
+        else:
+            return None
+
 # Main: Setup DBs
 
 if __name__ == "__main__":
@@ -116,3 +131,8 @@ if __name__ == "__main__":
         grp_acs[_GRP_1_UUID.encode(_ENCODING)] = _GRP_1_ACS
     with closing(shelve.open(_DB_GRP_OBJS, 'c')) as grp_objs:
         grp_objs[_GRP_1_UUID.encode(_ENCODING)] = _GRP_1_OBJS
+
+    with closing(shelve.open(_DB_OBJ_ACS, 'c')) as obj_acs:
+        obj_acs[_OBJ_1_UUID.encode(_ENCODING)] = _OBJ_1_ACS
+    with closing(shelve.open(_DB_OBJ_VAL, 'c')) as obj_val:
+        obj_val[_OBJ_1_UUID.encode(_ENCODING)] = _OBJ_1_VAL
