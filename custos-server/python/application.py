@@ -24,7 +24,7 @@ def _auth_request(req, endpoint, uuid=None, ovr=False):
     args_ovr_json = req.args.get(custos.ARGS_OVR)
 
     # Decode Args
-    if args_aa_json != None:
+    if args_aa_json:
         args_aa = json.loads(args_aa_json)
     else:
         args_aa = []
@@ -111,7 +111,7 @@ def endpoint_obj_get(grp_uuid, obj_uuid):
     # Process Request
     if success:
         res[custos.STANZA_STAT] = custos.RES_STATUS_ACCEPTED
-        res[custos.STANZA_VAL] = custos.obj_get(obj_uuid)
+        res[custos.STANZA_VAL], ver = custos.obj_get(obj_uuid)
     else:
         res[custos.STANZA_STAT] = custos.RES_STATUS_DENIED
         res[custos.STANZA_VAL] = None
