@@ -46,15 +46,18 @@ _NO_VAL = None
 
 def grp_list():
 
-    return db.list_srv_grps()
+    srv = db.custos_srv()
+    return srv.list_grps()
 
 def obj_list(grp_uuid):
 
-    return db.list_grp_objs(grp_uuid)
+    grp = db.custos_grp(grp_uuid)
+    return grp.list_objs()
 
-def obj_get(obj_uuid):
+def obj_get(obj_uuid, obj_ver=None):
 
-    return db.get_obj_val(obj_uuid)
+    obj = db.custos_obj(obj_uuid)
+    return obj.get_val(obj_ver)
 
 def create_cxt_AAs(cxt, echo):
 
@@ -74,13 +77,15 @@ def check_perm(perm, AAs_pro, uuid=None, ovr=False):
 
     # Lookup ACS
     if perm.startswith(_PERM_PRE_SRV):
-        acs = db.get_srv_ACS()
+        ou = db.custos_srv(uuid)
     elif perm.startswith(_PERM_PRE_GRP):
-        acs = db.get_grp_ACS(uuid)
+        ou = db.custos_grp(uuid)
     elif perm.startswith(_PERM_PRE_OBJ):
-        acs = db.get_obj_ACS(uuid)
+        ou = db.custos_obj(uuid)
     else:
         raise Exception("Unknown permission prefix")
+
+    acs, ver = ou.get_ACS()
     if acs is None:
         raise Exception("No ACS returned")
 
