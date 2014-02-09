@@ -1,0 +1,9 @@
+http://127.0.0.1:5000/grp
+
+http://127.0.0.1:5000/grp?aas=%5B%20%7B%22Type%22%3A%20%22psk%22%2C%20%22Class%22%3A%20%22explicit%22%2C%20%22Value%22%3A%20%22SXQncyBBIFRyYXAhAA%3D%3D%22%2C%20%22Echo%22%3A%20true%7D%20%5D
+
+http://127.0.0.1:5000/grp?aas=%5B%20%7B%22Type%22%3A%20%22psk%22%2C%20%22Class%22%3A%20%22explicit%22%2C%20%22Value%22%3A%20%22SXQncyBBIFRyYXAhAA%3D%3D%22%2C%20%22Echo%22%3A%20false%7D%20%5D
+
+http://127.0.0.1:5000/grp/649bdcbd-6965-4e0f-9ffd-fe98e5c93b1f/obj?aas=%5B%20%7B%22Type%22%3A%20%22psk%22%2C%20%22Class%22%3A%20%22explicit%22%2C%20%22Value%22%3A%20%22SXQncyBBIFRyYXAhAA%3D%3D%22%2C%20%22Echo%22%3A%20false%7D%20%5D
+
+http://127.0.0.1:5000/grp/649bdcbd-6965-4e0f-9ffd-fe98e5c93b1f/obj/abbac72b-dac3-434a-9720-bee993f1c8b2?aas=%5B%20%7B%22Type%22%3A%20%22psk%22%2C%20%22Class%22%3A%20%22explicit%22%2C%20%22Value%22%3A%20%22SXQncyBBIFRyYXAhAA%3D%3D%22%2C%20%22Echo%22%3A%20false%7D%20%5D
