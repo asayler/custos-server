@@ -194,7 +194,7 @@ class custos_obj:
 
         with closing(shelve.open(_DB_OBJ_ACS, 'r')) as db_obj_acs:
             if uuid_ver_str in db_obj_acs:
-                return db_obj_acs[uuid_ver_str], obj_ver
+                return db_obj_acs[uuid_ver_str]
             else:
                 return None
 

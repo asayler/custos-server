@@ -13,8 +13,12 @@ ARGS_OVR = u"ovr"
 STANZA_STAT = u"Status"
 STANZA_GRPS = u"Groups"
 STANZA_OBJS = u"Objects"
-STANZA_VAL = u"Value"
 STANZA_AAS = u"AccessAttributes"
+
+STANZA_GRPS_UUID = u"UUID"
+STANZA_OBJS_UUID = u"UUID"
+STANZA_OBJS_VAL = u"Value"
+STANZA_OBJS_VER = u"Version"
 
 RES_STATUS_ACCEPTED = u"accepted"
 RES_STATUS_DENIED = u"denied"
@@ -47,17 +51,27 @@ _NO_VAL = None
 def grp_list():
 
     srv = db.custos_srv()
-    return srv.list_grps()
+    grp_uuids =  srv.list_grps()
+    return [{STANZA_GRPS_UUID: grp_uuid} for grp_uuid in grp_uuids]
 
 def obj_list(grp_uuid):
 
     grp = db.custos_grp(grp_uuid)
-    return grp.list_objs()
+    obj_uuids = grp.list_objs()
+    return [{STANZA_OBJS_UUID: obj_uuid} for obj_uuid in obj_uuids]
 
 def obj_get(obj_uuid, obj_ver=None):
 
     obj = db.custos_obj(obj_uuid)
-    return obj.get_val(obj_ver)
+    obj_val, obj_ver = obj.get_val()
+    out = [
+        {
+            STANZA_OBJS_UUID: obj_uuid,
+            STANZA_OBJS_VAL: obj_val,
+            STANZA_OBJS_VER: obj_ver
+        }
+    ]
+    return out
 
 def create_cxt_AAs(cxt, echo):
 
@@ -85,7 +99,7 @@ def check_perm(perm, AAs_pro, uuid=None, ovr=False):
     else:
         raise Exception("Unknown permission prefix")
 
-    acs, ver = ou.get_ACS()
+    acs = ou.get_ACS()
     if acs is None:
         raise Exception("No ACS returned")
 
