@@ -4,6 +4,8 @@
 import shelve
 import uuid as py_uuid
 
+import posix_ipc as ipc
+
 from contextlib import closing
 
 _ENCODING = 'utf-8'
@@ -72,7 +74,7 @@ def get_attr_val(aa_uuid, ver=None):
 
 # Objects Methods
 
-class custos_srv:
+class custos_srv(object):
 
     def __init__(self, srv_uuid=None):
         if not srv_uuid:
@@ -119,7 +121,7 @@ class custos_srv:
         return custos_grp(grp_uuid)
 
 
-class custos_grp:
+class custos_grp(object):
 
     def __init__(self, grp_uuid):
         self.uuid = grp_uuid
@@ -168,7 +170,7 @@ class custos_grp:
         return custos_obj(obj_uuid)
 
 
-class custos_obj:
+class custos_obj(object):
 
     def __init__(self, obj_uuid):
         self.uuid = obj_uuid
@@ -197,6 +199,23 @@ class custos_obj:
                 return db_obj_acs[uuid_ver_str]
             else:
                 return None
+
+    def set_ACS(self, obj_acs):
+
+        obj_ver = self.get_ver()
+        if not obj_ver:
+                return None
+        obj_ver += 1
+
+        uuid_ver_str = _build_uuid_ver(self.uuid, obj_ver).encode(_ENCODING)
+
+        with closing(shelve.open(_DB_OBJ_ACS, 'w')) as db_obj_acs:
+            db_obj_acs[obj_uuid_ver_str] = obj_acs
+
+        with closing(shelve.open(_DB_OBJ_VER, 'w')) as db_obj_ver:
+            db_obj_ver[obj_uuid_str] = obj_ver
+
+        return obj_ver
 
     def get_val(self, obj_ver=None):
 
