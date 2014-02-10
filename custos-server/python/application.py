@@ -1,6 +1,7 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from flask import Flask, jsonify, request, g
+from flask import Flask, jsonify, request
 import json
 import copy
 import hashlib
@@ -111,10 +112,10 @@ def endpoint_obj_get(grp_uuid, obj_uuid):
     # Process Request
     if success:
         res[custos.STANZA_STAT] = custos.RES_STATUS_ACCEPTED
-        res[custos.STANZA_VAL], ver = custos.obj_get(obj_uuid)
+        res[custos.STANZA_OBJS] = custos.obj_get(obj_uuid)
     else:
         res[custos.STANZA_STAT] = custos.RES_STATUS_DENIED
-        res[custos.STANZA_VAL] = None
+        res[custos.STANZA_OBJS] = None
 
     return jsonify(res)
 
