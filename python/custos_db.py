@@ -153,6 +153,18 @@ class custos_grp(object):
             else:
                 return None
 
+    def get_obj(self, obj_uuid, obj_ver=None):
+
+        if not obj_ver:
+            uuid_str = self.uuid.encode(_ENCODING)
+            with closing(shelve.open(_DB_OBJ_VER_READ, 'r')) as db_obj_ver:
+                if uuid_str in db_obj_ver:
+                    obj_ver = db_obj_ver[uuid_str]
+                else:
+                    return None
+
+        return custos_obj(obj_uuid, obj_ver)
+
     def create_obj(self, obj_acs, obj_val):
 
         grp_uuid_str = self.uuid.encode(_ENCODING)
@@ -176,27 +188,18 @@ class custos_grp(object):
             tmp.append(obj_uuid)
             db_grp_objs[grp_uuid_str] = tmp
 
-        return custos_obj(obj_uuid)
+        return custos_obj(obj_uuid, obj_ver)
 
 
 class custos_obj(object):
 
-    def __init__(self, obj_uuid):
+    def __init__(self, obj_uuid, obj_ver):
 
         self.uuid = obj_uuid
+        self.ver = obj_ver
 
     def __repr__(self):
-        return u"obj_" + self.uuid
-
-    def __get_ver_read(self):
-
-        uuid_str = self.uuid.encode(_ENCODING)
-
-        with closing(shelve.open(_DB_OBJ_VER_READ, 'r')) as db_obj_ver:
-            if uuid_str in db_obj_ver:
-                return db_obj_ver[uuid_str]
-            else:
-                return None
+        return u"obj_" + self.uuid + u"_v" + unicode(self.ver)
 
     def __increment_ver_read(self, ver):
 
@@ -213,16 +216,6 @@ class custos_obj(object):
             else:
                 return None
 
-    def __get_ver_update(self):
-
-        uuid_str = self.uuid.encode(_ENCODING)
-
-        with closing(shelve.open(_DB_OBJ_VER_UPDATE, 'r')) as db_obj_ver:
-            if uuid_str in db_obj_ver:
-                return db_obj_ver[uuid_str]
-            else:
-                return None
-
     def __increment_ver_update(self):
 
         uuid_str = self.uuid.encode(_ENCODING)
@@ -236,13 +229,17 @@ class custos_obj(object):
             else:
                 return None
 
+    def get_uuid(self):
+
+        return self.uuid
+
     def get_ver(self):
 
-        return self.__get_ver_read()
+        return self.ver
 
-    def get_ACS(self, obj_ver):
+    def get_ACS(self):
 
-        uuid_ver_str = _build_uuid_ver(self.uuid, obj_ver).encode(_ENCODING)
+        uuid_ver_str = _build_uuid_ver(self.uuid, self.ver).encode(_ENCODING)
 
         with closing(shelve.open(_DB_OBJ_ACS, 'r')) as db_obj_acs:
             if uuid_ver_str in db_obj_acs:
@@ -250,9 +247,9 @@ class custos_obj(object):
             else:
                 return None
 
-    def set_ACS(self, obj_acs, obj_ver):
+    def set_ACS(self, obj_acs):
 
-        uuid_ver_str = _build_uuid_ver(self.uuid, obj_ver).encode(_ENCODING)
+        uuid_ver_str = _build_uuid_ver(self.uuid, self.ver).encode(_ENCODING)
 
         with closing(shelve.open(_DB_OBJ_ACS, 'w')) as db_obj_acs:
             if uuid_ver_str in db_obj_acs:
@@ -261,9 +258,9 @@ class custos_obj(object):
             else:
                 return None
 
-    def get_val(self, obj_ver):
+    def get_val(self):
 
-        uuid_ver_str = _build_uuid_ver(self.uuid, obj_ver).encode(_ENCODING)
+        uuid_ver_str = _build_uuid_ver(self.uuid, self.ver).encode(_ENCODING)
 
         with closing(shelve.open(_DB_OBJ_VAL, 'r')) as db_obj_val:
             if uuid_ver_str in db_obj_val:
@@ -271,7 +268,7 @@ class custos_obj(object):
             else:
                 return None
 
-    def set_val(self, obj_val, obj_acs, obj_ver):
+    def set_val(self, obj_val, obj_acs):
 
         obj_ver_update = self.__increment_ver_update()
         if not obj_ver_update:
@@ -288,7 +285,7 @@ class custos_obj(object):
         if not obj_ver_read:
             return None
 
-        return obj_ver_update
+        return custos_obj(self.uuid, obj_ver_update)
 
 
 # Utilty Functions
@@ -331,35 +328,25 @@ if __name__ == "__main__":
     print("{:s}: groups={:s}\nacs={:s}".format(srv_1, srv_1.list_grps(), srv_1.get_ACS()))
     print("{:s}: objects={:s}\nacs={:s}".format(grp_1, grp_1.list_objs(), grp_1.get_ACS()))
 
+    uuid = obj_1.get_uuid()
     ver = obj_1.get_ver()
-    if not ver:
-        print("obj_1.get_ver Error")
-    acs = obj_1.get_ACS(ver)
-    if not acs:
-        print("obj_1.get_ACS Error")
-    val = obj_1.get_val(ver)
-    if not val:
-        print("obj_1.get_val Error")
-    print("{:s}: ver={:d}, val={:s}\nacs={:s}".format(obj_1, ver, val, acs))
+    val = obj_1.get_val()
+    acs = obj_1.get_ACS()
+    print("{:s}: uuid={:s}, ver={:d}, val={:s}\nacs={:s}".format(obj_1, uuid, ver, val, acs))
 
+    acs = obj_1.set_ACS(_OBJ_1_ACS)
+    print("{:s}: uuid={:s}, ver={:d}, val={:s}\nacs={:s}".format(obj_1, uuid, ver, val, acs))
+
+    uuid = obj_1.get_uuid()
     ver = obj_1.get_ver()
-    if not ver:
-        print("obj_1.get_ver Error")
-    acs = obj_1.set_ACS(_OBJ_1_ACS, ver)
-    if not acs:
-        print("obj_1.set_ACS Error")
-    val = obj_1.get_val(ver)
-    if not val:
-        print("obj_1.get_val Error")
-    print("{:s}: ver={:d}, val={:s}\nacs={:s}".format(obj_1, ver, val, acs))
+    val = obj_1.get_val()
+    acs = obj_1.get_ACS()
+    print("{:s}: uuid={:s}, ver={:d}, val={:s}\nacs={:s}".format(obj_1, uuid, ver, val, acs))
 
-    ver = obj_1.set_val(_OBJ_1_VAL, _OBJ_1_ACS, ver)
-    if not ver:
-        print("obj_1.set_val Error")
-    val = obj_1.get_val(ver)
-    if not val:
-        print("obj_1.get_val Error")
-    acs = obj_1.get_ACS(ver)
-    if not acs:
-        print("obj_1.get_ACS Error")
-    print("{:s}: ver={:d}, val={:s}\nacs={:s}".format(obj_1, ver, val, acs))
+    obj_1 = obj_1.set_val(_OBJ_1_VAL, _OBJ_1_ACS)
+
+    uuid = obj_1.get_uuid()
+    ver = obj_1.get_ver()
+    val = obj_1.get_val()
+    acs = obj_1.get_ACS()
+    print("{:s}: uuid={:s}, ver={:d}, val={:s}\nacs={:s}".format(obj_1, uuid, ver, val, acs))
