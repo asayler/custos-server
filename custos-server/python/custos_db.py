@@ -23,7 +23,8 @@ _DB_SRV_GRPS = "db_srv_grps"
 _DB_GRP_OBJS = "db_grp_objs"
 
 _DB_OBJ_VAL = "db_obj_val"
-_DB_OBJ_VER = "db_obj_ver"
+_DB_OBJ_VER_READ = "db_obj_ver_read"
+_DB_OBJ_VER_UPDATE = "db_obj_ver_update"
 
 _DB_AAS = "db_aas"
 
@@ -81,6 +82,9 @@ class custos_srv(object):
             srv_uuid = _SRV_1_UUID
         self.uuid = srv_uuid
 
+    def __repr__(self):
+        return u"srv_" + self.uuid
+
     def get_ACS(self):
 
         srv_uuid_str = self.uuid.encode(_ENCODING)
@@ -126,6 +130,9 @@ class custos_grp(object):
     def __init__(self, grp_uuid):
         self.uuid = grp_uuid
 
+    def __repr__(self):
+        return u"grp_" + self.uuid
+
     def get_ACS(self):
 
         grp_uuid_str = self.uuid.encode(_ENCODING)
@@ -155,8 +162,10 @@ class custos_grp(object):
         obj_uuid_str = obj_uuid.encode(_ENCODING)
         obj_uuid_ver_str = _build_uuid_ver(obj_uuid, obj_ver).encode(_ENCODING)
 
-        with closing(shelve.open(_DB_OBJ_VER, 'w')) as db_obj_ver:
-            db_obj_ver[obj_uuid_str] = obj_ver
+        with closing(shelve.open(_DB_OBJ_VER_READ, 'w')) as db_obj_ver_read:
+            db_obj_ver_read[obj_uuid_str] = obj_ver
+        with closing(shelve.open(_DB_OBJ_VER_UPDATE, 'w')) as db_obj_ver_update:
+            db_obj_ver_update[obj_uuid_str] = obj_ver
         with closing(shelve.open(_DB_OBJ_ACS, 'w')) as db_obj_acs:
             db_obj_acs[obj_uuid_ver_str] = obj_acs
         with closing(shelve.open(_DB_OBJ_VAL, 'w')) as db_obj_val:
@@ -173,24 +182,65 @@ class custos_grp(object):
 class custos_obj(object):
 
     def __init__(self, obj_uuid):
+
         self.uuid = obj_uuid
 
-    def get_ver(self):
+    def __repr__(self):
+        return u"obj_" + self.uuid
+
+    def __get_ver_read(self):
 
         uuid_str = self.uuid.encode(_ENCODING)
 
-        with closing(shelve.open(_DB_OBJ_VER, 'r')) as db_obj_ver:
+        with closing(shelve.open(_DB_OBJ_VER_READ, 'r')) as db_obj_ver:
             if uuid_str in db_obj_ver:
                 return db_obj_ver[uuid_str]
             else:
                 return None
 
-    def get_ACS(self, obj_ver=None):
+    def __increment_ver_read(self, ver):
 
-        if not obj_ver:
-            obj_ver = self.get_ver()
-            if not obj_ver:
+        uuid_str = self.uuid.encode(_ENCODING)
+
+        with closing(shelve.open(_DB_OBJ_VER_READ, 'w')) as db_obj_ver:
+            if uuid_str in db_obj_ver:
+                tmp = db_obj_ver[uuid_str]
+                if ver > tmp:
+                    db_obj_ver[uuid_str] = ver
+                    return ver
+                else:
+                    return tmp
+            else:
                 return None
+
+    def __get_ver_update(self):
+
+        uuid_str = self.uuid.encode(_ENCODING)
+
+        with closing(shelve.open(_DB_OBJ_VER_UPDATE, 'r')) as db_obj_ver:
+            if uuid_str in db_obj_ver:
+                return db_obj_ver[uuid_str]
+            else:
+                return None
+
+    def __increment_ver_update(self):
+
+        uuid_str = self.uuid.encode(_ENCODING)
+
+        with closing(shelve.open(_DB_OBJ_VER_UPDATE, 'w')) as db_obj_ver:
+            if uuid_str in db_obj_ver:
+                tmp = db_obj_ver[uuid_str]
+                tmp += 1
+                db_obj_ver[uuid_str] = tmp
+                return tmp
+            else:
+                return None
+
+    def get_ver(self):
+
+        return self.__get_ver_read()
+
+    def get_ACS(self, obj_ver):
 
         uuid_ver_str = _build_uuid_ver(self.uuid, obj_ver).encode(_ENCODING)
 
@@ -200,37 +250,45 @@ class custos_obj(object):
             else:
                 return None
 
-    def set_ACS(self, obj_acs):
-
-        obj_ver = self.get_ver()
-        if not obj_ver:
-                return None
-        obj_ver += 1
+    def set_ACS(self, obj_acs, obj_ver):
 
         uuid_ver_str = _build_uuid_ver(self.uuid, obj_ver).encode(_ENCODING)
 
         with closing(shelve.open(_DB_OBJ_ACS, 'w')) as db_obj_acs:
-            db_obj_acs[obj_uuid_ver_str] = obj_acs
-
-        with closing(shelve.open(_DB_OBJ_VER, 'w')) as db_obj_ver:
-            db_obj_ver[obj_uuid_str] = obj_ver
-
-        return obj_ver
-
-    def get_val(self, obj_ver=None):
-
-        if not obj_ver:
-            obj_ver = self.get_ver()
-            if not obj_ver:
+            if uuid_ver_str in db_obj_acs:
+                db_obj_acs[uuid_ver_str] = obj_acs
+                return obj_acs
+            else:
                 return None
+
+    def get_val(self, obj_ver):
 
         uuid_ver_str = _build_uuid_ver(self.uuid, obj_ver).encode(_ENCODING)
 
         with closing(shelve.open(_DB_OBJ_VAL, 'r')) as db_obj_val:
             if uuid_ver_str in db_obj_val:
-                return db_obj_val[uuid_ver_str], obj_ver
+                return db_obj_val[uuid_ver_str]
             else:
                 return None
+
+    def set_val(self, obj_val, obj_acs, obj_ver):
+
+        obj_ver_update = self.__increment_ver_update()
+        if not obj_ver_update:
+            return None
+
+        uuid_ver_str = _build_uuid_ver(self.uuid, obj_ver_update).encode(_ENCODING)
+
+        with closing(shelve.open(_DB_OBJ_VAL, 'w')) as db_obj_val:
+            db_obj_val[uuid_ver_str] = obj_val
+        with closing(shelve.open(_DB_OBJ_ACS, 'w')) as db_obj_acs:
+            db_obj_acs[uuid_ver_str] = obj_acs
+
+        obj_ver_read = self.__increment_ver_read(obj_ver_update)
+        if not obj_ver_read:
+            return None
+
+        return obj_ver_update
 
 
 # Utilty Functions
@@ -238,6 +296,7 @@ class custos_obj(object):
 def _build_uuid_ver(uuid, ver):
 
     return uuid + _VER_SEPERATOR + unicode(ver)
+
 
 # Main: Setup DBs
 
@@ -260,12 +319,47 @@ if __name__ == "__main__":
         pass
     with closing(shelve.open(_DB_OBJ_VAL, 'n')) as db_obj_val:
         pass
-    with closing(shelve.open(_DB_OBJ_VER, 'n')) as db_obj_ver:
+    with closing(shelve.open(_DB_OBJ_VER_READ, 'n')) as db_obj_ver:
+        pass
+    with closing(shelve.open(_DB_OBJ_VER_UPDATE, 'n')) as db_obj_ver:
         pass
 
     srv_1 = custos_srv()
     grp_1 = srv_1.create_grp(_GRP_1_ACS)
     obj_1 = grp_1.create_obj(_OBJ_1_ACS, _OBJ_1_VAL)
 
-    print("groups: {:s}".format(srv_1.list_grps()))
-    print("objects: {:s}".format(grp_1.list_objs()))
+    print("{:s}: groups={:s}\nacs={:s}".format(srv_1, srv_1.list_grps(), srv_1.get_ACS()))
+    print("{:s}: objects={:s}\nacs={:s}".format(grp_1, grp_1.list_objs(), grp_1.get_ACS()))
+
+    ver = obj_1.get_ver()
+    if not ver:
+        print("obj_1.get_ver Error")
+    acs = obj_1.get_ACS(ver)
+    if not acs:
+        print("obj_1.get_ACS Error")
+    val = obj_1.get_val(ver)
+    if not val:
+        print("obj_1.get_val Error")
+    print("{:s}: ver={:d}, val={:s}\nacs={:s}".format(obj_1, ver, val, acs))
+
+    ver = obj_1.get_ver()
+    if not ver:
+        print("obj_1.get_ver Error")
+    acs = obj_1.set_ACS(_OBJ_1_ACS, ver)
+    if not acs:
+        print("obj_1.set_ACS Error")
+    val = obj_1.get_val(ver)
+    if not val:
+        print("obj_1.get_val Error")
+    print("{:s}: ver={:d}, val={:s}\nacs={:s}".format(obj_1, ver, val, acs))
+
+    ver = obj_1.set_val(_OBJ_1_VAL, _OBJ_1_ACS, ver)
+    if not ver:
+        print("obj_1.set_val Error")
+    val = obj_1.get_val(ver)
+    if not val:
+        print("obj_1.get_val Error")
+    acs = obj_1.get_ACS(ver)
+    if not acs:
+        print("obj_1.get_ACS Error")
+    print("{:s}: ver={:d}, val={:s}\nacs={:s}".format(obj_1, ver, val, acs))
