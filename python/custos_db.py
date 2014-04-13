@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import sys
 import shelve
-import uuid as py_uuid
-
-import posix_ipc as ipc
+import uuid
 
 from contextlib import closing
 
@@ -33,34 +32,41 @@ _AA_1_VAL = { u"Class": u"explicit",
               u"Type": u"psk",
               u"Value": u"SXQncyBBIFRyYXAhAA==" }
 
-_ACL_1 = [ [ _AA_1_UUID ] ]
+_ACC_1_UUID = u"1d0bf190-3d06-4708-9907-c1b99ccde842"
+_ACC_1 = [ _AA_1_UUID ]
 
-_OBJ_1_ACS = { u"obj_delete": _ACL_1,
-               u"obj_read": _ACL_1,
-               u"obj_update": _ACL_1,
-               u"obj_audit": _ACL_1,
-               u"obj_clean": _ACL_1,
-               u"obj_acs_get": _ACL_1,
-               u"obj_acs_set": _ACL_1 }
+_ACG_1_UUID = u"8fcd5a7e-1dee-46d3-8a12-f30a4b1e7d50"
+_ACG_1 = [ _ACC_1_UUID ]
+
+_ACS_OBJ_1_UUID = u"2680dbd6-897f-4197-825b-0f90b8b46102"
+_OBJ_1_ACS = { u"obj_delete": _ACC_1_UUID,
+               u"obj_read": _ACC_1_UUID,
+               u"obj_update": _ACC_1_UUID,
+               u"obj_audit": _ACC_1_UUID,
+               u"obj_clean": _ACC_1_UUID,
+               u"obj_acs_get": _ACC_1_UUID,
+               u"obj_acs_set": _ACC_1_UUID }
 _OBJ_1_VAL  = u"VGhpcyBpcyBhIHNlY3JldCBrZXkhAA=="
 
-_GRP_1_ACS = { u"grp_obj_create": _ACL_1,
-               u"grp_obj_list": _ACL_1,
-               u"grp_obj_ovr": _ACL_1,
-               u"grp_delete": _ACL_1,
-               u"grp_audit": _ACL_1,
-               u"grp_clean": _ACL_1,
-               u"grp_acs_get": _ACL_1,
-               u"grp_acs_set": _ACL_1 }
+_ACS_GRP_1_UUID = u"8a42be00-6e02-4bab-8b83-20bad53350fb"
+_GRP_1_ACS = { u"grp_obj_create": _ACC_1_UUID,
+               u"grp_obj_list": _ACC_1_UUID,
+               u"grp_obj_ovr": _ACC_1_UUID,
+               u"grp_delete": _ACC_1_UUID,
+               u"grp_audit": _ACC_1_UUID,
+               u"grp_clean": _ACC_1_UUID,
+               u"grp_acs_get": _ACC_1_UUID,
+               u"grp_acs_set": _ACC_1_UUID }
 
 _SRV_1_UUID = u"30976aa2-fcf9-463e-a6ed-ba7e3ef6ebd4"
-_SRV_1_ACS = { u"srv_grp_create": _ACL_1,
-               u"srv_grp_list": _ACL_1,
-               u"srv_grp_ovr": _ACL_1,
-               u"srv_audit": _ACL_1,
-               u"srv_clean": _ACL_1,
-               u"srv_acs_get": _ACL_1,
-               u"srv_acs_set": _ACL_1 }
+_ACS_SRV_1_UUID = u"b81522d1-7d29-409d-a27f-6f5c64596997"
+_SRV_1_ACS = { u"srv_grp_create": _ACC_1_UUID,
+               u"srv_grp_list": _ACC_1_UUID,
+               u"srv_grp_ovr": _ACC_1_UUID,
+               u"srv_audit": _ACC_1_UUID,
+               u"srv_clean": _ACC_1_UUID,
+               u"srv_acs_get": _ACC_1_UUID,
+               u"srv_acs_set": _ACC_1_UUID }
 
 # Get OUs
 
@@ -73,13 +79,92 @@ def get_attr_val(aa_uuid, ver=None):
             return None
 
 
-# Objects Methods
+# Objects
+
+class uuid_object(object):
+    """
+    Custos UUID Object Base Class
+
+    """
+
+    def __init__(self, my_uuid=None):
+        if not my_uuid:
+            my_uuid = uuid.uuid4()
+        self.uuid = my_uuid
+
+    def __unicode__(self):
+        u = u"{:s}_{:012x}".format(type(self).__name__, self.uuid.node)
+        return u
+
+    def __str__(self):
+        return unicode(self).encode(_ENCODING)
+
+    def __repr__(self):
+        u = u"{:s}".format(self.uuid)
+        return u.encode(_ENCODING)
+
+    def __hash__(self):
+        return hash(self.uuid)
+
+    def __eq__(self, other):
+        return (self.uuid == other.uuid)
+
+class aa(uuid_object):
+    """
+    Access Attribute
+
+    """
+
+    pass
+
+class custos_acc(object):
+    """
+    List of Access Attributes
+
+    """
+
+    def __init__(self, acc_uuid=None):
+        if not acc_uuid:
+            acc_uuid = unicode(uuid.uuid4())
+        self.uuid = acc_uuid
+
+    def __repr__(self):
+        return u"acc_" + self.uuid
+
+class custos_acg(object):
+    """
+    Group of Access Control Chains
+
+    """
+
+    def __init__(self, acg_uuid=None):
+        if not acg_uuid:
+            acg_uuid = unicode(uuid.uuid4())
+        self.uuid = acg_uuid
+
+    def __repr__(self):
+        return u"acg_" + self.uuid
+
+class custos_acs(object):
+    """
+    Specification of permissions to ACGs
+
+    """
+
+    def __init__(self, acs_uuid=None):
+        if not acs_uuid:
+            acs_uuid = unicode(uuid.uuid4())
+        self.uuid = acs_uuid
+
+    def __repr__(self):
+        return u"acs_" + self.uuid
+
 
 class custos_srv(object):
 
     def __init__(self, srv_uuid=None):
         if not srv_uuid:
-            srv_uuid = _SRV_1_UUID
+            srv_uuid = unicode(uuid.uuid4())
         self.uuid = srv_uuid
 
     def __repr__(self):
@@ -109,7 +194,7 @@ class custos_srv(object):
 
         srv_uuid_str = self.uuid.encode(_ENCODING)
 
-        grp_uuid = unicode(py_uuid.uuid4())
+        grp_uuid = unicode(uuid.uuid4())
         grp_uuid_str = grp_uuid.encode(_ENCODING)
 
         with closing(shelve.open(_DB_GRP_ACS, 'w')) as db_grp_acs:
@@ -169,7 +254,7 @@ class custos_grp(object):
 
         grp_uuid_str = self.uuid.encode(_ENCODING)
 
-        obj_uuid = unicode(py_uuid.uuid4())
+        obj_uuid = unicode(uuid.uuid4())
         obj_ver = _INIT_OBJ_VER
         obj_uuid_str = obj_uuid.encode(_ENCODING)
         obj_uuid_ver_str = _build_uuid_ver(obj_uuid, obj_ver).encode(_ENCODING)
@@ -290,15 +375,14 @@ class custos_obj(object):
 
 # Utilty Functions
 
-def _build_uuid_ver(uuid, ver):
+def _build_uuid_ver(my_uuid, my_ver):
 
-    return uuid + _VER_SEPERATOR + unicode(ver)
+    return my_uuid + _VER_SEPERATOR + unicode(my_ver)
 
 
 # Main: Setup DBs
 
-if __name__ == "__main__":
-
+def main():
     with closing(shelve.open(_DB_AAS, 'n')) as db_aas:
         db_aas[_AA_1_UUID.encode(_ENCODING)] = _AA_1_VAL
 
@@ -321,32 +405,37 @@ if __name__ == "__main__":
     with closing(shelve.open(_DB_OBJ_VER_UPDATE, 'n')) as db_obj_ver:
         pass
 
-    srv_1 = custos_srv()
+    srv_1 = custos_srv(_SRV_1_UUID)
     grp_1 = srv_1.create_grp(_GRP_1_ACS)
     obj_1 = grp_1.create_obj(_OBJ_1_ACS, _OBJ_1_VAL)
 
     print("{:s}: groups={:s}\nacs={:s}".format(srv_1, srv_1.list_grps(), srv_1.get_ACS()))
     print("{:s}: objects={:s}\nacs={:s}".format(grp_1, grp_1.list_objs(), grp_1.get_ACS()))
 
-    uuid = obj_1.get_uuid()
+    obj_uuid = obj_1.get_uuid()
     ver = obj_1.get_ver()
     val = obj_1.get_val()
     acs = obj_1.get_ACS()
-    print("{:s}: uuid={:s}, ver={:d}, val={:s}\nacs={:s}".format(obj_1, uuid, ver, val, acs))
+    print("{:s}: uuid={:s}, ver={:d}, val={:s}\nacs={:s}".format(obj_1, obj_uuid, ver, val, acs))
 
     acs = obj_1.set_ACS(_OBJ_1_ACS)
-    print("{:s}: uuid={:s}, ver={:d}, val={:s}\nacs={:s}".format(obj_1, uuid, ver, val, acs))
+    print("{:s}: uuid={:s}, ver={:d}, val={:s}\nacs={:s}".format(obj_1, obj_uuid, ver, val, acs))
 
-    uuid = obj_1.get_uuid()
+    obj_uuid = obj_1.get_uuid()
     ver = obj_1.get_ver()
     val = obj_1.get_val()
     acs = obj_1.get_ACS()
-    print("{:s}: uuid={:s}, ver={:d}, val={:s}\nacs={:s}".format(obj_1, uuid, ver, val, acs))
+    print("{:s}: uuid={:s}, ver={:d}, val={:s}\nacs={:s}".format(obj_1, obj_uuid, ver, val, acs))
 
     obj_1 = obj_1.set_val(_OBJ_1_VAL, _OBJ_1_ACS)
 
-    uuid = obj_1.get_uuid()
+    obj_uuid = obj_1.get_uuid()
     ver = obj_1.get_ver()
     val = obj_1.get_val()
     acs = obj_1.get_ACS()
-    print("{:s}: uuid={:s}, ver={:d}, val={:s}\nacs={:s}".format(obj_1, uuid, ver, val, acs))
+    print("{:s}: uuid={:s}, ver={:d}, val={:s}\nacs={:s}".format(obj_1, obj_uuid, ver, val, acs))
+
+    return 0
+
+if __name__ == "__main__":
+    sys.exit(main())
