@@ -17,12 +17,14 @@
 #include "custos_client.h"
 #include "custos_client_print.h"
 
-#define BAD_PSK "Nonsense"
-#define GOOD_PSK "It's A Trap!"
-#define UUID "1b4e28ba-2fa1-11d2-883f-b9a761bde3fb"
+#define BAD_PSK "HorseBatteryStaple"
+#define GOOD_PSK "CorrectHorseBatteryStaple"
+#define UUID "7af8c95d-479a-46fe-b5de-8574c6ca1369"
 
-//#define SERVER_URL "http://condor.andysayler.com"
-#define SERVER_URL "http://localhost:5000"
+#define SERVER_URL_DENY "http://condor.andysayler.com/custos/01-deny-response.json"
+#define SERVER_URL_ACCEPT "http://condor.andysayler.com/custos/01-accept-response.json"
+#define SERVER_URL "http://condor.andysayler.com"
+//#define SERVER_URL "http://localhost:5000"
 
 int main(int argc, char* argv[]) {
 

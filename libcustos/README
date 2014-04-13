@@ -1,0 +1,7 @@
+Requirments:
+
+sudo apt-get install \
+     uuid uuid-dev libuuid1 \
+     curl libcurl4-openssl-dev libcurl4-doc \
+     libjson0 libjson0-dev \
+     libmhash2 libmhash-dev

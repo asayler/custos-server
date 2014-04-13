@@ -3,6 +3,7 @@
 
 #include "custos_http.h"
 
+//#define URI "http://condor.andysayler.com/custos/01-deny-response.json"
 #define URI "http://condor.andysayler.com/custos/01-accept-response.json"
 
 int main(int argc, char* argv[]) {
@@ -68,10 +69,6 @@ int main(int argc, char* argv[]) {
     fprintf(stdout, "decoded:\n%s\n"     , decoded);
 
     /* Base64 Check */
-    if(ret != sizeof(base64Input)) {
-    	fprintf(stderr, "Base64 input size does not match Base64 output size!\n");
-    	exit(EXIT_FAILURE);
-    }
     if(strncmp(base64Input, decoded, decodedSize)) {
     	fprintf(stderr, "Base64 input content does not match Base64 output content!\n");
     	exit(EXIT_FAILURE);

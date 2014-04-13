@@ -29,8 +29,8 @@
 
 #define CUS_VERSION "0.1-dev"
 
-#define CUSTOS_ENDPOINT_KEYS "/keys"
-//#define CUSTOS_ENDPOINT_KEYS "/custos/01-accept-response.json"
+//#define CUSTOS_ENDPOINT_KEYS "/keys"
+#define CUSTOS_ENDPOINT_KEYS "/custos/01-accept-response.json"
 #define CUSTOS_ENDPOINT_KEYS_REQ "req"
 #define CUSTOS_ENDPOINT_KEYS_CHK "chk"
 

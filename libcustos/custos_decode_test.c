@@ -5,9 +5,7 @@
 #include "custos_http.h"
 #include "custos_json.h"
 
-//#define URI "http://condor.andysayler.com/custos/01-deny-request.json"
 //#define URI "http://condor.andysayler.com/custos/01-deny-response.json"
-//#define URI "http://condor.andysayler.com/custos/01-accept-request.json"
 #define URI "http://condor.andysayler.com/custos/01-accept-response.json"
 
 int main(int argc, char* argv[]) {

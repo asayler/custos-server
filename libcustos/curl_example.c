@@ -3,7 +3,9 @@
 #include <string.h>
 #include <curl/curl.h>
 
+//#define URI "http://condor.andysayler.com/custos/01-deny-response.json"
 #define URI "http://condor.andysayler.com/custos/01-accept-response.json"
+
 #define USERAGENT "libcurl-agent/1.0"
 
 typedef struct CurlData {
