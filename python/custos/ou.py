@@ -61,15 +61,16 @@ class AA(UUIDObject):
     def __init__(self, aa_uuid):
         """Base Constructor"""
         super(AA, self).__init__(aa_uuid)
-        self.ds = datastore.DS(datastore.DS_AA)
+        self._ds = datastore.DS(datastore.DS_AA)
 
     @classmethod
     def from_new(cls, aa_class, aa_type, aa_value):
         """New Constructor"""
         aa = super(AA, cls).from_new()
-        aa.ds['class'] = aa_class
-        aa.ds['type'] = aa_type
-        aa.ds['value'] = aa_value
+        row = { 'Class': aa_class,
+                'Type': aa_type,
+                'Value': aa_value }
+        aa._ds[repr(aa)] = row
         return aa
 
     @classmethod
@@ -77,6 +78,17 @@ class AA(UUIDObject):
         """Exisiting Constructor"""
         aa = super(AA, cls).from_existing(uuid_hex)
         return aa
+
+    def __getattr__(self, name):
+        row = self._ds[repr(self)]
+        if name == 'Class':
+            return row['Class']
+        elif name == 'Type':
+            return row['Type']
+        elif name == 'Value':
+            return row['Value']
+        else:
+            raise AttributeError
 
 # class custos_acc(object):
 #     """
