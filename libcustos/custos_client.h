@@ -35,6 +35,7 @@
 #define CUSTOS_ENDPOINT_KEYS_CHK "chk"
 
 typedef enum custosResStatus {
+    CUS_RESSTAT_DUMMY = -1,
     CUS_RESSTAT_ACCEPTED = 0,
     CUS_RESSTAT_DENIED,
     CUS_RESSTAT_ERROR,
@@ -46,6 +47,7 @@ typedef enum custosResStatus {
 #define CUS_RESSTAT_ERROR_STR    "error"
 
 typedef enum custosAttrStatus {
+    CUS_ATTRSTAT_DUMMY = -1,
     CUS_ATTRSTAT_ACCEPTED = 0,
     CUS_ATTRSTAT_DENIED,
     CUS_ATTRSTAT_REQUIRED,
@@ -61,6 +63,7 @@ typedef enum custosAttrStatus {
 #define CUS_ATTRSTAT_IGNORED_STR  "ignored"
 
 typedef enum custosKeyStatus {
+    CUS_KEYSTAT_DUMMY = -1,
     CUS_KEYSTAT_ACCEPTED = 0,
     CUS_KEYSTAT_DENIED,
     CUS_KEYSTAT_UNKNOWN,
@@ -72,6 +75,7 @@ typedef enum custosKeyStatus {
 #define CUS_KEYSTAT_UNKNOWN_STR   "unknown"
 
 typedef enum custosAttrClass {
+    CUS_ATTRCLASS_DUMMY = -1,
     CUS_ATTRCLASS_IMPLICIT = 0,
     CUS_ATTRCLASS_EXPLICIT,
     CUS_ATTRCLASS_MAX
@@ -81,6 +85,7 @@ typedef enum custosAttrClass {
 #define CUS_ATTRCLASS_EXPLICIT_STR "explicit"
 
 typedef enum custosAttrType {
+    CUS_ATTRTYPE_DUMMY = -1,
     CUS_ATTRTYPE_EXP_PSK = 0,
     CUS_ATTRTYPE_EXP_MAX,
     CUS_ATTRTYPE_IMP_SOURCEIP = 0,

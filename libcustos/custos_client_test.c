@@ -21,8 +21,8 @@
 #define GOOD_PSK "CorrectHorseBatteryStaple"
 #define UUID "7af8c95d-479a-46fe-b5de-8574c6ca1369"
 
-#define SERVER_URL_DENY "http://condor.andysayler.com/custos/01-deny-response.json"
-#define SERVER_URL_ACCEPT "http://condor.andysayler.com/custos/01-accept-response.json"
+//#define SERVER_URL_DENY "http://condor.andysayler.com/custos/01-deny-response.json"
+//#define SERVER_URL_ACCEPT "http://condor.andysayler.com/custos/01-accept-response.json"
 #define SERVER_URL "http://condor.andysayler.com"
 //#define SERVER_URL "http://localhost:5000"
 
