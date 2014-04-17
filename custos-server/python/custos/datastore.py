@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import shelve
+import os
 
 from abc import abstractmethod
 from contextlib import closing
@@ -47,9 +48,20 @@ class _DSbase(object):
         """Delete DS item"""
 
     @abstractmethod
+    def create(self, overwrite=False):
+        """Create DS"""
+
+    @abstractmethod
+    def destroy(self):
+        """Destroy DS"""
+
+    @abstractmethod
+    def exits(self):
+        """Test for DS Existance"""
+
+    @abstractmethod
     def get_row(self, row_id):
         """Return DSrow item"""
-
 
 class _DSshelve(_DSbase):
     """
@@ -79,10 +91,34 @@ class _DSshelve(_DSbase):
             del(s[key])
             return None
 
+    def create(self, overwrite=False):
+        """Create DS"""
+        if overwrite:
+            closing(shelve.open(self._name, 'n'))
+        else:
+            closing(shelve.open(self._name, 'c'))
+
+    def destroy(self):
+        """Destory DS"""
+        os.remove(self._name)
+
+    def exists(self):
+        """Test for DS Existance"""
+        return os.path.isfile(self._name)
+
     def get_row(self, row_id):
         """Return DSrow item"""
         row_proto = DS_ROW_MAP[self._name]
         return DSrow(self, row_id, row_proto)
+
+
+class DS(_DSshelve):
+    """
+    Custos default database driver
+
+    """
+
+    pass
 
 class DSrow(object):
     """
@@ -101,12 +137,12 @@ class DSrow(object):
 
     def __getitem__(self, key):
         """Get DS row item"""
-        row = self.row()
+        row = self.get_row()
         return row[key]
 
     def __setitem__(self, key, val):
         """Set DS row item"""
-        row = self.row()
+        row = self.get_row()
         row[key] = val
         self.set_row(row)
         return row[key]
@@ -117,17 +153,9 @@ class DSrow(object):
 
     def get_row(self):
         """Get DS row"""
-        return self._ds[row_id]
+        return self._ds[self.row_id]
 
     def set_row(self, row):
         """Set DS row"""
-        self._ds[row_id] = row
-        return self._ds[row_id]
-
-class DS(_DSshelve):
-    """
-    Custos default database driver
-
-    """
-
-    pass
+        self._ds[self.row_id] = row
+        return self._ds[self.row_id]
