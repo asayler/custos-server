@@ -60,6 +60,14 @@ class _DSbase(object):
         """Test for DS item existance"""
 
     @abstractmethod
+    def __iter__(self):
+        """Get DS key iterator"""
+
+    @abstractmethod
+    def iterkeys(self):
+        """Get DS key iterator"""
+
+    @abstractmethod
     def create(self, overwrite=False):
         """Create DS"""
 
@@ -112,6 +120,16 @@ class _DSshelve(_DSbase):
         """Test for DS item existance"""
         with closing(shelve.open(self._name, 'r')) as s:
             return key in s
+
+    def __iter__(self):
+        """Get DS key iterator"""
+        with closing(shelve.open(self._name, 'r')) as s:
+            for key in s.keys():
+                yield key
+
+    def iterkeys(self):
+        """Get DS key iterator"""
+        return self.__iter__()
 
     def create(self, overwrite=False):
         """Create DS"""
@@ -173,7 +191,7 @@ class DSrow(object):
     def create(self, overwrite=False):
         """Create DS row"""
         if overwrite:
-            self._ds[row_id] = self.prototype
+            self._ds[self.row_id] = self.prototype
         else:
             if self.row_id not in self._ds:
                 self._ds[self.row_id] = self.prototype
