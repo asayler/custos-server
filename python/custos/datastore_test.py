@@ -76,10 +76,37 @@ class DSTestCase(unittest.TestCase):
         ds = datastore.DS(datastore.DS_TEST)
         ds.create()
         f = lambda k: ds[k]
-        ds['key1'] =  None
+        ds['key1'] = None
         del(ds['key1'])
         self.assertRaises(KeyError, f, 'key1')
         ds.destroy()
+
+    def test_set_iter(self):
+        ds = datastore.DS(datastore.DS_TEST)
+        ds.create()
+        ds['key1'] = None
+        ds['key2'] = None
+        ds['key3'] = None
+        s = {'key1': None, 'key2': None, 'key3': None}
+        for k in ds:
+            self.assertTrue(k in s, "{} not in {}".format(k, s))
+            del(s[k])
+        self.assertEqual(len(s), 0, "{} still in s".format(s))
+        ds.destroy()
+
+    def test_set_iterkeys(self):
+        ds = datastore.DS(datastore.DS_TEST)
+        ds.create()
+        ds['key1'] = None
+        ds['key2'] = None
+        ds['key3'] = None
+        s = {'key1': None, 'key2': None, 'key3': None}
+        for k in ds.iterkeys():
+            self.assertTrue(k in s, "{} not in {}".format(k, s))
+            del(s[k])
+        self.assertEqual(len(s), 0, "{} still in s".format(s))
+        ds.destroy()
+
 
 class DSrowTestCase(unittest.TestCase):
 
