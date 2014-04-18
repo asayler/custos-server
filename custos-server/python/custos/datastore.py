@@ -20,10 +20,14 @@ DS_OBJ_VAL = "ds_obj_val"
 DS_OBJ_VER_READ = "ds_obj_ver_read"
 DS_OBJ_VER_UPDATE = "ds_obj_ver_update"
 
+
+DS_TEST = 'ds_test'
+DS_TEST_ROW = { 'col1': None, 'col2': None, 'col3':None }
 DS_AA = 'ds_aa'
 DS_AA_ROW = { 'Class': None, 'Type': None, 'Value':None }
 
-DS_ROW_MAP = { DS_AA: DS_AA_ROW }
+DS_ROW_MAP = { DS_TEST: DS_TEST_ROW ,
+               DS_AA: DS_AA_ROW }
 
 class _DSbase(object):
     """
@@ -36,6 +40,10 @@ class _DSbase(object):
         self._name = name
 
     @abstractmethod
+    def __len__(self):
+        """Number of DS rows"""
+
+    @abstractmethod
     def __getitem__(self, key):
         """Get DS item"""
 
@@ -46,6 +54,10 @@ class _DSbase(object):
     @abstractmethod
     def __delitem__(self, key):
         """Delete DS item"""
+
+    @abstractmethod
+    def __contains__(self, key):
+        """Test for DS item existance"""
 
     @abstractmethod
     def create(self, overwrite=False):
@@ -74,6 +86,11 @@ class _DSshelve(_DSbase):
         super(_DSshelve, self).__init__(name)
         closing(shelve.open(self._name, 'c'))
 
+    def __len__(self):
+        """Number of DS rows"""
+        with closing(shelve.open(self._name, 'r')) as s:
+            return len(s)
+
     def __getitem__(self, key):
         """Get DS item"""
         with closing(shelve.open(self._name, 'r')) as s:
@@ -91,6 +108,11 @@ class _DSshelve(_DSbase):
             del(s[key])
             return None
 
+    def __contains__(self, key):
+        """Test for DS item existance"""
+        with closing(shelve.open(self._name, 'r')) as s:
+            return key in s
+
     def create(self, overwrite=False):
         """Create DS"""
         if overwrite:
@@ -106,7 +128,7 @@ class _DSshelve(_DSbase):
         """Test for DS Existance"""
         return os.path.isfile(self._name)
 
-    def get_row(self, row_id):
+    def row(self, row_id):
         """Return DSrow item"""
         row_proto = DS_ROW_MAP[self._name]
         return DSrow(self, row_id, row_proto)
@@ -131,9 +153,6 @@ class DSrow(object):
         self._ds = ds
         self.row_id = row_id
         self.prototype = row_proto
-        if self.row_id not in self._ds:
-            # Create prototype row
-            self._ds[row_id] = self.prototype
 
     def __getitem__(self, key):
         """Get DS row item"""
@@ -150,6 +169,24 @@ class DSrow(object):
     def __delitem__(self, key):
         """Delete DS row item"""
         pass
+
+    def create(self, overwrite=False):
+        """Create DS row"""
+        if overwrite:
+            self._ds[row_id] = self.prototype
+        else:
+            if self.row_id not in self._ds:
+                self._ds[self.row_id] = self.prototype
+            else:
+                pass
+
+    def destroy(self):
+        """Destory DS row"""
+        del(self._ds[self.row_id])
+
+    def exists(self):
+        """Test for DS Existance"""
+        return self.row_id in self._ds
 
     def get_row(self):
         """Get DS row"""
