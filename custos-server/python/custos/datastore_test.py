@@ -19,6 +19,7 @@ class DSTestCase(unittest.TestCase):
 
     def test_init(self):
         ds = datastore.DS(datastore.DS_TEST)
+        self.assertFalse(ds.exists(), "DS exists before create()")
         ds.create()
         self.assertTrue(ds.exists(), "DS does not exist after create()")
         ds.destroy()
@@ -75,10 +76,9 @@ class DSTestCase(unittest.TestCase):
     def test_set_del(self):
         ds = datastore.DS(datastore.DS_TEST)
         ds.create()
-        f = lambda k: ds[k]
         ds['key1'] = None
         del(ds['key1'])
-        self.assertRaises(KeyError, f, 'key1')
+        self.assertFalse('key1' in ds)
         ds.destroy()
 
     def test_set_iter(self):
@@ -120,46 +120,100 @@ class DSrowTestCase(unittest.TestCase):
         if ds.exists():
             ds.destroy()
 
-    # def test_init(self):
-    #     ds = datastore.DS(datastore.DS_TEST)
-    #     ds.create()
-    #     row = ds.row('row1')
-    #     row.create()
-    #     self.assertTrue(row.exists(), "Row does not exist after create()")
-    #     row.destroy()
-    #     self.assertFalse(row.exists(), "Row still exists after destroy()")
+    def test_init(self):
+        ds = datastore.DS(datastore.DS_TEST)
+        ds.create()
+        row = ds.row('row1')
+        self.assertFalse(row.exists(), "Row exists before create()")
+        row.create()
+        self.assertTrue(row.exists(), "Row does not exist after create()")
+        self.assertEqual(row.get_id(), 'row1', "Row ID does not match create ID")
+        self.assertEqual(row.get_vals().keys(), datastore.DS_TEST_ROW.keys(),
+                         "Row protoype does not match create prototype")
+        self.assertEqual(row.get_vals().keys(), row.get_proto().keys(),
+                         "Row protoype does not match stored prototype")
+        row.destroy()
+        self.assertFalse(row.exists(), "Row still exists after destroy()")
+        ds.destroy()
 
-    # def test_set_get(self):
-    #     ds = datastore.DS(datastore.DS_TEST)
-    #     ds.create()
-    #     self.assertTrue(ds.exists(), "DS does not exist after create()")
-    #     ds['key1'] = "This is key 1"
-    #     ds['key2'] = "This is key 2"
-    #     ds['key3'] = "This is key 3"
-    #     self.assertEqual(ds['key1'], "This is key 1", "Key1 does not match")
-    #     self.assertEqual(ds['key2'], "This is key 2", "Key2 does not match")
-    #     self.assertEqual(ds['key3'], "This is key 3", "Key3 does not match")
-    #     ds.destroy()
-    #     self.assertFalse(ds.exists(), "DS still exists after destroy()")
+    def test_set(self):
+        ds = datastore.DS(datastore.DS_TEST)
+        ds.create()
+        row = ds.row('row1')
+        row.create()
+        key = row.get_proto().keys()[0]
+        def setitem(k, v):
+            row[k] = v
+        setitem(key, 'fakeval')
+        self.assertTrue(key in row, "{} does not exist".format(key))
+        self.assertRaises(KeyError, setitem, 'fakekey', 'fakeval')
+        self.assertFalse('fakekey' in row, "fakekey exists")
+        row.destroy()
+        ds.destroy()
 
-    # def test_set_get_del(self):
-    #     ds = datastore.DS(datastore.DS_TEST)
-    #     ds.create()
-    #     f = lambda k: ds[k]
-    #     self.assertTrue(ds.exists(), "DS does not exist after create()")
-    #     ds['key1'] = "This is key 1"
-    #     ds['key2'] = "This is key 2"
-    #     self.assertEqual(ds['key1'], "This is key 1", "Key1 does not match")
-    #     self.assertEqual(ds['key2'], "This is key 2", "Key2 does not match")
-    #     del(ds['key1'])
-    #     self.assertRaises(KeyError, f, 'key1')
-    #     self.assertEqual(ds['key2'], "This is key 2", "Key2 does not match")
-    #     del(ds['key2'])
-    #     self.assertRaises(KeyError, f, 'key1')
-    #     self.assertRaises(KeyError, f, 'key2')
-    #     ds.destroy()
-    #     self.assertFalse(ds.exists(), "DS still exists after destroy()")
+    def test_set_len(self):
+        ds = datastore.DS(datastore.DS_TEST)
+        ds.create()
+        row = ds.row('row1')
+        row.create()
+        self.assertEqual(len(row), len(datastore.DS_TEST_ROW), "Row has wrong length"),
+        self.assertEqual(len(row), len(row.get_proto()), "Row has wrong length"),
+        row.destroy()
+        ds.destroy()
 
+    def test_set_get(self):
+        ds = datastore.DS(datastore.DS_TEST)
+        ds.create()
+        row = ds.row('row1')
+        row.create()
+        key = row.get_proto().keys()[0]
+        row[key] = 'testval'
+        def getitem(k):
+            return row[k]
+        self.assertEqual(row[key], 'testval', "{} val does not match".format(key))
+        self.assertRaises(KeyError, getitem, 'fakekey')
+        row.destroy()
+        ds.destroy()
+
+    def test_set_del(self):
+        ds = datastore.DS(datastore.DS_TEST)
+        ds.create()
+        row = ds.row('row1')
+        row.create()
+        key = row.get_proto().keys()[0]
+        self.assertEqual(row[key], row.get_proto()[key], "{} val does not match".format(key))
+        row[key] = 'testval'
+        self.assertEqual(row[key], 'testval', "{} val does not match".format(key))
+        del(row[key])
+        self.assertEqual(row[key], row.get_proto()[key], "{} val does not match".format(key))
+        row.destroy()
+        ds.destroy()
+
+    def test_set_iter(self):
+        ds = datastore.DS(datastore.DS_TEST)
+        ds.create()
+        row = ds.row('row1')
+        row.create()
+        s = row.get_proto()
+        for k in row:
+            self.assertTrue(k in s, "{} not in {}".format(k, s))
+            del(s[k])
+        self.assertEqual(len(s), 0, "{} still in s".format(s))
+        row.destroy()
+        ds.destroy()
+
+    def test_set_iterkeys(self):
+        ds = datastore.DS(datastore.DS_TEST)
+        ds.create()
+        row = ds.row('row1')
+        row.create()
+        s = row.get_proto()
+        for k in row.iterkeys():
+            self.assertTrue(k in s, "{} not in {}".format(k, s))
+            del(s[k])
+        self.assertEqual(len(s), 0, "{} still in s".format(s))
+        row.destroy()
+        ds.destroy()
 
 if __name__ == '__main__':
     unittest.main()

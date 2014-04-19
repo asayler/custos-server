@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import shelve
+import copy
 import os
+import shelve
 
 from abc import abstractmethod
 from contextlib import closing
@@ -29,6 +30,26 @@ DS_AA_ROW = { 'Class': None, 'Type': None, 'Value':None }
 DS_ROW_MAP = { DS_TEST: DS_TEST_ROW ,
                DS_AA: DS_AA_ROW }
 
+# Exceptions
+
+class DSError(Exception):
+    """Base class for DS excpetions"""
+
+    pass
+
+class DSrowError(DSError):
+    """Base class for DS row excpetions"""
+
+    pass
+
+class DSrowFormatError(DSrowError):
+    """DS row exceptions for prototype format mismatch"""
+
+    def __init__(self, msg):
+        self.msg = msg
+
+# DS Classes
+
 class _DSbase(object):
     """
     Custos Generic database wrapper
@@ -37,7 +58,7 @@ class _DSbase(object):
 
     def __init__(self, name):
         """Setup DS"""
-        self._name = name
+        self._name = copy.deepcopy(name)
 
     @abstractmethod
     def __len__(self):
@@ -80,6 +101,10 @@ class _DSbase(object):
         """Test for DS Existance"""
 
     @abstractmethod
+    def get_name(self):
+        """Return DS name"""
+
+    @abstractmethod
     def get_row(self, row_id):
         """Return DSrow item"""
 
@@ -92,7 +117,6 @@ class _DSshelve(_DSbase):
     def __init__(self, name):
         """Setup DS"""
         super(_DSshelve, self).__init__(name)
-        closing(shelve.open(self._name, 'c'))
 
     def __len__(self):
         """Number of DS rows"""
@@ -102,12 +126,12 @@ class _DSshelve(_DSbase):
     def __getitem__(self, key):
         """Get DS item"""
         with closing(shelve.open(self._name, 'r')) as s:
-            return s[key]
+            return copy.deepcopy(s[key])
 
     def __setitem__(self, key, val):
         """Set DS item"""
         with closing(shelve.open(self._name, 'w')) as s:
-            s[key] = val
+            s[key] = copy.deepcopy(val)
             return s[key]
 
     def __delitem__(self, key):
@@ -167,50 +191,90 @@ class DSrow(object):
     """
 
     def __init__(self, ds, row_id, row_proto):
-        """Setup DS"""
+        """Setup DS row"""
         self._ds = ds
-        self.row_id = row_id
-        self.prototype = row_proto
+        self._id = copy.deepcopy(row_id)
+        self._proto = copy.deepcopy(row_proto)
+
+    def __len__(self):
+        """Number of DS row cols"""
+        vals = self.get_vals()
+        return len(vals)
 
     def __getitem__(self, key):
         """Get DS row item"""
-        row = self.get_row()
-        return row[key]
+        vals = self.get_vals()
+        return vals[key]
 
     def __setitem__(self, key, val):
         """Set DS row item"""
-        row = self.get_row()
-        row[key] = val
-        self.set_row(row)
-        return row[key]
+        vals = self.get_vals()
+        if key in vals:
+            vals[key] = copy.deepcopy(val)
+            self.set_vals(vals)
+            return vals[key]
+        else:
+            raise KeyError ("{} not in {}".format(key, self._proto.keys()))
 
     def __delitem__(self, key):
         """Delete DS row item"""
-        pass
+        vals = self.get_vals()
+        if key in vals:
+            vals[key] = copy.deepcopy(self._proto[key])
+            self.set_vals(vals)
+            return vals[key]
+        else:
+            raise KeyError ("{} not in {}".format(key, self._proto.keys()))
+
+    def __contains__(self, key):
+        """Test for DS row item existance"""
+        vals = self.get_vals()
+        return key in vals
+
+    def __iter__(self):
+        """Get DS row key iterator"""
+        vals = self.get_vals()
+        for key in vals:
+            yield key
+
+    def iterkeys(self):
+        """Get DS row key iterator"""
+        return self.__iter__()
 
     def create(self, overwrite=False):
         """Create DS row"""
         if overwrite:
-            self._ds[self.row_id] = self.prototype
+            self._ds[self._id] = copy.deepcopy(self._proto)
         else:
-            if self.row_id not in self._ds:
-                self._ds[self.row_id] = self.prototype
+            if self._id not in self._ds:
+                self._ds[self._id] = copy.deepcopy(self._proto)
             else:
                 pass
 
     def destroy(self):
         """Destory DS row"""
-        del(self._ds[self.row_id])
+        del(self._ds[self._id])
 
     def exists(self):
         """Test for DS Existance"""
-        return self.row_id in self._ds
+        return self._id in self._ds
 
-    def get_row(self):
+    def get_id(self):
+        """Get DS row ID"""
+        return copy.deepcopy(self._id)
+
+    def get_proto(self):
+        """Get DS row prototype"""
+        return copy.deepcopy(self._proto)
+
+    def get_vals(self):
         """Get DS row"""
-        return self._ds[self.row_id]
+        return copy.deepcopy(self._ds[self._id])
 
-    def set_row(self, row):
+    def set_vals(self, vals):
         """Set DS row"""
-        self._ds[self.row_id] = row
-        return self._ds[self.row_id]
+        if vals.keys() == self._proto.keys():
+            self._ds[self._id] = copy.deepcopy(vals)
+            return self._ds[self._id]
+        else:
+            raise DSrowFormatError("{} does not match {}".format(vals.keys(), self._proto.keys()))
