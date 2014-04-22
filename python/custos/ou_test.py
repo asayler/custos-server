@@ -38,7 +38,10 @@ class UUIDObjectTestCase(unittest.TestCase):
     def test_equal(self):
         obj_a = ou.UUIDObject(TEST_UUID)
         obj_b = ou.UUIDObject.from_existing(TEST_UUID_HEX)
+        obj_c = ou.UUIDObject.from_new()
+        obj_d = ou.UUIDObject.from_new()
         self.assertEqual(obj_a, obj_b, "Objects not equal")
+        self.assertNotEqual(obj_c, obj_d, "Objects equal")
 
 
 class AATestCase(unittest.TestCase):
@@ -66,7 +69,28 @@ class AATestCase(unittest.TestCase):
     def test_equal(self):
         aa_a = ou.AA(TEST_UUID)
         aa_b = ou.AA.from_existing(TEST_UUID_HEX)
+        aa_c = ou.AA.from_new(TEST_AA_CLASS, TEST_AA_TYPE, TEST_AA_VALUE)
+        aa_d = ou.AA.from_new(TEST_AA_CLASS, TEST_AA_TYPE, TEST_AA_VALUE)
         self.assertEqual(aa_a, aa_b, "AAs not equal")
+        self.assertNotEqual(aa_c, aa_d, "AAs equal")
+
+    def test_get_item(self):
+        aa = ou.AA.from_new(TEST_AA_CLASS, TEST_AA_TYPE, TEST_AA_VALUE)
+        def get_item(k):
+            return aa[k]
+        self.assertEqual(aa['Class'], TEST_AA_CLASS, "AA class does not match")
+        self.assertEqual(aa['Type'], TEST_AA_TYPE, "AA type does not match")
+        self.assertEqual(aa['Value'], TEST_AA_VALUE, "AA value does not match")
+        self.assertRaises(KeyError, get_item, 'FakeKey')
+
+    def test_get_attr(self):
+        aa = ou.AA.from_new(TEST_AA_CLASS, TEST_AA_TYPE, TEST_AA_VALUE)
+        def get_attr(a):
+            return aa.a
+        self.assertEqual(aa.Class, TEST_AA_CLASS, "AA class does not match")
+        self.assertEqual(aa.Type, TEST_AA_TYPE, "AA type does not match")
+        self.assertEqual(aa.Value, TEST_AA_VALUE, "AA value does not match")
+        self.assertRaises(AttributeError, get_attr, 'FakeAttr')
 
 
 if __name__ == '__main__':
