@@ -46,10 +46,10 @@ class UUIDObject(object):
         return u.encode(_ENCODING)
 
     def __hash__(self):
-        return hash(self.uuid)
+        return hash(repr(self))
 
     def __eq__(self, other):
-        return (self.uuid == other.uuid)
+        return (repr(self) == repr(other))
 
 
 class AA(UUIDObject):
@@ -62,15 +62,16 @@ class AA(UUIDObject):
         """Base Constructor"""
         super(AA, self).__init__(aa_uuid)
         self._ds = datastore.DS(datastore.DS_AA)
+        self._ds.create()
+        self._ds_row = self._ds.row(repr(self))
+        self._ds_row.create()
 
     @classmethod
     def from_new(cls, aa_class, aa_type, aa_value):
         """New Constructor"""
         aa = super(AA, cls).from_new()
-        row = { 'Class': aa_class,
-                'Type': aa_type,
-                'Value': aa_value }
-        aa._ds[repr(aa)] = row
+        vals = { 'Class': aa_class, 'Type': aa_type, 'Value': aa_value }
+        aa._ds_row.set_vals(vals)
         return aa
 
     @classmethod
@@ -79,16 +80,16 @@ class AA(UUIDObject):
         aa = super(AA, cls).from_existing(uuid_hex)
         return aa
 
-    def __getattr__(self, name):
-        row = self._ds[repr(self)]
-        if name == 'Class':
-            return row['Class']
-        elif name == 'Type':
-            return row['Type']
-        elif name == 'Value':
-            return row['Value']
-        else:
-            raise AttributeError
+    # def __getitem__(self, name):
+    #     row = self._ds[repr(self)]
+    #     if name == 'Class':
+    #         return row['Class']
+    #     elif name == 'Type':
+    #         return row['Type']
+    #     elif name == 'Value':
+    #         return row['Value']
+    #     else:
+    #         raise AttributeError
 
 # class custos_acc(object):
 #     """
