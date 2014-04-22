@@ -80,16 +80,18 @@ class AA(UUIDObject):
         aa = super(AA, cls).from_existing(uuid_hex)
         return aa
 
-    # def __getitem__(self, name):
-    #     row = self._ds[repr(self)]
-    #     if name == 'Class':
-    #         return row['Class']
-    #     elif name == 'Type':
-    #         return row['Type']
-    #     elif name == 'Value':
-    #         return row['Value']
-    #     else:
-    #         raise AttributeError
+    def __getitem__(self, name):
+        return self._ds_row[name]
+
+    def __getattr__(self, name):
+        if name == 'Class':
+            return self['Class']
+        elif name == 'Type':
+            return self['Type']
+        elif name == 'Value':
+            return self['Value']
+        else:
+            raise AttributeError
 
 # class custos_acc(object):
 #     """
