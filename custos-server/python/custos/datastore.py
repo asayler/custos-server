@@ -128,13 +128,11 @@ class _DSshelve(_DSbase):
         """Set DS item"""
         with closing(shelve.open(self._name, 'w')) as s:
             s[key] = copy.deepcopy(val)
-            return s[key]
 
     def __delitem__(self, key):
         """Delete DS item"""
         with closing(shelve.open(self._name, 'w')) as s:
             del(s[key])
-            return None
 
     def __contains__(self, key):
         """Test for DS item existance"""
@@ -208,7 +206,6 @@ class DSrow(object):
         if key in vals:
             vals[key] = copy.deepcopy(val)
             self.set_vals(vals)
-            return vals[key]
         else:
             raise KeyError("{} not in {}".format(key, self._proto.keys()))
 
@@ -218,7 +215,6 @@ class DSrow(object):
         if key in vals:
             vals[key] = copy.deepcopy(self._proto[key])
             self.set_vals(vals)
-            return vals[key]
         else:
             raise KeyError("{} not in {}".format(key, self._proto.keys()))
 
@@ -271,6 +267,5 @@ class DSrow(object):
         """Set DS row"""
         if vals.keys() == self._proto.keys():
             self._ds[self._id] = copy.deepcopy(vals)
-            return self._ds[self._id]
         else:
             raise DSrowFormatError("{} does not match {}".format(vals.keys(), self._proto.keys()))
