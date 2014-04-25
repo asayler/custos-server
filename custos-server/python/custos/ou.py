@@ -10,6 +10,24 @@ import datastore
 
 _ENCODING = 'utf-8'
 
+# Exceptions
+
+class OUError(Exception):
+    """Base class for OU exceptions"""
+
+    pass
+
+class UUIDObjectError(OUError):
+    """Base class for OU UUID Object excpetions"""
+
+    pass
+
+class UUIDObjectDoesNotExistError(UUIDObjectError):
+    """UUID Object does not exist"""
+
+    def __init__(self, uuid_object):
+        self.msg = "{} does not exist".format(uuid_object)
+
 # Objects
 
 class UUIDObject(object):
@@ -62,15 +80,14 @@ class AA(UUIDObject):
         """Base Constructor"""
         super(AA, self).__init__(aa_uuid)
         self._ds = datastore.DS(datastore.DS_AA)
-        self._ds.create()
         self._ds_row = self._ds.row(repr(self))
-        self._ds_row.create()
 
     @classmethod
     def from_new(cls, aa_class, aa_type, aa_value):
         """New Constructor"""
         aa = super(AA, cls).from_new()
         vals = { 'Class': aa_class, 'Type': aa_type, 'Value': aa_value }
+        aa._ds_row.create()
         aa._ds_row.set_vals(vals)
         return aa
 
@@ -78,20 +95,16 @@ class AA(UUIDObject):
     def from_existing(cls, uuid_hex):
         """Exisiting Constructor"""
         aa = super(AA, cls).from_existing(uuid_hex)
+        if not aa._ds_row.exists():
+            raise UUIDObjectDoesNotExistError(aa)
         return aa
 
-    def __getitem__(self, name):
-        return self._ds_row[name]
+    def __getitem__(self, key):
+        return self._ds_row[key]
 
-    def __getattr__(self, name):
-        if name == 'Class':
-            return self['Class']
-        elif name == 'Type':
-            return self['Type']
-        elif name == 'Value':
-            return self['Value']
-        else:
-            raise AttributeError
+    def __setitem__(self, key, value):
+        self._ds_row[key] = value
+
 
 # class custos_acc(object):
 #     """
