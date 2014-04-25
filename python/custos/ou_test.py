@@ -46,19 +46,30 @@ class UUIDObjectTestCase(unittest.TestCase):
 
 class AATestCase(unittest.TestCase):
 
+    @classmethod
+    def setUpClass(cls):
+        ou.datastore.DS_AA_OLD = ou.datastore.DS_AA
+        ou.datastore.DS_AA += '_test'
+        ou.datastore.DS_ROW_MAP_OLD = ou.datastore.DS_ROW_MAP
+        ou.datastore.DS_ROW_MAP[ou.datastore.DS_AA] = ou.datastore.DS_AA_ROW
+
+    @classmethod
+    def tearDownClass(cls):
+        ou.datastore.DS_ROW_MAP = ou.datastore.DS_ROW_MAP_OLD
+        del(ou.datastore.DS_ROW_MAP_OLD)
+        ou.datastore.DS_AA = ou.datastore.DS_AA_OLD
+        del(ou.datastore.DS_AA_OLD)
+
     def setUp(self):
-        pass
+        ds = ou.datastore.DS(ou.datastore.DS_AA)
+        ds.create(overwrite=True)
 
     def tearDown(self):
-        pass
+        ds = ou.datastore.DS(ou.datastore.DS_AA)
+        ds.destroy()
 
     def test_init(self):
         aa = ou.AA(TEST_UUID)
-        self.assertEqual(str(aa.uuid), TEST_UUID_HEX, "str(aa.uuid) does not match UUID hex")
-        self.assertEqual(repr(aa), TEST_UUID_HEX, "repr(aa) does not match UUID hex")
-
-    def test_init_from_existing(self):
-        aa = ou.AA.from_existing(TEST_UUID_HEX)
         self.assertEqual(str(aa.uuid), TEST_UUID_HEX, "str(aa.uuid) does not match UUID hex")
         self.assertEqual(repr(aa), TEST_UUID_HEX, "repr(aa) does not match UUID hex")
 
@@ -66,31 +77,47 @@ class AATestCase(unittest.TestCase):
         aa = ou.AA.from_new(TEST_AA_CLASS, TEST_AA_TYPE, TEST_AA_VALUE)
         self.assertEqual(str(aa.uuid), repr(aa), "str(obj.uuid) does not match repr(obj)")
 
+    def test_init_from_existing(self):
+        aa_a = ou.AA.from_new(TEST_AA_CLASS, TEST_AA_TYPE, TEST_AA_VALUE)
+        aa_b = ou.AA.from_existing(repr(aa_a))
+        self.assertEqual(str(aa_b.uuid), repr(aa_b), "str(obj.uuid) does not match repr(obj)")
+
     def test_equal(self):
-        aa_a = ou.AA(TEST_UUID)
-        aa_b = ou.AA.from_existing(TEST_UUID_HEX)
+        aa_a = ou.AA.from_new(TEST_AA_CLASS, TEST_AA_TYPE, TEST_AA_VALUE)
+        aa_b = ou.AA.from_existing(repr(aa_a))
         aa_c = ou.AA.from_new(TEST_AA_CLASS, TEST_AA_TYPE, TEST_AA_VALUE)
-        aa_d = ou.AA.from_new(TEST_AA_CLASS, TEST_AA_TYPE, TEST_AA_VALUE)
         self.assertEqual(aa_a, aa_b, "AAs not equal")
-        self.assertNotEqual(aa_c, aa_d, "AAs equal")
+        self.assertNotEqual(aa_b, aa_c, "AAs equal")
 
     def test_get_item(self):
         aa = ou.AA.from_new(TEST_AA_CLASS, TEST_AA_TYPE, TEST_AA_VALUE)
         def get_item(k):
             return aa[k]
-        self.assertEqual(aa['Class'], TEST_AA_CLASS, "AA class does not match")
-        self.assertEqual(aa['Type'], TEST_AA_TYPE, "AA type does not match")
-        self.assertEqual(aa['Value'], TEST_AA_VALUE, "AA value does not match")
+        self.assertEqual(aa['Class'], TEST_AA_CLASS, ("AA Class Mismatch: {} != {}"
+                                                      .format(aa['Class'], TEST_AA_CLASS)))
+        self.assertEqual(aa['Type'], TEST_AA_TYPE, ("AA Type Mismatch: {} != {}"
+                                                    .format(aa['Type'], TEST_AA_TYPE)))
+        self.assertEqual(aa['Value'], TEST_AA_VALUE, ("AA Value Mismatch: {} != {}"
+                                                      .format(aa['Value'], TEST_AA_VALUE)))
         self.assertRaises(KeyError, get_item, 'FakeKey')
 
-    def test_get_attr(self):
-        aa = ou.AA.from_new(TEST_AA_CLASS, TEST_AA_TYPE, TEST_AA_VALUE)
-        def get_attr(a):
-            return aa.a
-        self.assertEqual(aa.Class, TEST_AA_CLASS, "AA class does not match")
-        self.assertEqual(aa.Type, TEST_AA_TYPE, "AA type does not match")
-        self.assertEqual(aa.Value, TEST_AA_VALUE, "AA value does not match")
-        self.assertRaises(AttributeError, get_attr, 'FakeAttr')
+    def test_set_item(self):
+        aa = ou.AA.from_new("", "", "")
+        def set_item(k, v):
+            aa[k] = v
+        def get_item(k):
+            return aa[k]
+        aa['Class'] = TEST_AA_CLASS
+        aa['Type'] = TEST_AA_TYPE
+        aa['Value'] = TEST_AA_VALUE
+        self.assertRaises(KeyError, set_item, 'FakeKey', 'FakeValue')
+        self.assertEqual(aa['Class'], TEST_AA_CLASS, ("AA Class Mismatch: {} != {}"
+                                                      .format(aa['Class'], TEST_AA_CLASS)))
+        self.assertEqual(aa['Type'], TEST_AA_TYPE, ("AA Type Mismatch: {} != {}"
+                                                    .format(aa['Type'], TEST_AA_TYPE)))
+        self.assertEqual(aa['Value'], TEST_AA_VALUE, ("AA Value Mismatch: {} != {}"
+                                                      .format(aa['Value'], TEST_AA_VALUE)))
+        self.assertRaises(KeyError, get_item, 'FakeKey')
 
 
 if __name__ == '__main__':
