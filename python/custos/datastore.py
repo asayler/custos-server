@@ -31,18 +31,23 @@ DS_ROW_MAP = { DS_AA: DS_AA_ROW }
 class DSError(Exception):
     """Base class for DS exceptions"""
 
-    pass
+    def __init__(self, msg):
+        super(DSError, self).__init__(msg)
 
-class DSrowError(DSError):
+
+class DSRowError(DSError):
     """Base class for DS row excpetions"""
 
-    pass
+    def __init__(self, msg):
+        super(DSRowError, self).__init__(msg)
 
-class DSrowFormatError(DSrowError):
+
+class DSRowFormatError(DSRowError):
     """DS row exceptions for prototype format mismatch"""
 
     def __init__(self, msg):
-        self.msg = msg
+        super(DSRowFormatError, self).__init__(msg)
+
 
 # DS Classes
 
@@ -93,15 +98,15 @@ class _DSbase(object):
         """Destroy DS"""
 
     @abstractmethod
-    def exits(self):
+    def exists(self):
         """Test for DS Existance"""
 
     @abstractmethod
-    def get_name(self):
+    def name(self):
         """Return DS name"""
 
     @abstractmethod
-    def get_row(self, row_id):
+    def row(self, row_id):
         """Return DSrow item"""
 
 class _DSshelve(_DSbase):
@@ -116,33 +121,33 @@ class _DSshelve(_DSbase):
 
     def __len__(self):
         """Number of DS rows"""
-        with closing(shelve.open(self._name, 'r')) as s:
-            return len(s)
+        with closing(shelve.open(self._name, 'r')) as ds:
+            return len(ds)
 
     def __getitem__(self, key):
         """Get DS item"""
-        with closing(shelve.open(self._name, 'r')) as s:
-            return copy.deepcopy(s[key])
+        with closing(shelve.open(self._name, 'r')) as ds:
+            return copy.deepcopy(ds[key])
 
     def __setitem__(self, key, val):
         """Set DS item"""
-        with closing(shelve.open(self._name, 'w')) as s:
-            s[key] = copy.deepcopy(val)
+        with closing(shelve.open(self._name, 'w')) as ds:
+            ds[key] = copy.deepcopy(val)
 
     def __delitem__(self, key):
         """Delete DS item"""
-        with closing(shelve.open(self._name, 'w')) as s:
-            del(s[key])
+        with closing(shelve.open(self._name, 'w')) as ds:
+            del(ds[key])
 
     def __contains__(self, key):
         """Test for DS item existance"""
-        with closing(shelve.open(self._name, 'r')) as s:
-            return key in s
+        with closing(shelve.open(self._name, 'r')) as ds:
+            return key in ds
 
     def __iter__(self):
         """Get DS key iterator"""
-        with closing(shelve.open(self._name, 'r')) as s:
-            for key in s.keys():
+        with closing(shelve.open(self._name, 'r')) as ds:
+            for key in ds.keys():
                 yield key
 
     def iterkeys(self):
@@ -164,6 +169,10 @@ class _DSshelve(_DSbase):
         """Test for DS Existance"""
         return os.path.isfile(self._name)
 
+    def name(self):
+        """Return DS name"""
+        return self._name
+
     def row(self, row_id):
         """Return DSrow item"""
         row_proto = DS_ROW_MAP[self._name]
@@ -177,6 +186,7 @@ class DS(_DSshelve):
     """
 
     pass
+
 
 class DSrow(object):
     """
@@ -268,4 +278,4 @@ class DSrow(object):
         if vals.keys() == self._proto.keys():
             self._ds[self._id] = copy.deepcopy(vals)
         else:
-            raise DSrowFormatError("{} does not match {}".format(vals.keys(), self._proto.keys()))
+            raise DSRowFormatError("{} does not match {}".format(vals.keys(), self._proto.keys()))
