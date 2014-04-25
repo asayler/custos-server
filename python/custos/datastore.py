@@ -21,19 +21,15 @@ DS_OBJ_VAL = "ds_obj_val"
 DS_OBJ_VER_READ = "ds_obj_ver_read"
 DS_OBJ_VER_UPDATE = "ds_obj_ver_update"
 
-
-DS_TEST = 'ds_test'
-DS_TEST_ROW = { 'col1': None, 'col2': None, 'col3':None }
 DS_AA = 'ds_aa'
 DS_AA_ROW = { 'Class': None, 'Type': None, 'Value':None }
 
-DS_ROW_MAP = { DS_TEST: DS_TEST_ROW ,
-               DS_AA: DS_AA_ROW }
+DS_ROW_MAP = { DS_AA: DS_AA_ROW }
 
 # Exceptions
 
 class DSError(Exception):
-    """Base class for DS excpetions"""
+    """Base class for DS exceptions"""
 
     pass
 
@@ -214,7 +210,7 @@ class DSrow(object):
             self.set_vals(vals)
             return vals[key]
         else:
-            raise KeyError ("{} not in {}".format(key, self._proto.keys()))
+            raise KeyError("{} not in {}".format(key, self._proto.keys()))
 
     def __delitem__(self, key):
         """Delete DS row item"""
@@ -224,7 +220,7 @@ class DSrow(object):
             self.set_vals(vals)
             return vals[key]
         else:
-            raise KeyError ("{} not in {}".format(key, self._proto.keys()))
+            raise KeyError("{} not in {}".format(key, self._proto.keys()))
 
     def __contains__(self, key):
         """Test for DS row item existance"""
