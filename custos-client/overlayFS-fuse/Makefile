@@ -5,8 +5,8 @@
 AR = ar
 CC = gcc
 
-CFLAGS  = -c -g -Wall -Wextra -Werror
-LFLAGS  = -g -Wall -Wextra -Werror
+CFLAGS  = -c -g -Wall -Wextra #-Werror
+LFLAGS  = -g -Wall -Wextra #-Werror
 ARFLAGS = rcsv
 
 # Executables

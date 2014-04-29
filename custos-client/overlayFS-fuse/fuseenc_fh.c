@@ -31,6 +31,8 @@
 #include <sys/time.h>
 #include <sys/xattr.h>
 #include <sys/file.h>
+#include <stdint.h>
+#include <inttypes.h>
 
 #include "aes-crypt.h"
 #include "libcustos/custos_client.h"
@@ -85,7 +87,7 @@ typedef struct fsState {
 #define PATHBUFSIZE 1024
 #define PATHDELIMINATOR '/'
 #define NULLTERM '\0'
-#define TEMPNAME_PRE  "."
+#define TEMPNAME_PRE  "_"
 #define TEMPNAME_POST ".decrypt"
 
 #define TESTKEY "Password"
@@ -97,26 +99,30 @@ static int buildPath(const char* path, char* buf, size_t bufSize) {
 
     /* Input Checks */
     if(path == NULL) {
-	fprintf(stderr, "ERROR buildPath: path must not be NULL\n");
-	return -EINVAL;
+        fprintf(stderr, "ERROR buildPath: path must not be NULL\n");
+        return -EINVAL;
     }
     if(buf == NULL) {
-	fprintf(stderr, "ERROR buildPath: buf must not be NULL\n");
-	return -EINVAL;
+        fprintf(stderr, "ERROR buildPath: buf must not be NULL\n");
+        return -EINVAL;
     }
+
+#ifdef DEBUG
+    fprintf(stderr, "INFO buildPath: path = %s\n", path);
+#endif
 
     /* Get State */
     state = (fsState_t*)(fuse_get_context()->private_data);
     if(state == NULL) {
-	fprintf(stderr, "ERROR buildPath: state must not be NULL\n");
-	return -EINVAL;
+        fprintf(stderr, "ERROR buildPath: state must not be NULL\n");
+        return -EINVAL;
     }
 
     /* Concatenate in Buffer */
     size = snprintf(buf, bufSize, "%s%s", state->basePath, path);
     if(size > (bufSize - 1)) {
-	fprintf(stderr, "ERROR buildPath: length too large for buffer\n");
-	return -ENAMETOOLONG;
+        fprintf(stderr, "ERROR buildPath: length too large for buffer\n");
+        return -ENAMETOOLONG;
     }
 
 #ifdef DEBUG
@@ -135,35 +141,37 @@ static int buildTempPath(const char* fullPath, char* tempPath, size_t bufSize) {
 
     /* Input Checks */
     if(fullPath == NULL) {
-	fprintf(stderr, "ERROR buildTempPath: fullPath must not be NULL\n");
-	return -EINVAL;
+        fprintf(stderr, "ERROR buildTempPath: fullPath must not be NULL\n");
+        return -EINVAL;
     }
     if(tempPath == NULL) {
-	fprintf(stderr, "ERROR buildTempPath: tempPath must not be NULL\n");
-	return -EINVAL;
+        fprintf(stderr, "ERROR buildTempPath: tempPath must not be NULL\n");
+        return -EINVAL;
     }
+
+    fprintf(stderr, "INFO buildTempPath: fullPath = %s\n", fullPath);
 
     /* Copy input path to buf */
     length = snprintf(buf, sizeof(buf), "%s", fullPath);
     if(length > (sizeof(buf) - 1)) {
-	fprintf(stderr, "ERROR buildTempPath: Overflowed buf\n");
-	return -ENAMETOOLONG;
+        fprintf(stderr, "ERROR buildTempPath: Overflowed buf\n");
+        return -ENAMETOOLONG;
     }
 
     /* Find start of file name */
     pFileName = strrchr(buf, PATHDELIMINATOR);
     if(pFileName == NULL) {
-	fprintf(stderr, "ERROR buildTempPath: Could not find deliminator in path\n");
-	return -EINVAL;
+        fprintf(stderr, "ERROR buildTempPath: Could not find deliminator in path\n");
+        return -EINVAL;
     }
     *pFileName = NULLTERM;
 
     /* Build Temp Path */
     length = snprintf(tempPath, bufSize, "%s%c%s%s%s",
-		      buf, PATHDELIMINATOR, TEMPNAME_PRE, (pFileName + 1), TEMPNAME_POST);
+                      buf, PATHDELIMINATOR, TEMPNAME_PRE, (pFileName + 1), TEMPNAME_POST);
     if(length > (bufSize - 1)) {
-	fprintf(stderr, "ERROR buildTempPath: Overflowed tempPath\n");
-	return -ENAMETOOLONG;
+        fprintf(stderr, "ERROR buildTempPath: Overflowed tempPath\n");
+        return -ENAMETOOLONG;
     }
 
 #ifdef DEBUG
@@ -175,31 +183,31 @@ static int buildTempPath(const char* fullPath, char* tempPath, size_t bufSize) {
 }
 
 static enc_fhs_t* createFilePair(const char* encPath, const char* clearPath,
-				 int flags, mode_t mode) {
+                                 int flags, mode_t mode) {
 
     int ret;
     enc_fhs_t* fhs = NULL;
 
     fhs = malloc(sizeof(*fhs));
     if(!fhs) {
-	fprintf(stderr, "ERROR createFilePair: malloc failed\n");
-	perror("ERROR createFilePair");
-	return NULL;
+        fprintf(stderr, "ERROR createFilePair: malloc failed\n");
+        perror("ERROR createFilePair");
+        return NULL;
     }
 
     ret = open(encPath, flags, mode);
     if(ret < 0) {
-	fprintf(stderr, "ERROR createFilePair: open(encPath) failed\n");
-	perror("ERROR createFilePair");
-	return NULL;
+        fprintf(stderr, "ERROR createFilePair: open(encPath) failed\n");
+        perror("ERROR createFilePair");
+        return NULL;
     }
     fhs->encFH = ret;
 
     ret = open(clearPath, flags, mode);
     if(ret < 0) {
-	fprintf(stderr, "ERROR createFilePair: open(clearPath) failed\n");
-	perror("ERROR createFilePair");
-	return NULL;
+        fprintf(stderr, "ERROR createFilePair: open(clearPath) failed\n");
+        perror("ERROR createFilePair");
+        return NULL;
     }
     fhs->clearFH = ret;
 
@@ -462,6 +470,59 @@ static int decryptFile(const char* encPath, const char* plainPath) {
 
 }
 
+static int decryptFH(const uint64_t encFH, const uint64_t clearFH) {
+
+    int ret = RETURN_SUCCESS;
+    FILE* encFP = NULL;
+    FILE* clearFP = NULL;
+    char* key;
+
+    encFP = fdopen(dup(encFH), "r");
+    if(!encFP) {
+        fprintf(stderr, "ERROR decryptFH: encFH fdopen(%"PRIu64") failed\n", encFH);
+        perror("ERROR decryptFH");
+        ret = -errno;
+        goto ERROR_0;
+    }
+
+    clearFP = fdopen(dup(clearFH), "w");
+    if(!clearFP) {
+        fprintf(stderr, "ERROR decryptFH: clearFH fdopen(%"PRIu64") failed\n", clearFH);
+        perror("ERROR decryptFH");
+        ret = -errno;
+        goto ERROR_1;
+    }
+
+    /* Decrypt */
+    key = TESTKEY;
+    ret = crypt_decrypt(encFP, clearFP, key);
+    if(ret < 0) {
+        fprintf(stderr, "ERROR decryptFH: crypt_decrypt() failed\n");
+        goto ERROR_2;
+    }
+
+ ERROR_2:
+
+    if(fclose(clearFP)) {
+        fprintf(stderr, "ERROR decryptFH: fclose(clearFP) failed\n");
+        perror("ERROR decryptFH");
+        ret = -errno;
+    }
+
+ ERROR_1:
+
+    if(fclose(encFP)) {
+        fprintf(stderr, "ERROR decryptFH: fclose(encFP) failed\n");
+        perror("ERROR decryptFH");
+        ret = -errno;
+    }
+
+ ERROR_0:
+
+    return ret;
+
+}
+
 static int encryptFile(const char* plainPath, const char* encPath) {
 
     int ret;
@@ -630,6 +691,59 @@ static int encryptFile(const char* plainPath, const char* encPath) {
     if(fclose(plainFP)) {
         fprintf(stderr, "ERROR encryptFile: fclose(plainFP) failed\n");
         perror("ERROR encryptFile");
+        ret = -errno;
+    }
+
+ ERROR_0:
+
+    return ret;
+
+}
+
+static int encryptFH(const uint64_t clearFH, const uint64_t encFH) {
+
+    int ret = RETURN_SUCCESS;
+    FILE* clearFP = NULL;
+    FILE* encFP = NULL;
+    char* key;
+
+    clearFP = fdopen(dup(clearFH), "r");
+    if(!clearFP) {
+        fprintf(stderr, "ERROR encryptFH: clearFH fdopen(%"PRIu64") failed\n", clearFH);
+        perror("ERROR encryptFH");
+        ret = -errno;
+        goto ERROR_0;
+    }
+
+    encFP = fdopen(dup(encFH), "w");
+    if(!encFP) {
+        fprintf(stderr, "ERROR encryptFH: encFH fdopen(%"PRIu64") failed\n", encFH);
+        perror("ERROR encryptFH");
+        ret = -errno;
+        goto ERROR_1;
+    }
+
+    /* Encrypt */
+    key = TESTKEY;
+    ret = crypt_encrypt(clearFP, encFP, key);
+    if(ret < 0) {
+        fprintf(stderr, "ERROR encryptFH: crypt_encrypt() failed\n");
+        goto ERROR_2;
+    }
+
+ ERROR_2:
+
+    if(fclose(encFP)) {
+        fprintf(stderr, "ERROR encryptFH: fclose(encFP) failed\n");
+        perror("ERROR encryptFH");
+        ret = -errno;
+    }
+
+ ERROR_1:
+
+    if(fclose(clearFP)) {
+        fprintf(stderr, "ERROR encryptFH: fclose(clearFP) failed\n");
+        perror("ERROR encryptFH");
         ret = -errno;
     }
 
@@ -941,6 +1055,10 @@ static int enc_unlink(const char* path) {
 
     int ret;
     char fullPath[PATHBUFSIZE];
+
+#ifdef DEBUG
+    fprintf(stderr, "INFO enc_unlink: function called on %s\n", path);
+#endif
 
     ret = buildPath(path, fullPath, sizeof(fullPath));
     if(ret < 0){
@@ -1419,71 +1537,53 @@ static int enc_flush(const char* path, fuse_file_info_t* fi) {
        close the file.  This is important if used on a network
        filesystem like NFS which flush the data/metadata on close() */
 
+    (void) path;
+
     int ret;
     enc_fhs_t* fhs;
-    char fullPath[PATHBUFSIZE];
-    char tempPath[PATHBUFSIZE];
-
-    if(!path) {
-	fprintf(stderr, "ERROR enc_flush: path is NULL");
-	return -EINVAL;
-    }
 
     if(!fi) {
-	fprintf(stderr, "ERROR enc_flush: fi is NULL");
-	return -EINVAL;
-    }
-
-    ret = buildPath(path, fullPath, sizeof(fullPath));
-    if(ret < 0) {
-	fprintf(stderr, "ERROR enc_flush: buildPath failed\n");
-	return ret;
-    }
-    path = NULL;
-
-    ret = buildTempPath(fullPath, tempPath, sizeof(tempPath));
-    if(ret < 0) {
-	fprintf(stderr, "ERROR enc_flush: buildTempPath failed\n");
-	return ret;
+        fprintf(stderr, "ERROR enc_flush: fi is NULL");
+        return -EINVAL;
     }
 
     fhs = get_fhs(fi->fh);
 
     ret = dup(fhs->clearFH);
     if(ret < 0) {
-	fprintf(stderr, "ERROR enc_flush: dup(clearFH) failed\n");
-	perror("ERROR enc_flush");
-	return -errno;
+        fprintf(stderr, "ERROR enc_flush: dup(clearFH) failed\n");
+        perror("ERROR enc_flush");
+        return -errno;
     }
     ret = close(ret);
     if(ret < 0) {
-	fprintf(stderr, "ERROR enc_flush: close(dup(clearFH)) failed\n");
-	perror("ERROR enc_flush");
-	return -errno;
+        fprintf(stderr, "ERROR enc_flush: close(dup(clearFH)) failed\n");
+        perror("ERROR enc_flush");
+        return -errno;
     }
 
     ret = dup(fhs->encFH);
     if(ret < 0) {
-	fprintf(stderr, "ERROR enc_flush: dup(encFH) failed\n");
-	perror("ERROR enc_flush");
-	return -errno;
+        fprintf(stderr, "ERROR enc_flush: dup(encFH) failed\n");
+        perror("ERROR enc_flush");
+        return -errno;
     }
     ret = close(ret);
     if(ret < 0) {
-	fprintf(stderr, "ERROR enc_flush: close(dup(encFH)) failed\n");
-	perror("ERROR enc_flush");
-	return -errno;
+        fprintf(stderr, "ERROR enc_flush: close(dup(encFH)) failed\n");
+        perror("ERROR enc_flush");
+        return -errno;
     }
 
     if(fhs->dirty == FHS_DIRTY) {
 
-	ret = encryptFile(tempPath, fullPath);
-	if(ret < 0) {
-	    fprintf(stderr, "ERROR enc_flush: encryptFile failed\n");
-	    return ret;
-	}
+        ret = encryptFH(fhs->clearFH, fhs->encFH);
+        if(ret < 0) {
+            fprintf(stderr, "ERROR enc_flush: encryptFH failed\n");
+            return ret;
+        }
 
-	fhs->dirty = FHS_CLEAN;
+        fhs->dirty = FHS_CLEAN;
 
     }
 
@@ -1492,61 +1592,43 @@ static int enc_flush(const char* path, fuse_file_info_t* fi) {
 }
 
 static int enc_fsync(const char* path, int isdatasync,
-		     fuse_file_info_t* fi) {
+                     fuse_file_info_t* fi) {
+
+    (void) path;
 
     int ret;
     enc_fhs_t* fhs;
-    char fullPath[PATHBUFSIZE];
-    char tempPath[PATHBUFSIZE];
-
-    if(!path) {
-	fprintf(stderr, "ERROR enc_fsync: path is NULL");
-	return -EINVAL;
-    }
 
     if(!fi) {
-	fprintf(stderr, "ERROR enc_fsync: fi is NULL");
-	return -EINVAL;
-    }
-
-    ret = buildPath(path, fullPath, sizeof(fullPath));
-    if(ret < 0) {
-	fprintf(stderr, "ERROR enc_fsync: buildPath failed\n");
-	return ret;
-    }
-    path = NULL;
-
-    ret = buildTempPath(fullPath, tempPath, sizeof(tempPath));
-    if(ret < 0) {
-	fprintf(stderr, "ERROR enc_fsync: buildTempPath failed\n");
-	return ret;
+        fprintf(stderr, "ERROR enc_fsync: fi is NULL");
+        return -EINVAL;
     }
 
     fhs = get_fhs(fi->fh);
 
     if(fhs->dirty == FHS_DIRTY) {
 
-	ret = encryptFile(tempPath, fullPath);
-	if(ret < 0) {
-	    fprintf(stderr, "ERROR enc_fsync: encryptFile failed\n");
-	    return ret;
-	}
+        ret = encryptFH(fhs->clearFH, fhs->encFH);
+        if(ret < 0) {
+            fprintf(stderr, "ERROR enc_fsync: encryptFH failed\n");
+            return ret;
+        }
 
-	fhs->dirty = FHS_CLEAN;
+        fhs->dirty = FHS_CLEAN;
 
     }
 
     if(isdatasync) {
-	ret = fdatasync(fhs->encFH);
+        ret = fdatasync(fhs->encFH);
     }
     else {
-	ret = fsync(fhs->encFH);
+        ret = fsync(fhs->encFH);
     }
 
     if(ret < 0) {
-	fprintf(stderr, "ERROR enc_fsync: fdatasync/fsync failed\n");
-	perror("ERROR enc_fsync");
-	return -errno;
+        fprintf(stderr, "ERROR enc_fsync: fdatasync/fsync failed\n");
+        perror("ERROR enc_fsync");
+        return -errno;
     }
 
     return RETURN_SUCCESS;
@@ -1555,63 +1637,44 @@ static int enc_fsync(const char* path, int isdatasync,
 
 static int enc_release(const char* path, fuse_file_info_t* fi) {
 
+    (void) path;
+
     int ret;
-    int dirty;
     enc_fhs_t* fhs;
-    char fullPath[PATHBUFSIZE];
-    char tempPath[PATHBUFSIZE];
 
 #ifdef DEBUG
     fprintf(stderr, "INFO enc_release: function called\n");
 #endif
 
-    if(!path) {
-	fprintf(stderr, "ERROR enc_release: path is NULL");
-	return -EINVAL;
-    }
-
     if(!fi) {
-	fprintf(stderr, "ERROR enc_release: fi is NULL");
-	return -EINVAL;
-    }
-
-    ret = buildPath(path, fullPath, sizeof(fullPath));
-    if(ret < 0) {
-	fprintf(stderr, "ERROR enc_release: buildPath failed\n");
-	return ret;
-    }
-    path = NULL;
-
-    ret = buildTempPath(fullPath, tempPath, sizeof(tempPath));
-    if(ret < 0) {
-	fprintf(stderr, "ERROR enc_release: buildTempPath failed\n");
-	return ret;
+        fprintf(stderr, "ERROR enc_release: fi is NULL");
+        return -EINVAL;
     }
 
     fhs = get_fhs(fi->fh);
-    dirty = fhs->dirty;
+
+    if(fhs->dirty == FHS_DIRTY) {
+
+        ret = encryptFH(fhs->clearFH, fhs->encFH);
+        if(ret < 0) {
+            fprintf(stderr, "ERROR enc_release: encryptFH failed\n");
+            return ret;
+        }
+
+    }
 
     ret = closeFilePair(fhs);
     if(ret < 0) {
-	fprintf(stderr, "ERROR enc_release: closeFilePair failed\n");
-	return ret;
+        fprintf(stderr, "ERROR enc_release: closeFilePair failed\n");
+        return ret;
     }
 
-    if(dirty == FHS_DIRTY) {
-
-	ret = encryptFile(tempPath, fullPath);
-	if(ret < 0) {
-	    fprintf(stderr, "ERROR enc_release: encryptFile failed\n");
-	    return ret;
-	}
-
-    }
-
-    ret = removeFile(tempPath);
-    if(ret < 0) {
-	fprintf(stderr, "ERROR enc_release: removeFile failed\n");
-	return ret;
-    }
+    // TODO save temp path to fhs
+    /* ret = removeFile(tempPath); */
+    /* if(ret < 0) { */
+    /*     fprintf(stderr, "ERROR enc_release: removeFile failed\n"); */
+    /*     return ret; */
+    /* } */
 
 #ifdef DEBUG
     fprintf(stderr, "INFO enc_release: returning successfully\n");
@@ -1663,99 +1726,99 @@ static int enc_flock(const char* path, fuse_file_info_t* fi, int op) {
 }
 
 /* xattr operations are optional and can safely be left unimplemented */
-static int enc_setxattr(const char* path, const char* name, const char* value,
-			size_t size, int flags) {
+/* static int enc_setxattr(const char* path, const char* name, const char* value, */
+/*                         size_t size, int flags) { */
 
-    int ret;
-    char fullPath[PATHBUFSIZE];
+/*     int ret; */
+/*     char fullPath[PATHBUFSIZE]; */
 
-    ret = buildPath(path, fullPath, sizeof(fullPath));
-    if(ret < 0){
-	fprintf(stderr, "ERROR enc_setxattr: buildPath failed\n");
-	return ret;
-    }
-    path = NULL;
+/*     ret = buildPath(path, fullPath, sizeof(fullPath)); */
+/*     if(ret < 0){ */
+/*         fprintf(stderr, "ERROR enc_setxattr: buildPath failed\n"); */
+/*         return ret; */
+/*     } */
+/*     path = NULL; */
 
-    ret = lsetxattr(fullPath, name, value, size, flags);
-    if(ret < 0) {
-	fprintf(stderr, "ERROR enc_setxattr: lsetxattr failed\n");
-	perror("ERROR enc_setxattr");
-        return -errno;
-    }
+/*     ret = lsetxattr(fullPath, name, value, size, flags); */
+/*     if(ret < 0) { */
+/*         fprintf(stderr, "ERROR enc_setxattr: lsetxattr failed\n"); */
+/*         perror("ERROR enc_setxattr"); */
+/*         return -errno; */
+/*     } */
 
-    return RETURN_SUCCESS;
+/*     return RETURN_SUCCESS; */
 
-}
+/* } */
 
-static int enc_getxattr(const char* path, const char* name, char* value,
-			size_t size) {
+/* static int enc_getxattr(const char* path, const char* name, char* value, */
+/*                         size_t size) { */
 
-    int ret;
-    char fullPath[PATHBUFSIZE];
+/*     int ret; */
+/*     char fullPath[PATHBUFSIZE]; */
 
-    ret = buildPath(path, fullPath, sizeof(fullPath));
-    if(ret < 0){
-	fprintf(stderr, "ERROR enc_getxattr: buildPath failed\n");
-	return ret;
-    }
-    path = NULL;
+/*     ret = buildPath(path, fullPath, sizeof(fullPath)); */
+/*     if(ret < 0){ */
+/*         fprintf(stderr, "ERROR enc_getxattr: buildPath failed\n"); */
+/*         return ret; */
+/*     } */
+/*     path = NULL; */
 
-    ret = lgetxattr(fullPath, name, value, size);
-    if(ret < 0) {
-	fprintf(stderr, "ERROR enc_getxattr: lgetxattr failed\n");
-	perror("ERROR enc_getxattr");
-        return -errno;
-    }
+/*     ret = lgetxattr(fullPath, name, value, size); */
+/*     if(ret < 0) { */
+/*         fprintf(stderr, "ERROR enc_getxattr: lgetxattr failed\n"); */
+/*         perror("ERROR enc_getxattr"); */
+/*         return -errno; */
+/*     } */
 
-    return ret;
+/*     return ret; */
 
-}
+/* } */
 
-static int enc_listxattr(const char* path, char* list, size_t size) {
+/* static int enc_listxattr(const char* path, char* list, size_t size) { */
 
-    int ret;
-    char fullPath[PATHBUFSIZE];
+/*     int ret; */
+/*     char fullPath[PATHBUFSIZE]; */
 
-    ret = buildPath(path, fullPath, sizeof(fullPath));
-    if(ret < 0){
-	fprintf(stderr, "ERROR enc_listxattr: buildPath failed\n");
-	return ret;
-    }
-    path = NULL;
+/*     ret = buildPath(path, fullPath, sizeof(fullPath)); */
+/*     if(ret < 0){ */
+/*         fprintf(stderr, "ERROR enc_listxattr: buildPath failed\n"); */
+/*         return ret; */
+/*     } */
+/*     path = NULL; */
 
-    ret = llistxattr(fullPath, list, size);
-    if(ret < 0) {
-	fprintf(stderr, "ERROR enc_listxattr: llistxattr failed\n");
-	perror("ERROR enc_listxattr");
-        return -errno;
-    }
+/*     ret = llistxattr(fullPath, list, size); */
+/*     if(ret < 0) { */
+/*         fprintf(stderr, "ERROR enc_listxattr: llistxattr failed\n"); */
+/*         perror("ERROR enc_listxattr"); */
+/*         return -errno; */
+/*     } */
 
-    return ret;
+/*     return ret; */
 
-}
+/* } */
 
-static int enc_removexattr(const char* path, const char* name) {
+/* static int enc_removexattr(const char* path, const char* name) { */
 
-    int ret;
-    char fullPath[PATHBUFSIZE];
+/*     int ret; */
+/*     char fullPath[PATHBUFSIZE]; */
 
-    ret = buildPath(path, fullPath, sizeof(fullPath));
-    if(ret < 0){
-	fprintf(stderr, "ERROR enc_removexattr: buildPath failed\n");
-	return RETURN_FAILURE;
-    }
-    path = NULL;
+/*     ret = buildPath(path, fullPath, sizeof(fullPath)); */
+/*     if(ret < 0){ */
+/*         fprintf(stderr, "ERROR enc_removexattr: buildPath failed\n"); */
+/*         return RETURN_FAILURE; */
+/*     } */
+/*     path = NULL; */
 
-    ret = lremovexattr(fullPath, name);
-    if(ret < 0) {
-	fprintf(stderr, "ERROR enc_removexattr: lremovexattr failed\n");
-	perror("ERROR enc_removexattr");
-        return -errno;
-    }
+/*     ret = lremovexattr(fullPath, name); */
+/*     if(ret < 0) { */
+/*         fprintf(stderr, "ERROR enc_removexattr: lremovexattr failed\n"); */
+/*         perror("ERROR enc_removexattr"); */
+/*         return -errno; */
+/*     } */
 
-    return RETURN_SUCCESS;
+/*     return RETURN_SUCCESS; */
 
-}
+/* } */
 
 static struct fuse_operations enc_oper = {
 
@@ -1803,10 +1866,10 @@ static struct fuse_operations enc_oper = {
     .fsync       = enc_fsync,       /* Synch Open File Contents */
 
     /* Extended Attributes */
-    .setxattr    = enc_setxattr,    /* Set XATTR */
-    .getxattr    = enc_getxattr,    /* Get XATTR */
-    .listxattr   = enc_listxattr,   /* List XATTR */
-    .removexattr = enc_removexattr, /* Remove XATTR */
+    /* .setxattr    = enc_setxattr,    /\* Set XATTR *\/ */
+    /* .getxattr    = enc_getxattr,    /\* Get XATTR *\/ */
+    /* .listxattr   = enc_listxattr,   /\* List XATTR *\/ */
+    /* .removexattr = enc_removexattr, /\* Remove XATTR *\/ */
 
     /* Flags */
     .flag_nullpath_ok   = 1,
