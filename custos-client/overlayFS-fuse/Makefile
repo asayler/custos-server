@@ -29,11 +29,9 @@ LLIBSOPENSSL  = `pkg-config openssl --libs`
 CFLAGSUUID    = `pkg-config uuid --cflags`
 LLIBSUUID     = `pkg-config uuid --libs`
 
-.PHONY: all clean encfs mirfs \
-	fuse-examples xattr-examples openssl-examples
+.PHONY: all clean encfs mirfs fuse-examples xattr-examples openssl-examples
 
-all:    encfs mirfs \
-	fuse-examples xattr-examples openssl-examples
+all: encfs mirfs fuse-examples xattr-examples openssl-examples
 
 encfs: $(ENCFS)
 mirfs: $(MIRFS)

@@ -33,7 +33,7 @@
 #include <sys/file.h>
 
 #include "aes-crypt.h"
-#include "custos_client.h"
+#include "libcustos/custos_client.h"
 
 typedef struct fuse_args fuse_args_t;
 typedef struct fuse_bufvec fuse_bufvec_t;
@@ -88,8 +88,10 @@ typedef struct fsState {
 #define TEMPNAME_PRE  "."
 #define TEMPNAME_POST ".decrypt"
 
+#define TESTKEY "Password"
+
 static int buildPath(const char* path, char* buf, size_t bufSize) {
-    
+
     size_t size = 0;
     fsState_t* state = NULL;
 
@@ -122,7 +124,7 @@ static int buildPath(const char* path, char* buf, size_t bufSize) {
 #endif
 
     return RETURN_SUCCESS;
-    
+
 }
 
 static int buildTempPath(const char* fullPath, char* tempPath, size_t bufSize) {
@@ -140,14 +142,14 @@ static int buildTempPath(const char* fullPath, char* tempPath, size_t bufSize) {
 	fprintf(stderr, "ERROR buildTempPath: tempPath must not be NULL\n");
 	return -EINVAL;
     }
-    
+
     /* Copy input path to buf */
     length = snprintf(buf, sizeof(buf), "%s", fullPath);
     if(length > (sizeof(buf) - 1)) {
 	fprintf(stderr, "ERROR buildTempPath: Overflowed buf\n");
 	return -ENAMETOOLONG;
     }
-    
+
     /* Find start of file name */
     pFileName = strrchr(buf, PATHDELIMINATOR);
     if(pFileName == NULL) {
@@ -155,7 +157,7 @@ static int buildTempPath(const char* fullPath, char* tempPath, size_t bufSize) {
 	return -EINVAL;
     }
     *pFileName = NULLTERM;
-		      
+
     /* Build Temp Path */
     length = snprintf(tempPath, bufSize, "%s%c%s%s%s",
 		      buf, PATHDELIMINATOR, TEMPNAME_PRE, (pFileName + 1), TEMPNAME_POST);
@@ -177,7 +179,7 @@ static enc_fhs_t* createFilePair(const char* encPath, const char* clearPath,
 
     int ret;
     enc_fhs_t* fhs = NULL;
-    
+
     fhs = malloc(sizeof(*fhs));
     if(!fhs) {
 	fprintf(stderr, "ERROR createFilePair: malloc failed\n");
@@ -283,361 +285,362 @@ static int removeFile(const char* filePath) {
 }
 
 static int decryptFile(const char* encPath, const char* plainPath) {
-    
+
     int ret;
-    int i;
+    //int i;
     FILE* encFP = NULL;
     FILE* plainFP = NULL;
-    custosKeyReq_t* req = NULL;
-    custosKeyRes_t* res = NULL;
-    uuid_t uuid;
+    //custosKeyReq_t* req = NULL;
+    //custosKeyRes_t* res = NULL;
+    //uuid_t uuid;
     char* key;
-        
+
     encFP = fopen(encPath, "r");
     if(!encFP) {
-	fprintf(stderr, "ERROR decryptFile: fopen(encPath) failed\n");
-	perror("ERROR decryptFile");
-	ret = -errno;
-	goto ERROR_0;
+        fprintf(stderr, "ERROR decryptFile: fopen(encPath) failed\n");
+        perror("ERROR decryptFile");
+        ret = -errno;
+        goto ERROR_0;
     }
-    
+
     plainFP = fopen(plainPath, "w");
     if(!plainFP) {
-	fprintf(stderr, "ERROR decryptFile: fopen(plainPath) failed\n");
-	perror("ERROR decryptFile");
-	ret = -errno;
-	goto ERROR_1;
-    }
-    
-    /* Create a new Custos request */
-    uuid_generate(uuid);
-    req = custos_createKeyReq(uuid, "http://test.com");
-    if(!req) {
-	fprintf(stderr, "ERROR decryptFile: custos_createKeyReq failed\n");
-	ret = -errno;
-	goto ERROR_2;
+        fprintf(stderr, "ERROR decryptFile: fopen(plainPath) failed\n");
+        perror("ERROR decryptFile");
+        ret = -errno;
+        goto ERROR_1;
     }
 
-    /* Get Key - 1st Attempt */
-    res = custos_getKeyRes(req);
-    if(!res) {
-	fprintf(stderr, "ERROR decryptFile: custos_getKeyRes failed\n");
-	ret = -errno;
-	goto ERROR_3;
-    }
+    /* /\* Create a new Custos request *\/ */
+    /* uuid_generate(uuid); */
+    /* req = custos_createKeyReq(uuid, "http://test.com"); */
+    /* if(!req) { */
+	/* fprintf(stderr, "ERROR decryptFile: custos_createKeyReq failed\n"); */
+	/* ret = -errno; */
+	/* goto ERROR_2; */
+    /* } */
 
-    if(res->resStat) {
-	fprintf(stderr, "ERROR decryptFile: response error %d\n", res->resStat);
-	ret = -errno;
-	goto ERROR_4;
-    }
+    /* /\* Get Key - 1st Attempt *\/ */
+    /* res = custos_getKeyRes(req); */
+    /* if(!res) { */
+	/* fprintf(stderr, "ERROR decryptFile: custos_getKeyRes failed\n"); */
+	/* ret = -errno; */
+	/* goto ERROR_3; */
+    /* } */
 
-    if(!(res->key)) {
+    /* if(res->resStat) { */
+	/* fprintf(stderr, "ERROR decryptFile: response error %d\n", res->resStat); */
+	/* ret = -errno; */
+	/* goto ERROR_4; */
+    /* } */
 
-	/* Update Request */
-	for(i = 0; i < CUS_ATTRID_MAX; i++) {
-	    if(res->attrStat[i] == CUS_ATTRSTAT_REQ) {
-		switch(i) {
-		case CUS_ATTRID_PSK:
-		    ret = custos_updateKeyReq(req, i, CUS_TEST_PSK,
-					      (strlen(CUS_TEST_PSK) + 1));
-		    if(ret < 0) {
-			fprintf(stderr, "ERROR decryptFile: custos_updateKeyReq failed\n");
-			goto ERROR_4;
-		    }
-		    break;
-		default:
-		    fprintf(stderr, "ERROR decryptFile: Unknown Custos Attr %d required\n", i);
-		    goto ERROR_4;
-		    break;
-		}
-	    }
-	    else {
-		fprintf(stderr, "ERROR decryptFile: Custos Attr %d Error %d\n",
-			i, res->attrStat[i]);
-		goto ERROR_4;
-	    }
-	}
+    /* if(!(res->key)) { */
 
-	/* Free Response */
-	ret = custos_destroyKeyRes(&res);
-	if(ret < 0) {
-	    fprintf(stderr, "ERROR decryptFile: custos_destroyKeyRes failed\n");
-	    goto ERROR_3;
-	}
+    /*     /\* Update Request *\/ */
+    /*     for(i = 0; i < CUS_ATTRID_MAX; i++) { */
+    /*         if(res->attrStat[i] == CUS_ATTRSTAT_REQ) { */
+    /*             switch(i) { */
+    /*             case CUS_ATTRID_PSK: */
+    /*                 ret = custos_updateKeyReq(req, i, CUS_TEST_PSK, */
+    /*                                           (strlen(CUS_TEST_PSK) + 1)); */
+    /*                 if(ret < 0) { */
+    /*                     fprintf(stderr, "ERROR decryptFile: custos_updateKeyReq failed\n"); */
+    /*                     goto ERROR_4; */
+    /*                 } */
+    /*                 break; */
+    /*             default: */
+    /*                 fprintf(stderr, "ERROR decryptFile: Unknown Custos Attr %d required\n", i); */
+    /*                 goto ERROR_4; */
+    /*                 break; */
+    /*             } */
+    /*         } */
+    /*         else { */
+    /*             fprintf(stderr, "ERROR decryptFile: Custos Attr %d Error %d\n", */
+    /*                     i, res->attrStat[i]); */
+    /*             goto ERROR_4; */
+    /*         } */
+    /*     } */
 
-	/* Get Key - 2nd Attempt */
-	res = custos_getKeyRes(req);
-	if(!res) {
-	    fprintf(stderr, "ERROR decryptFile: custos_getKeyRes failed\n");
-	    ret = -errno;
-	    goto ERROR_3;
-	}
+    /*     /\* Free Response *\/ */
+    /*     ret = custos_destroyKeyRes(&res); */
+    /*     if(ret < 0) { */
+    /*         fprintf(stderr, "ERROR decryptFile: custos_destroyKeyRes failed\n"); */
+    /*         goto ERROR_3; */
+    /*     } */
 
-	if(res->resStat) {
-	    fprintf(stderr, "ERROR decryptFile: response error %d\n", res->resStat);
-	    ret = -errno;
-	    goto ERROR_4;
-	}
-	
-	if(!(res->key)) {
-	    fprintf(stderr, "ERROR decryptFile: request failed\n");
-	    ret = RETURN_FAILURE;
-	    goto ERROR_4;
-	}
-    }
+    /*     /\* Get Key - 2nd Attempt *\/ */
+    /*     res = custos_getKeyRes(req); */
+    /*     if(!res) { */
+    /*         fprintf(stderr, "ERROR decryptFile: custos_getKeyRes failed\n"); */
+    /*         ret = -errno; */
+    /*         goto ERROR_3; */
+    /*     } */
+
+    /*     if(res->resStat) { */
+    /*         fprintf(stderr, "ERROR decryptFile: response error %d\n", res->resStat); */
+    /*         ret = -errno; */
+    /*         goto ERROR_4; */
+    /*     } */
+
+    /*     if(!(res->key)) { */
+    /*         fprintf(stderr, "ERROR decryptFile: request failed\n"); */
+    /*         ret = RETURN_FAILURE; */
+    /*         goto ERROR_4; */
+    /*     } */
+    /* } */
 
     /* Decrypt */
-    key = (char*)(res->key);
+    //key = (char*)(res->key);
+    key = TESTKEY;
     ret = crypt_decrypt(encFP, plainFP, key);
     if(ret < 0) {
-	fprintf(stderr, "ERROR decryptFile: crypt_decrypt() failed\n");
-	goto ERROR_2;
+        fprintf(stderr, "ERROR decryptFile: crypt_decrypt() failed\n");
+        goto ERROR_2;
     }
 
-    /* Free Response */
-    ret = custos_destroyKeyRes(&res);
-    if(ret < 0) {
-	fprintf(stderr, "ERROR decryptFile: custos_destroyKeyRes failed\n");
-	return EXIT_FAILURE;
-    }
+    /* /\* Free Response *\/ */
+    /* ret = custos_destroyKeyRes(&res); */
+    /* if(ret < 0) { */
+	/* fprintf(stderr, "ERROR decryptFile: custos_destroyKeyRes failed\n"); */
+	/* return EXIT_FAILURE; */
+    /* } */
 
-    /* Free Request */
-    ret = custos_destroyKeyReq(&req);
-    if(ret < 0) {
-	fprintf(stderr, "ERROR decryptFile: custos_destroyKeyReq failed\n");
-	return EXIT_FAILURE;
-    }
+    /* /\* Free Request *\/ */
+    /* ret = custos_destroyKeyReq(&req); */
+    /* if(ret < 0) { */
+	/* fprintf(stderr, "ERROR decryptFile: custos_destroyKeyReq failed\n"); */
+	/* return EXIT_FAILURE; */
+    /* } */
 
     if(fclose(plainFP)) {
-	fprintf(stderr, "ERROR decryptFile: fclose(plainFP) failed\n");
-	perror("ERROR decryptFile");
-	ret = -errno;
-	goto ERROR_1;
+        fprintf(stderr, "ERROR decryptFile: fclose(plainFP) failed\n");
+        perror("ERROR decryptFile");
+        ret = -errno;
+        goto ERROR_1;
     }
 
     if(fclose(encFP)) {
-	fprintf(stderr, "ERROR decryptFile: fclose(encFP) failed\n");
-	perror("ERROR decryptFile");
-	ret = -errno;
-	goto ERROR_0;
+        fprintf(stderr, "ERROR decryptFile: fclose(encFP) failed\n");
+        perror("ERROR decryptFile");
+        ret = -errno;
+        goto ERROR_0;
     }
 
     return RETURN_SUCCESS;
 
- ERROR_4:
-    ret = custos_destroyKeyRes(&res);
-    if(ret < 0) {
-	fprintf(stderr, "ERROR decryptFile: custos_destroyKeyRes failed\n");
-    }
+    /* ERROR_4: */
+    /*    ret = custos_destroyKeyRes(&res); */
+    /*    if(ret < 0) { */
+    /*    fprintf(stderr, "ERROR decryptFile: custos_destroyKeyRes failed\n"); */
+    /*    } */
 
- ERROR_3:
-    ret = custos_destroyKeyReq(&req);
-    if(ret < 0) {
-	fprintf(stderr, "ERROR decryptFile: custos_destroyKeyReq failed\n");
-    }
+    /* ERROR_3: */
+    /*    ret = custos_destroyKeyReq(&req); */
+    /*    if(ret < 0) { */
+    /*    fprintf(stderr, "ERROR decryptFile: custos_destroyKeyReq failed\n"); */
+    /*    } */
 
  ERROR_2:
 
     if(fclose(plainFP)) {
-	fprintf(stderr, "ERROR decryptFile: fclose(plainFP) failed\n");
-	perror("ERROR decryptFile");
-	ret = -errno;
+        fprintf(stderr, "ERROR decryptFile: fclose(plainFP) failed\n");
+        perror("ERROR decryptFile");
+        ret = -errno;
     }
 
  ERROR_1:
 
     if(fclose(encFP)) {
-	fprintf(stderr, "ERROR decryptFile: fclose(encFP) failed\n");
-	perror("ERROR decryptFile");
-	ret = -errno;
+        fprintf(stderr, "ERROR decryptFile: fclose(encFP) failed\n");
+        perror("ERROR decryptFile");
+        ret = -errno;
     }
 
  ERROR_0:
-    
+
     return ret;
 
 }
 
 static int encryptFile(const char* plainPath, const char* encPath) {
-    
+
     int ret;
-    int i;
+    //int i;
     FILE* plainFP = NULL;
     FILE* encFP = NULL;
-    custosKeyReq_t* req = NULL;
-    custosKeyRes_t* res = NULL;
-    uuid_t uuid;
-    char* key;        
-    
+    //custosKeyReq_t* req = NULL;
+    //custosKeyRes_t* res = NULL;
+    //uuid_t uuid;
+    char* key;
+
     plainFP = fopen(plainPath, "r");
     if(!plainFP) {
-	fprintf(stderr, "ERROR encryptFile: fopen(%s) failed\n", plainPath);
-	perror("ERROR encryptFile");
-	ret = -errno;
-	goto ERROR_0;
+        fprintf(stderr, "ERROR encryptFile: fopen(%s) failed\n", plainPath);
+        perror("ERROR encryptFile");
+        ret = -errno;
+        goto ERROR_0;
     }
-    
+
     encFP = fopen(encPath, "w");
     if(!encFP) {
-	fprintf(stderr, "ERROR encryptFile: fopen(%s) failed\n", encPath);
-	perror("ERROR encryptFile");
-	ret = -errno;
-	goto ERROR_1;
+        fprintf(stderr, "ERROR encryptFile: fopen(%s) failed\n", encPath);
+        perror("ERROR encryptFile");
+        ret = -errno;
+        goto ERROR_1;
     }
 
-    /* Create a new Custos request */
-    uuid_generate(uuid);
-    req = custos_createKeyReq(uuid, "http://test.com");
-    if(!req) {
-	fprintf(stderr, "ERROR encryptFile: custos_createKeyReq failed\n");
-	ret = -errno;
-	goto ERROR_2;
-    }
+    /* /\* Create a new Custos request *\/ */
+    /* uuid_generate(uuid); */
+    /* req = custos_createKeyReq(uuid, "http://test.com"); */
+    /* if(!req) { */
+    /*     fprintf(stderr, "ERROR encryptFile: custos_createKeyReq failed\n"); */
+    /*     ret = -errno; */
+    /*     goto ERROR_2; */
+    /* } */
 
-    /* Get Key - 1st Attempt */
-    res = custos_getKeyRes(req);
-    if(!res) {
-	fprintf(stderr, "ERROR encryptFile: custos_getKeyRes failed\n");
-	ret = -errno;
-	goto ERROR_3;
-    }
+    /* /\* Get Key - 1st Attempt *\/ */
+    /* res = custos_getKeyRes(req); */
+    /* if(!res) { */
+    /*     fprintf(stderr, "ERROR encryptFile: custos_getKeyRes failed\n"); */
+    /*     ret = -errno; */
+    /*     goto ERROR_3; */
+    /* } */
 
-    if(res->resStat) {
-	fprintf(stderr, "ERROR encryptFile: response error %d\n", res->resStat);
-	ret = -errno;
-	goto ERROR_4;
-    }
+    /* if(res->resStat) { */
+    /*     fprintf(stderr, "ERROR encryptFile: response error %d\n", res->resStat); */
+    /*     ret = -errno; */
+    /*     goto ERROR_4; */
+    /* } */
 
-    if(!(res->key)) {
+    /* if(!(res->key)) { */
 
-	/* Update Request */
-	for(i = 0; i < CUS_ATTRID_MAX; i++) {
-	    if(res->attrStat[i] == CUS_ATTRSTAT_REQ) {
-		switch(i) {
-		case CUS_ATTRID_PSK:
-		    ret = custos_updateKeyReq(req, i, CUS_TEST_PSK,
-					      (strlen(CUS_TEST_PSK) + 1));
-		    if(ret < 0) {
-			fprintf(stderr, "ERROR encryptFile: custos_updateKeyReq failed\n");
-			goto ERROR_4;
-		    }
-		    break;
-		default:
-		    fprintf(stderr, "ERROR encryptFile: Unknown Custos Attr %d required\n", i);
-		    goto ERROR_4;
-		    break;
-		}
-	    }
-	    else {
-		fprintf(stderr, "ERROR encryptFile: Custos Attr %d Error %d\n",
-			i, res->attrStat[i]);
-		goto ERROR_4;
-	    }
-	}
+    /*     /\* Update Request *\/ */
+    /*     for(i = 0; i < CUS_ATTRID_MAX; i++) { */
+    /*         if(res->attrStat[i] == CUS_ATTRSTAT_REQ) { */
+    /*             switch(i) { */
+    /*             case CUS_ATTRID_PSK: */
+    /*                 ret = custos_updateKeyReq(req, i, CUS_TEST_PSK, */
+    /*                                           (strlen(CUS_TEST_PSK) + 1)); */
+    /*                 if(ret < 0) { */
+    /*                     fprintf(stderr, "ERROR encryptFile: custos_updateKeyReq failed\n"); */
+    /*                     goto ERROR_4; */
+    /*                 } */
+    /*                 break; */
+    /*             default: */
+    /*                 fprintf(stderr, "ERROR encryptFile: Unknown Custos Attr %d required\n", i); */
+    /*                 goto ERROR_4; */
+    /*                 break; */
+    /*             } */
+    /*         } */
+    /*         else { */
+    /*             fprintf(stderr, "ERROR encryptFile: Custos Attr %d Error %d\n", */
+    /*                     i, res->attrStat[i]); */
+    /*             goto ERROR_4; */
+    /*         } */
+    /*     } */
 
-	/* Free Response */
-	ret = custos_destroyKeyRes(&res);
-	if(ret < 0) {
-	    fprintf(stderr, "ERROR encryptFile: custos_destroyKeyRes failed\n");
-	    goto ERROR_3;
-	}
+    /*     /\* Free Response *\/ */
+    /*     ret = custos_destroyKeyRes(&res); */
+    /*     if(ret < 0) { */
+    /*         fprintf(stderr, "ERROR encryptFile: custos_destroyKeyRes failed\n"); */
+    /*         goto ERROR_3; */
+    /*     } */
 
-	/* Get Key - 2nd Attempt */
-	res = custos_getKeyRes(req);
-	if(!res) {
-	    fprintf(stderr, "ERROR encryptFile: custos_getKeyRes failed\n");
-	    ret = -errno;
-	    goto ERROR_3;
-	}
+    /*     /\* Get Key - 2nd Attempt *\/ */
+    /*     res = custos_getKeyRes(req); */
+    /*     if(!res) { */
+    /*         fprintf(stderr, "ERROR encryptFile: custos_getKeyRes failed\n"); */
+    /*         ret = -errno; */
+    /*         goto ERROR_3; */
+    /*     } */
 
-	if(res->resStat) {
-	    fprintf(stderr, "ERROR encryptFile: response error %d\n", res->resStat);
-	    ret = -errno;
-	    goto ERROR_4;
-	}
-	
-	if(!(res->key)) {
-	    fprintf(stderr, "ERROR encryptFile: request failed\n");
-	    ret = RETURN_FAILURE;
-	    goto ERROR_4;
-	}
-    }
+    /*     if(res->resStat) { */
+    /*         fprintf(stderr, "ERROR encryptFile: response error %d\n", res->resStat); */
+    /*         ret = -errno; */
+    /*         goto ERROR_4; */
+    /*     } */
 
-    key = (char*)(res->key);    
+    /*     if(!(res->key)) { */
+    /*         fprintf(stderr, "ERROR encryptFile: request failed\n"); */
+    /*         ret = RETURN_FAILURE; */
+    /*         goto ERROR_4; */
+    /*     } */
+    /* } */
+
+    //key = (char*)(res->key);
+    key = TESTKEY;
     ret = crypt_encrypt(plainFP, encFP, key);
     if(ret < 0) {
-	fprintf(stderr, "ERROR encryptFile: crypt_encrypt() failed\n");
-	goto ERROR_2;
+        fprintf(stderr, "ERROR encryptFile: crypt_encrypt() failed\n");
+        goto ERROR_2;
     }
 
-    /* Free Response */
-    ret = custos_destroyKeyRes(&res);
-    if(ret < 0) {
-	fprintf(stderr, "ERROR encryptFile: custos_destroyKeyRes failed\n");
-	return EXIT_FAILURE;
-    }
+    /* /\* Free Response *\/ */
+    /* ret = custos_destroyKeyRes(&res); */
+    /* if(ret < 0) { */
+    /*     fprintf(stderr, "ERROR encryptFile: custos_destroyKeyRes failed\n"); */
+    /*     return EXIT_FAILURE; */
+    /* } */
 
-    /* Free Request */
-    ret = custos_destroyKeyReq(&req);
-    if(ret < 0) {
-	fprintf(stderr, "ERROR encryptFile: custos_destroyKeyReq failed\n");
-	return EXIT_FAILURE;
-    }
-
+    /* /\* Free Request *\/ */
+    /* ret = custos_destroyKeyReq(&req); */
+    /* if(ret < 0) { */
+    /*     fprintf(stderr, "ERROR encryptFile: custos_destroyKeyReq failed\n"); */
+    /*     return EXIT_FAILURE; */
+    /* } */
 
     if(fclose(encFP)) {
-	fprintf(stderr, "ERROR encryptFile: fclose(encFP) failed\n");
-	perror("ERROR encryptFile");
-	ret = -errno;
-	goto ERROR_1;
+        fprintf(stderr, "ERROR encryptFile: fclose(encFP) failed\n");
+        perror("ERROR encryptFile");
+        ret = -errno;
+        goto ERROR_1;
     }
 
     if(fclose(plainFP)) {
-	fprintf(stderr, "ERROR encryptFile: fclose(plainFP) failed\n");
-	perror("ERROR encryptFile");
-	ret = -errno;
-	goto ERROR_0;
+        fprintf(stderr, "ERROR encryptFile: fclose(plainFP) failed\n");
+        perror("ERROR encryptFile");
+        ret = -errno;
+        goto ERROR_0;
     }
 
     return RETURN_SUCCESS;
 
- ERROR_4:
-    ret = custos_destroyKeyRes(&res);
-    if(ret < 0) {
-	fprintf(stderr, "ERROR encryptFile: custos_destroyKeyRes failed\n");
-    }
+ /* ERROR_4: */
+ /*    ret = custos_destroyKeyRes(&res); */
+ /*    if(ret < 0) { */
+ /*        fprintf(stderr, "ERROR encryptFile: custos_destroyKeyRes failed\n"); */
+ /*    } */
 
- ERROR_3:
-    ret = custos_destroyKeyReq(&req);
-    if(ret < 0) {
-	fprintf(stderr, "ERROR encryptFile: custos_destroyKeyReq failed\n");
-    }
+ /* ERROR_3: */
+ /*    ret = custos_destroyKeyReq(&req); */
+ /*    if(ret < 0) { */
+ /*        fprintf(stderr, "ERROR encryptFile: custos_destroyKeyReq failed\n"); */
+ /*    } */
 
  ERROR_2:
 
     if(fclose(encFP)) {
-	fprintf(stderr, "ERROR encryptFile: fclose(encFP) failed\n");
-	perror("ERROR encryptFile");
-	ret = -errno;
+        fprintf(stderr, "ERROR encryptFile: fclose(encFP) failed\n");
+        perror("ERROR encryptFile");
+        ret = -errno;
     }
 
  ERROR_1:
 
     if(fclose(plainFP)) {
-	fprintf(stderr, "ERROR encryptFile: fclose(plainFP) failed\n");
-	perror("ERROR encryptFile");
-	ret = -errno;
+        fprintf(stderr, "ERROR encryptFile: fclose(plainFP) failed\n");
+        perror("ERROR encryptFile");
+        ret = -errno;
     }
 
  ERROR_0:
-    
+
     return ret;
 
 }
 
 static int enc_getattr(const char* path, stat_t* stbuf) {
-    
+
     int ret;
     int exists;
     char fullPath[PATHBUFSIZE];
@@ -665,7 +668,7 @@ static int enc_getattr(const char* path, stat_t* stbuf) {
 	    fprintf(stderr, "ERROR enc_getattr: buildTempPath failed\n");
 	    return ret;
 	}
-	
+
 	if(access(tempPath, F_OK) < 0) {
 	    exists = 0;
 	}
@@ -735,7 +738,7 @@ static int enc_fgetattr(const char* path, stat_t* stbuf,
     stbuf->st_size = stTemp.st_size;
     stbuf->st_blksize = stTemp.st_blksize;
     stbuf->st_blocks = stTemp.st_blocks;
-    
+
     return RETURN_SUCCESS;
 
 }
@@ -805,7 +808,7 @@ static int enc_opendir(const char* path, fuse_file_info_t* fi) {
 	perror("ERROR enc_opendir");
 	return -errno;
     }
-    
+
     ret = buildPath(path, fullPath, sizeof(fullPath));
     if(ret < 0){
 	fprintf(stderr, "ERROR enc_opendir: buildPath failed\n");
@@ -906,7 +909,7 @@ static int enc_mknod(const char* path, mode_t mode, dev_t rdev) {
 	perror("ERROR enc_mknod");
 	return -errno;
     }
-    
+
     return RETURN_SUCCESS;
 
 }
@@ -961,7 +964,7 @@ static int enc_rmdir(const char* path) {
 
     int ret;
     char fullPath[PATHBUFSIZE];
-    
+
     ret = buildPath(path, fullPath, sizeof(fullPath));
     if(ret < 0){
 	fprintf(stderr, "ERROR enc_rmdir: buildPath failed\n");
@@ -1134,7 +1137,7 @@ static int enc_truncate(const char* path, off_t size) {
 	fprintf(stderr, "ERROR enc_truncate: buildTempPath failed\n");
 	return ret;
     }
-	
+
     if(access(tempPath, F_OK) < 0) {
 	exists = 0;
     }
@@ -1150,7 +1153,7 @@ static int enc_truncate(const char* path, off_t size) {
 	    return ret;
 
 	}
-	
+
     }
 
     ret = truncate(tempPath, size);
@@ -1167,14 +1170,14 @@ static int enc_truncate(const char* path, off_t size) {
     }
 
     if(!exists) {
-	
+
 	ret = removeFile(tempPath);
 	if(ret < 0) {
 	    fprintf(stderr, "ERROR enc_truncate: removeFile failed\n");
 	    return ret;
 
 	}
-    
+
     }
 
 #ifdef DEBUG
@@ -1265,7 +1268,7 @@ static int enc_create(const char* path, mode_t mode, fuse_file_info_t* fi) {
     if(ret < 0) {
 	fprintf(stderr, "ERROR enc_create: closeFilePair failed\n");
 	return ret;
-    }    
+    }
 
     ret = encryptFile(tempPath, fullPath);
     if(ret < 0) {
@@ -1290,7 +1293,7 @@ static int enc_create(const char* path, mode_t mode, fuse_file_info_t* fi) {
     if(!fhs) {
 	fprintf(stderr, "ERROR enc_create: openFilePair failed\n");
 	return RETURN_FAILURE;
-    }    
+    }
 
     fhs->dirty = FHS_CLEAN;
     fi->fh = put_fhs(fhs);
@@ -1333,8 +1336,8 @@ static int enc_open(const char* path, fuse_file_info_t* fi) {
     if(!fhs) {
 	fprintf(stderr, "ERROR enc_open: openFilePair failed\n");
 	return RETURN_FAILURE;
-    }    
-    
+    }
+
     fhs->dirty = FHS_CLEAN;
     fi->fh = put_fhs(fhs);
 
@@ -1473,7 +1476,7 @@ static int enc_flush(const char* path, fuse_file_info_t* fi) {
     }
 
     if(fhs->dirty == FHS_DIRTY) {
-	
+
 	ret = encryptFile(tempPath, fullPath);
 	if(ret < 0) {
 	    fprintf(stderr, "ERROR enc_flush: encryptFile failed\n");
@@ -1481,7 +1484,7 @@ static int enc_flush(const char* path, fuse_file_info_t* fi) {
 	}
 
 	fhs->dirty = FHS_CLEAN;
-	
+
     }
 
     return RETURN_SUCCESS;
@@ -1522,7 +1525,7 @@ static int enc_fsync(const char* path, int isdatasync,
     fhs = get_fhs(fi->fh);
 
     if(fhs->dirty == FHS_DIRTY) {
-	
+
 	ret = encryptFile(tempPath, fullPath);
 	if(ret < 0) {
 	    fprintf(stderr, "ERROR enc_fsync: encryptFile failed\n");
@@ -1530,7 +1533,7 @@ static int enc_fsync(const char* path, int isdatasync,
 	}
 
 	fhs->dirty = FHS_CLEAN;
-	
+
     }
 
     if(isdatasync) {
@@ -1545,7 +1548,7 @@ static int enc_fsync(const char* path, int isdatasync,
 	perror("ERROR enc_fsync");
 	return -errno;
     }
-    
+
     return RETURN_SUCCESS;
 
 }
@@ -1640,7 +1643,7 @@ static int enc_lock(const char* path, fuse_file_info_t* fi, int cmd,
 }
 
 static int enc_flock(const char* path, fuse_file_info_t* fi, int op) {
-    
+
     (void) path;
 
     int ret;
@@ -1654,11 +1657,11 @@ static int enc_flock(const char* path, fuse_file_info_t* fi, int op) {
 	perror("ERROR enc_flock");
         return -errno;
     }
-    
+
     return RETURN_SUCCESS;
 
 }
-    
+
 /* xattr operations are optional and can safely be left unimplemented */
 static int enc_setxattr(const char* path, const char* name, const char* value,
 			size_t size, int flags) {
@@ -1758,7 +1761,7 @@ static struct fuse_operations enc_oper = {
 
     /* Access Control */
     .access     = enc_access,       /* Check File Permissions */
-    .lock       = enc_lock,         /* Lock File */    
+    .lock       = enc_lock,         /* Lock File */
     .flock      = enc_flock,        /* Lock Open File */
 
     /* Metadata */
@@ -1773,8 +1776,8 @@ static struct fuse_operations enc_oper = {
     .create     = enc_create,       /* Create and Open a Regular File */
     .mkdir      = enc_mkdir,        /* Create a Directory */
     .mknod      = enc_mknod,        /* Create a Non-Regular File Node */
-    .link       = enc_link,         /* Create a Hard Link */    
-    .symlink    = enc_symlink,      /* Create a Symbolic Link */	
+    .link       = enc_link,         /* Create a Hard Link */
+    .symlink    = enc_symlink,      /* Create a Symbolic Link */
     .rmdir      = enc_rmdir,        /* Remove a Directory */
     .unlink     = enc_unlink,       /* Remove a File */
 
@@ -1782,7 +1785,7 @@ static struct fuse_operations enc_oper = {
     .open       = enc_open,         /* Open a File */
     .opendir    = enc_opendir,      /* Open a Directory */
     .release    = enc_release,      /* Release an Open File */
-    .releasedir = enc_releasedir,   /* Release an Open Directory */    
+    .releasedir = enc_releasedir,   /* Release an Open Directory */
 
     /* Read and Write */
     .read        = enc_read,        /* Read a File */
@@ -1793,12 +1796,12 @@ static struct fuse_operations enc_oper = {
     /* Modify */
     .rename      = enc_rename,      /* Rename a File */
     .truncate    = enc_truncate,    /* Change the Size of a File */
-    .ftruncate   = enc_ftruncate,   /* Change the Size of an Open File*/    
+    .ftruncate   = enc_ftruncate,   /* Change the Size of an Open File*/
 
     /* Buffering */
     .flush       = enc_flush,       /* Flush Cached Data */
     .fsync       = enc_fsync,       /* Synch Open File Contents */
-    
+
     /* Extended Attributes */
     .setxattr    = enc_setxattr,    /* Set XATTR */
     .getxattr    = enc_getxattr,    /* Get XATTR */
@@ -1831,7 +1834,7 @@ int main(int argc, char *argv[]) {
 	    fuse_opt_add_arg(&args, argv[i]);
     }
 
-    umask(0);     
+    umask(0);
 
     return fuse_main(args.argc, args.argv, &enc_oper, &state);
 
