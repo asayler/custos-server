@@ -58,8 +58,9 @@ typedef struct timespec timespec_t;
 #define PATHBUFSIZE 1024
 #define PATHDELIMINATOR '/'
 #define NULLTERM '\0'
-#define TEMPNAME_PRE  "_"
+#define TEMPNAME_PRE  "._"
 #define TEMPNAME_POST ".decrypt"
+#define KEYBUFSIZE 1024
 
 typedef struct enc_fhs {
     uint64_t encFH;
@@ -91,6 +92,127 @@ typedef struct fsState {
     char* basePath;
 } fsState_t;
 
+#define GOOD_PSK "It's A Trap!"
+#define UUID "1b4e28ba-2fa1-11d2-883f-b9a761bde3fb"
+#define SERVER_URL "http://localhost:5000"
+
+static int getCustosKey(char* buf, size_t bufSize) {
+
+    uuid_t uuid;
+    custosReq_t*     req     = NULL;
+    custosKey_t*     key     = NULL;
+    custosKeyReq_t*  keyreq  = NULL;
+    custosAttr_t*    attr    = NULL;
+    custosAttrReq_t* attrreq = NULL;
+    custosRes_t*     res     = NULL;
+
+    /* Setup a new request */
+    req = custos_createReq(SERVER_URL);
+    if(!req) {
+        fprintf(stderr, "ERROR getCustosKey: custos_createKeyReq() failed\n");
+        return RETURN_FAILURE;
+    }
+
+    /* Add Key to Request */
+    if(uuid_parse(UUID, uuid) < 0) {
+        fprintf(stderr, "ERROR getCustosKey: uuid_parse() failed\n");
+        return RETURN_FAILURE;
+    }
+    key = custos_createKey(uuid, 1, 0, NULL);
+    if(!key) {
+        fprintf(stderr, "ERROR getCustosKey: custos_createKey() failed\n");
+        return RETURN_FAILURE;
+    }
+    keyreq = custos_createKeyReq(true);
+    if(!keyreq) {
+        fprintf(stderr, "ERROR getCustosKey: custos_createKeyReq() failed\n");
+        return RETURN_FAILURE;
+    }
+    if(custos_updateKeyReqAddKey(keyreq, key) < 0) {
+        fprintf(stderr, "ERROR getCustosKey: custos_updateKeyReqAddKey() failed\n");
+        return RETURN_FAILURE;
+    }
+    if(custos_updateReqAddKeyReq(req, keyreq) < 0) {
+        fprintf(stderr, "ERROR getCustosKey: custos_updateReqAddKeyReq() failed\n");
+        return RETURN_FAILURE;
+    }
+
+    /* Add attr to request */
+    attr = custos_createAttr(CUS_ATTRCLASS_EXPLICIT, CUS_ATTRTYPE_EXP_PSK, 0,
+                             (strlen(GOOD_PSK) + 1), (uint8_t*) GOOD_PSK);
+    if(!attr) {
+        fprintf(stderr, "ERROR getCustosKey: custos_createAttr() failed\n");
+        return RETURN_FAILURE;
+    }
+    attrreq = custos_createAttrReq(true);
+    if(!attrreq) {
+        fprintf(stderr, "ERROR getCustosKey: custos_createAttrReq() failed\n");
+        return RETURN_FAILURE;
+    }
+    if(custos_updateAttrReqAddAttr(attrreq, attr) < 0) {
+        fprintf(stderr, "ERROR getCustosKey: custos_updateAttrReqAddAttr() failed\n");
+        return RETURN_FAILURE;
+    }
+    if(custos_updateReqAddAttrReq(req, attrreq) < 0) {
+        fprintf(stderr, "ERROR getCustosKey: custos_updateReqAddAttrReq() failed\n");
+        return RETURN_FAILURE;
+    }
+
+    /* Get Response */
+    res = custos_getRes(req);
+    if(!res) {
+    	fprintf(stderr, "ERROR getCustosKey: custos_getRes() failed\n");
+    	return RETURN_FAILURE;
+    }
+
+    /* Extract Key */
+    if(res->status != CUS_RESSTAT_ACCEPTED) {
+    	fprintf(stderr, "ERROR getCustosKey: Bad response status %d\n", res->status);
+    	return RETURN_FAILURE;
+    }
+    if(res->num_keys != 1) {
+    	fprintf(stderr, "ERROR getCustosKey: Bad number of keys: %zd\n", res->num_keys);
+    	return RETURN_FAILURE;
+    }
+    if(!res->keys[0]) {
+    	fprintf(stderr, "ERROR getCustosKey: Key response struct must not be NULL\n");
+    	return RETURN_FAILURE;
+    }
+    if(res->keys[0]->status != CUS_KEYSTAT_ACCEPTED) {
+    	fprintf(stderr, "ERROR getCustosKey: Bad key response status: %d\n", res->keys[0]->status);
+    	return RETURN_FAILURE;
+    }
+    if(!res->keys[0]->key) {
+    	fprintf(stderr, "ERROR getCustosKey: Key struct must not be NULL\n");
+    	return RETURN_FAILURE;
+    }
+    if(!res->keys[0]->key->val) {
+    	fprintf(stderr, "ERROR getCustosKey: Key value must not be NULL\n");
+    	return RETURN_FAILURE;
+    }
+    if(res->keys[0]->key->size >= bufSize) {
+    	fprintf(stderr, "ERROR getCustosKey: keySize %zd larger than bufSize %zd\n",
+                res->keys[0]->key->size, bufSize);
+    	return RETURN_FAILURE;
+    }
+    strncpy(buf, (char*) res->keys[0]->key->val, res->keys[0]->key->size);
+    buf[res->keys[0]->key->size] = '\0';
+
+    /* Free Response */
+    if(custos_destroyRes(&res) < 0) {
+        fprintf(stderr, "ERROR getCustosKey: custos_destroyRes() failed\n");
+        return RETURN_FAILURE;
+    }
+
+    /* Free Request */
+    if(custos_destroyReq(&req) < 0) {
+        fprintf(stderr, "ERROR getCustosKey: custos_destroyReq() failed\n");
+        return RETURN_FAILURE;
+    }
+
+    return RETURN_SUCCESS;
+
+}
 
 static int buildPath(const char* path, char* buf, size_t bufSize) {
 
@@ -317,9 +439,16 @@ static int decryptFH(const uint64_t encFH, const uint64_t clearFH) {
     off_t clearOffset;
     FILE* encFP = NULL;
     FILE* clearFP = NULL;
-    char* key;
+    char key[KEYBUFSIZE];
 
     fprintf(stderr, "DEBUG decryptFH called\n");
+
+    /* Get Custos Key */
+    ret = getCustosKey(key, sizeof(key));
+    if(ret  < 0) {
+        fprintf(stderr, "ERROR decryptFH: getCustosKey failed\n");
+        goto CLEANUP_0;
+    }
 
     /* Save and Rewind Input Offset */
     encOffset = lseek(encFH, 0, SEEK_CUR);
@@ -411,7 +540,6 @@ static int decryptFH(const uint64_t encFH, const uint64_t clearFH) {
     }
 
     /* Decrypt */
-    key = TESTKEY;
     ret = crypt_decrypt(encFP, clearFP, key);
     //ret = crypt_copy(encFP, clearFP);
     if(ret < 0) {
@@ -502,9 +630,16 @@ static int encryptFH(const uint64_t clearFH, const uint64_t encFH) {
     off_t encOffset;
     FILE* clearFP = NULL;
     FILE* encFP = NULL;
-    char* key;
+    char key[KEYBUFSIZE];
 
     fprintf(stderr, "DEBUG encryptFH called\n");
+
+    /* Get Custos Key */
+    ret = getCustosKey(key, sizeof(key));
+    if(ret  < 0) {
+        fprintf(stderr, "ERROR decryptFH: getCustosKey failed\n");
+        goto CLEANUP_0;
+    }
 
     /* Save and Rewind Input Offset */
     clearOffset = lseek(clearFH, 0, SEEK_CUR);
@@ -596,7 +731,6 @@ static int encryptFH(const uint64_t clearFH, const uint64_t encFH) {
     }
 
     /* Encrypt */
-    key = TESTKEY;
     ret = crypt_encrypt(clearFP, encFP, key);
     //ret = crypt_copy(clearFP, encFP);
     if(ret < 0) {
