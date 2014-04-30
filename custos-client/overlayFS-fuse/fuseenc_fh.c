@@ -412,8 +412,8 @@ static int decryptFH(const uint64_t encFH, const uint64_t clearFH) {
 
     /* Decrypt */
     key = TESTKEY;
-    //ret = crypt_decrypt(encFP, clearFP, key);
-    ret = crypt_copy(encFP, clearFP);
+    ret = crypt_decrypt(encFP, clearFP, key);
+    //ret = crypt_copy(encFP, clearFP);
     if(ret < 0) {
         fprintf(stderr,
 		"ERROR decryptFH: crypt_decrypt() failed\n");
@@ -597,8 +597,8 @@ static int encryptFH(const uint64_t clearFH, const uint64_t encFH) {
 
     /* Encrypt */
     key = TESTKEY;
-    //ret = crypt_encrypt(clearFP, encFP, key);
-    ret = crypt_copy(clearFP, encFP);
+    ret = crypt_encrypt(clearFP, encFP, key);
+    //ret = crypt_copy(clearFP, encFP);
     if(ret < 0) {
         fprintf(stderr,
 		"ERROR encryptFH: crypt_encrypt() failed\n");
