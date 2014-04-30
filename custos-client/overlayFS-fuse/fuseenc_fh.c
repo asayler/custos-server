@@ -472,7 +472,7 @@ static int decryptFH(const uint64_t encFH, const uint64_t clearFH) {
         perror("ERROR decryptFH");
         ret = -errno;
         fprintf(stderr,
-                "ERROR decryptFH: Restore clr lseek(%"PRIu64") failed with error %d\n",
+                "ERROR decryptFH: Restore clr lseek(%"PRIu64") failed, error %d\n",
                 encFH, -ret);
     }
 
@@ -483,7 +483,7 @@ static int decryptFH(const uint64_t encFH, const uint64_t clearFH) {
         perror("ERROR decryptFH");
         ret = -errno;
         fprintf(stderr,
-                "ERROR decryptFH: Restore enc lseek(%"PRIu64") failed with error %d\n",
+                "ERROR decryptFH: Restore enc lseek(%"PRIu64") failed, error %d\n",
                 encFH, -ret);
     }
 
@@ -498,68 +498,181 @@ static int encryptFH(const uint64_t clearFH, const uint64_t encFH) {
     int ret = RETURN_SUCCESS;
     int clearFD;
     int encFD;
+    off_t clearOffset;
+    off_t encOffset;
     FILE* clearFP = NULL;
     FILE* encFP = NULL;
     char* key;
 
     fprintf(stderr, "DEBUG encryptFH called\n");
 
+    /* Save and Rewind Input Offset */
+    clearOffset = lseek(clearFH, 0, SEEK_CUR);
+    if(clearOffset < 0) {
+        perror("ERROR encryptFH");
+        ret = -errno;
+        fprintf(stderr,
+		"ERROR encryptFH: Save clr lseek(%"PRIu64") failed with error %d\n",
+                clearFH, -ret);
+        goto CLEANUP_0;
+    }
+    ret = lseek(clearFH, 0, SEEK_SET);
+    if(ret < 0) {
+        perror("ERROR encryptFH");
+        ret = -errno;
+        fprintf(stderr,
+		"ERROR encryptFH: Rewind clr lseek(%"PRIu64") failed with error %d\n",
+                clearFH, -ret);
+        goto CLEANUP_0;
+    }
+
+    /* Save, Rewind, and Truncate Output */
+    encOffset = lseek(encFH, 0, SEEK_CUR);
+    if(encOffset < 0) {
+        perror("ERROR encryptFH");
+        ret = -errno;
+        fprintf(stderr,
+		"ERROR encryptFH: Save enc lseek(%"PRIu64") failed with error %d\n",
+                encFH, -ret);
+        goto CLEANUP_1;
+    }
+    ret = lseek(encFH, 0, SEEK_SET);
+    if(ret < 0) {
+        perror("ERROR encryptFH");
+        ret = -errno;
+        fprintf(stderr,
+		"ERROR encryptFH: Rewind enc lseek(%"PRIu64") failed with error %d\n",
+                encFH, -ret);
+        goto CLEANUP_1;
+    }
+    ret = ftruncate(encFH, 0);
+    if(ret < 0) {
+        perror("ERROR encryptFH");
+        ret = -errno;
+        fprintf(stderr,
+		"ERROR encryptFH: enc ftruncate(%"PRIu64") failed with error %d\n",
+                encFH, -ret);
+        goto CLEANUP_2;
+    }
+
+    /* Dup and get FILE* for clearFH */
     clearFD = dup(clearFH);
     if(ret < 0) {
-        fprintf(stderr, "ERROR encryptFH: clearFH dup(%"PRIu64") failed\n", clearFH);
         perror("ERROR encryptFH");
-        return -errno;
+        ret = -errno;
+        fprintf(stderr,
+		"ERROR encryptFH: clearFH dup(%"PRIu64") failed with error %d\n",
+                clearFH, -ret);
+        goto CLEANUP_3;
     }
-
     clearFP = fdopen(clearFD, "r");
     if(!clearFP) {
-        ret = -errno;
         perror("ERROR encryptFH");
-        fprintf(stderr, "ERROR encryptFH: clearFH fdopen(%d) failed with error %d\n", clearFD, -ret);
-        goto ERROR_0;
+        ret = -errno;
+        fprintf(stderr,
+		"ERROR encryptFH: clearFH fdopen(%d) failed with error %d\n",
+                clearFD, -ret);
+        goto CLEANUP_4;
     }
 
+    /* Dup and get FILE* for encFH */
     encFD = dup(encFH);
     if(ret < 0) {
-        fprintf(stderr, "ERROR encryptFH: encFH dup(%"PRIu64") failed\n", encFH);
         perror("ERROR encryptFH");
-        return -errno;
+        ret = -errno;
+        fprintf(stderr,
+		"ERROR encryptFH: encFH dup(%"PRIu64") failed with error %d\n",
+                encFH, -ret);
+        goto CLEANUP_5;
     }
-
     encFP = fdopen(encFD, "w");
     if(!encFP) {
-        ret = -errno;
         perror("ERROR encryptFH");
-        fprintf(stderr, "ERROR encryptFH: encFH fdopen(%d) failed with error %d\n", encFD, -ret);
-        goto ERROR_1;
+        ret = -errno;
+        fprintf(stderr,
+		"ERROR encryptFH: encFH fdopen(%d) failed with error %d\n",
+                encFD, -ret);
+        goto CLEANUP_6;
     }
 
     /* Encrypt */
     key = TESTKEY;
     ret = crypt_encrypt(clearFP, encFP, key);
     if(ret < 0) {
-        fprintf(stderr, "ERROR encryptFH: crypt_encrypt() failed\n");
-        goto ERROR_2;
+        fprintf(stderr,
+		"ERROR encryptFH: crypt_encrypt() failed\n");
+        goto CLEANUP_7;
     }
 
- ERROR_2:
-
+ CLEANUP_7:
+    /* Cleanup encFP */
     if(fclose(encFP)) {
-        fprintf(stderr, "ERROR encryptFH: fclose(encFP) failed\n");
-        perror("ERROR encryptFH");
+        perror("ERROR decryptFH");
         ret = -errno;
+        fprintf(stderr,
+                "ERROR decryptFH: fclose(encFP) failed with error %d\n",
+                -ret);
+    }
+    goto CLEANUP_5;
+
+ CLEANUP_6:
+    /* Cleanup Duped encFD */
+    if(close(encFD)) {
+        perror("ERROR decryptFH");
+        ret = -errno;
+        fprintf(stderr,
+                "ERROR decryptFH: close(encFD) failed with error %d\n",
+                -ret);
     }
 
- ERROR_1:
-
+ CLEANUP_5:
+    /* Cleanup clearFP */
     if(fclose(clearFP)) {
-        fprintf(stderr, "ERROR encryptFH: fclose(clearFP) failed\n");
-        perror("ERROR encryptFH");
+        perror("ERROR decryptFH");
         ret = -errno;
+        fprintf(stderr,
+                "ERROR decryptFH: fclose(clearFP) failed with error %d\n",
+                -ret);
+    }
+    goto CLEANUP_3;
+
+ CLEANUP_4:
+    /* Cleanup Duped clearFD */
+    if(close(clearFD)) {
+        perror("ERROR decryptFH");
+        ret = -errno;
+        fprintf(stderr,
+                "ERROR decryptFH: close(clearFD) failed with error %d\n",
+                -ret);
     }
 
- ERROR_0:
+ CLEANUP_3:
+    /* No Cleanup */
 
+ CLEANUP_2:
+    /* Restore Output Offset*/
+    ret = lseek(encFH, encOffset, SEEK_SET);
+    if(ret < 0) {
+        perror("ERROR decryptFH");
+        ret = -errno;
+        fprintf(stderr,
+                "ERROR decryptFH: Restore enc lseek(%"PRIu64") failed, error %d\n",
+                encFH, -ret);
+    }
+
+ CLEANUP_1:
+    /* Restore Input Offset*/
+    ret = lseek(clearFH, clearOffset, SEEK_SET);
+    if(ret < 0) {
+        perror("ERROR decryptFH");
+        ret = -errno;
+        fprintf(stderr,
+                "ERROR decryptFH: Restore clr lseek(%"PRIu64") failed, error %d\n",
+                encFH, -ret);
+    }
+
+ CLEANUP_0:
+    /* Return */
     return ret;
 
 }
