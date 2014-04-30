@@ -10,7 +10,7 @@
   gcc -Wall fuseenc_fh.c `pkg-config fuse --cflags --libs` -lulockmgr -o fuseenc_fh
 */
 
-#define FUSE_USE_VERSION 29
+#define FUSE_USE_VERSION 30
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -98,6 +98,8 @@ static int buildPath(const char* path, char* buf, size_t bufSize) {
     size_t size = 0;
     fsState_t* state = NULL;
 
+    fprintf(stderr, "DEBUG buildPath called\n");
+
     /* Input Checks */
     if(path == NULL) {
         fprintf(stderr, "ERROR buildPath: path must not be NULL\n");
@@ -108,9 +110,7 @@ static int buildPath(const char* path, char* buf, size_t bufSize) {
         return -EINVAL;
     }
 
-#ifdef DEBUG
     fprintf(stderr, "INFO buildPath: path = %s\n", path);
-#endif
 
     /* Get State */
     state = (fsState_t*)(fuse_get_context()->private_data);
@@ -126,9 +126,7 @@ static int buildPath(const char* path, char* buf, size_t bufSize) {
         return -ENAMETOOLONG;
     }
 
-#ifdef DEBUG
     fprintf(stderr, "INFO buildPath: buf = %s\n", buf);
-#endif
 
     return RETURN_SUCCESS;
 
@@ -139,6 +137,8 @@ static int buildTempPath(const char* fullPath, char* tempPath, size_t bufSize) {
     char* pFileName = NULL;
     char buf[PATHBUFSIZE];
     size_t length;
+
+    fprintf(stderr, "DEBUG buildTempPath called\n");
 
     /* Input Checks */
     if(fullPath == NULL) {
@@ -175,9 +175,7 @@ static int buildTempPath(const char* fullPath, char* tempPath, size_t bufSize) {
         return -ENAMETOOLONG;
     }
 
-#ifdef DEBUG
     fprintf(stderr, "INFO buildTempPath: tempPath = %s\n", tempPath);
-#endif
 
     return RETURN_SUCCESS;
 
@@ -187,16 +185,9 @@ static enc_fhs_t* createFilePair(const char* encPath, const char* clearPath,
                                  int flags, mode_t mode) {
 
     int ret;
-    //    int newflags;
     enc_fhs_t* fhs = NULL;
 
-    fprintf(stderr, "INFO createFilePair called\n");
-
-    /* if((flags & O_WRONLY) == O_WRONLY) { */
-    /*     newflags = (flags & ~O_WRONLY) | O_RDWR; */
-    /*     fprintf(stderr, "INFO createFilePair: upgrading O_WRONLY to O_RDWR: %X to %X\n", */
-    /*             flags, newflags); */
-    /* } */
+    fprintf(stderr, "DEBUG createFilePair called\n");
 
     fhs = malloc(sizeof(*fhs));
     if(!fhs) {
@@ -233,7 +224,7 @@ static enc_fhs_t* openFilePair(const char* encPath, const char* clearPath,
     int newflags;
     enc_fhs_t* fhs = NULL;
 
-    fprintf(stderr, "INFO openFilePair called\n");
+    fprintf(stderr, "DEBUG openFilePair called\n");
 
     if((flags & O_WRONLY) == O_WRONLY) {
         newflags = (flags & ~O_WRONLY) | O_RDWR;
@@ -274,6 +265,8 @@ static enc_fhs_t* openFilePair(const char* encPath, const char* clearPath,
 
 static int closeFilePair(enc_fhs_t* fhs) {
 
+    fprintf(stderr, "DEBUG closeFilePair called\n");
+
     if(!fhs) {
         fprintf(stderr, "ERROR closeFilePair: fhs must not be NULL\n");
         return -EINVAL;
@@ -301,9 +294,9 @@ static int removeFile(const char* filePath) {
 
     int ret;
 
-#ifdef DEBUG
+    fprintf(stderr, "DEBUG removeFile called\n");
+
     fprintf(stderr, "INFO removeFile: function called on %s\n", filePath);
-#endif
 
     ret = unlink(filePath);
     if(ret < 0) {
@@ -321,38 +314,75 @@ static int decryptFH(const uint64_t encFH, const uint64_t clearFH) {
     int ret = RETURN_SUCCESS;
     int encFD;
     int clearFD;
+    off_t offset;
     FILE* encFP = NULL;
     FILE* clearFP = NULL;
     char* key;
 
+    fprintf(stderr, "DEBUG decryptFH called\n");
+
+    /* Save and Rewind Input Offset */
+    offset = lseek(encFH, 0, SEEK_CUR);
+    if(offset < 0) {
+        perror("ERROR decryptFH");
+        ret = -errno;
+        fprintf(stderr, "ERROR decryptFH: Save lseek(%"PRIu64") failed with error %d\n",
+                encFH, -ret);
+        goto CLEANUP_0;
+    }
+    ret = lseek(encFH, 0, SEEK_SET);
+    if(ret < 0) {
+        perror("ERROR decryptFH");
+        ret = -errno;
+        fprintf(stderr, "ERROR decryptFH: Rewind lseek(%"PRIu64") failed with error %d\n",
+                encFH, -ret);
+        goto CLEANUP_1;
+    }
+
+    /* Truncate Output */
+    ret = ftruncate(clearFH, 0);
+    if(ret < 0) {
+        perror("ERROR decryptFH");
+        ret = -errno;
+        fprintf(stderr, "ERROR decryptFH: clearFH ftruncate(%"PRIu64") failed with error %d\n",
+                clearFH, -ret);
+        goto CLEANUP_2;
+    }
+
+    /* Dup and get FILE* for encFH */
     encFD = dup(encFH);
     if(ret < 0) {
-        fprintf(stderr, "ERROR decryptFH: encFH dup(%"PRIu64") failed\n", encFH);
         perror("ERROR decryptFH");
-        return -errno;
+        ret = -errno;
+        fprintf(stderr, "ERROR decryptFH: encFH dup(%"PRIu64") failed with error %d\n",
+                encFH, -ret);
+        goto CLEANUP_3;
     }
-
     encFP = fdopen(encFD, "r");
     if(!encFP) {
-        fprintf(stderr, "ERROR decryptFH: encFH fdopen(%d) failed\n", encFD);
         perror("ERROR decryptFH");
         ret = -errno;
-        goto ERROR_0;
+        fprintf(stderr, "ERROR decryptFH: encFH fdopen(%d) failed with error %d\n",
+                encFD, -ret);
+        goto CLEANUP_4;
     }
 
+    /* Dup and get FILE* for clearFH */
     clearFD = dup(clearFH);
     if(ret < 0) {
-        fprintf(stderr, "ERROR decryptFH: clearFH dup(%"PRIu64") failed\n", clearFH);
-        perror("ERROR decryptFH");
-        return -errno;
-    }
-
-    clearFP = fdopen(clearFD, "w");
-    if(!clearFP) {
-        fprintf(stderr, "ERROR decryptFH: clearFH fdopen(%d) failed\n", clearFD);
         perror("ERROR decryptFH");
         ret = -errno;
-        goto ERROR_1;
+        fprintf(stderr, "ERROR decryptFH: clearFH dup(%"PRIu64") failed with error %d\n",
+                clearFH, -ret);
+        goto CLEANUP_5;
+    }
+    clearFP = fdopen(clearFD, "w");
+    if(!clearFP) {
+        perror("ERROR decryptFH");
+        ret = -errno;
+        fprintf(stderr, "ERROR decryptFH: clearFH fdopen(%d) failed with error %d\n",
+                clearFD, -ret);
+        goto CLEANUP_6;
     }
 
     /* Decrypt */
@@ -360,27 +390,70 @@ static int decryptFH(const uint64_t encFH, const uint64_t clearFH) {
     ret = crypt_decrypt(encFP, clearFP, key);
     if(ret < 0) {
         fprintf(stderr, "ERROR decryptFH: crypt_decrypt() failed\n");
-        goto ERROR_2;
+        goto CLEANUP_7;
     }
 
- ERROR_2:
-
+ CLEANUP_7:
+    /* Cleanup clearFP */
     if(fclose(clearFP)) {
-        fprintf(stderr, "ERROR decryptFH: fclose(clearFP) failed\n");
         perror("ERROR decryptFH");
         ret = -errno;
+        fprintf(stderr,
+                "ERROR decryptFH: fclose(clearFP) failed with error %d\n",
+                -ret);
+    }
+    goto CLEANUP_5;
+
+ CLEANUP_6:
+    /* Cleanup Duped clearFD */
+    if(close(clearFD)) {
+        perror("ERROR decryptFH");
+        ret = -errno;
+        fprintf(stderr,
+                "ERROR decryptFH: close(clearFD) failed with error %d\n",
+                -ret);
     }
 
- ERROR_1:
-
+ CLEANUP_5:
+    /* Cleanup encFP */
     if(fclose(encFP)) {
-        fprintf(stderr, "ERROR decryptFH: fclose(encFP) failed\n");
         perror("ERROR decryptFH");
         ret = -errno;
+        fprintf(stderr,
+                "ERROR decryptFH: fclose(encFP) failed with error %d\n",
+                -ret);
+    }
+    goto CLEANUP_3;
+
+ CLEANUP_4:
+    /* Cleanup Duped encFD */
+    if(close(encFD)) {
+        perror("ERROR decryptFH");
+        ret = -errno;
+        fprintf(stderr,
+                "ERROR decryptFH: close(encFD) failed with error %d\n",
+                -ret);
     }
 
- ERROR_0:
+ CLEANUP_3:
+    /* No Cleanup */
 
+ CLEANUP_2:
+    /* Restore Input Offset*/
+    ret = lseek(encFH, offset, SEEK_SET);
+    if(ret < 0) {
+        perror("ERROR decryptFH");
+        ret = -errno;
+        fprintf(stderr,
+                "ERROR decryptFH: Restore lseek(%"PRIu64") failed with error %d\n",
+                encFH, -ret);
+    }
+
+ CLEANUP_1:
+    /* No Cleanup */
+
+ CLEANUP_0:
+    /* Return */
     return ret;
 
 }
@@ -393,6 +466,8 @@ static int encryptFH(const uint64_t clearFH, const uint64_t encFH) {
     FILE* clearFP = NULL;
     FILE* encFP = NULL;
     char* key;
+
+    fprintf(stderr, "DEBUG encryptFH called\n");
 
     clearFD = dup(clearFH);
     if(ret < 0) {
