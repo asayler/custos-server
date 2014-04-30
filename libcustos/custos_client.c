@@ -1964,9 +1964,6 @@ extern custosRes_t* custos_getRes(const custosReq_t* req) {
     reqUrlStr = NULL;
 
     /* Make Get Request */
-#ifdef DEBUG
-    fprintf(stderr, "fullReqUrl = \n%s\n\n", fullReqUrl);
-#endif
     if(httpGet(fullReqUrl, &resHttp) != 200) {
 #ifdef DEBUG
 	fprintf(stderr, "ERROR custos_getRes: httpGet() returned non-200 code\n");
