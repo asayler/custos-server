@@ -47,12 +47,25 @@ typedef struct stat stat_t;
 typedef struct statvfs statvfs_t;
 typedef struct timespec timespec_t;
 
+#define DEBUG
+
+#define TESTKEY "Password"
+
+#define RETURN_FAILURE -1
+#define RETURN_SUCCESS 0
+
 #define FHS_DIRTY 1
 #define FHS_CLEAN 0
+#define PATHBUFSIZE 1024
+#define PATHDELIMINATOR '/'
+#define NULLTERM '\0'
+#define TEMPNAME_PRE  "_"
+#define TEMPNAME_POST ".decrypt"
 
 typedef struct enc_fhs {
     uint64_t encFH;
     uint64_t clearFH;
+    char     clearPath[PATHBUFSIZE];
     char     dirty;
     char     padding[7];
 } enc_fhs_t;
@@ -79,18 +92,6 @@ typedef struct fsState {
     char* basePath;
 } fsState_t;
 
-
-#define DEBUG
-
-#define RETURN_FAILURE -1
-#define RETURN_SUCCESS 0
-#define PATHBUFSIZE 1024
-#define PATHDELIMINATOR '/'
-#define NULLTERM '\0'
-#define TEMPNAME_PRE  "_"
-#define TEMPNAME_POST ".decrypt"
-
-#define TESTKEY "Password"
 
 static int buildPath(const char* path, char* buf, size_t bufSize) {
 
@@ -186,7 +187,16 @@ static enc_fhs_t* createFilePair(const char* encPath, const char* clearPath,
                                  int flags, mode_t mode) {
 
     int ret;
+    //    int newflags;
     enc_fhs_t* fhs = NULL;
+
+    fprintf(stderr, "INFO createFilePair called\n");
+
+    /* if((flags & O_WRONLY) == O_WRONLY) { */
+    /*     newflags = (flags & ~O_WRONLY) | O_RDWR; */
+    /*     fprintf(stderr, "INFO createFilePair: upgrading O_WRONLY to O_RDWR: %X to %X\n", */
+    /*             flags, newflags); */
+    /* } */
 
     fhs = malloc(sizeof(*fhs));
     if(!fhs) {
@@ -203,46 +213,60 @@ static enc_fhs_t* createFilePair(const char* encPath, const char* clearPath,
     }
     fhs->encFH = ret;
 
-    ret = open(clearPath, flags, mode);
+    ret = open(clearPath, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
     if(ret < 0) {
         fprintf(stderr, "ERROR createFilePair: open(clearPath) failed\n");
         perror("ERROR createFilePair");
         return NULL;
     }
     fhs->clearFH = ret;
+    strncpy(fhs->clearPath, clearPath, PATHBUFSIZE);
 
     return fhs;
 
 }
 
 static enc_fhs_t* openFilePair(const char* encPath, const char* clearPath,
-			       int flags) {
+                               int flags) {
 
     int ret;
+    int newflags;
     enc_fhs_t* fhs = NULL;
+
+    fprintf(stderr, "INFO openFilePair called\n");
+
+    if((flags & O_WRONLY) == O_WRONLY) {
+        newflags = (flags & ~O_WRONLY) | O_RDWR;
+        fprintf(stderr, "INFO openFilePair: upgrading O_WRONLY to O_RDWR: %X to %X\n",
+                flags, newflags);
+    }
+    else {
+        newflags = flags;
+    }
 
     fhs = malloc(sizeof(*fhs));
     if(!fhs) {
-	fprintf(stderr, "ERROR openFilePair: malloc failed\n");
-	perror("ERROR openFilePair");
-	return NULL;
+        fprintf(stderr, "ERROR openFilePair: malloc failed\n");
+        perror("ERROR openFilePair");
+        return NULL;
     }
 
-    ret = open(encPath, flags);
+    ret = open(encPath, newflags);
     if(ret < 0) {
-	fprintf(stderr, "ERROR openFilePair: open(encPath) failed\n");
-	perror("ERROR openFilePair");
-	return NULL;
+        fprintf(stderr, "ERROR openFilePair: open(encPath) failed\n");
+        perror("ERROR openFilePair");
+        return NULL;
     }
     fhs->encFH = ret;
 
-    ret = open(clearPath, flags);
+    ret = open(clearPath, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
     if(ret < 0) {
-	fprintf(stderr, "ERROR openFilePair: open(clearPath) failed\n");
-	perror("ERROR openFilePair");
-	return NULL;
+        fprintf(stderr, "ERROR openFilePair: open(clearPath) failed\n");
+        perror("ERROR openFilePair");
+        return NULL;
     }
     fhs->clearFH = ret;
+    strncpy(fhs->clearPath, clearPath, PATHBUFSIZE);
 
     return fhs;
 
@@ -251,20 +275,20 @@ static enc_fhs_t* openFilePair(const char* encPath, const char* clearPath,
 static int closeFilePair(enc_fhs_t* fhs) {
 
     if(!fhs) {
-	fprintf(stderr, "ERROR closeFilePair: fhs must not be NULL\n");
-   	return -EINVAL;
+        fprintf(stderr, "ERROR closeFilePair: fhs must not be NULL\n");
+        return -EINVAL;
     }
 
     if(close(fhs->encFH) < 0) {
-	fprintf(stderr, "ERROR closeFilePair: close(encFH) failed\n");
-	perror("ERROR enc_release");
-	return -errno;
+        fprintf(stderr, "ERROR closeFilePair: close(encFH) failed\n");
+        perror("ERROR enc_release");
+        return -errno;
     }
 
     if(close(fhs->clearFH) < 0) {
-	fprintf(stderr, "ERROR closeFilePair: close(clearFH) failed\n");
-	perror("ERROR enc_release");
-	return -errno;
+        fprintf(stderr, "ERROR closeFilePair: close(clearFH) failed\n");
+        perror("ERROR enc_release");
+        return -errno;
     }
 
     free(fhs);
@@ -283,211 +307,49 @@ static int removeFile(const char* filePath) {
 
     ret = unlink(filePath);
     if(ret < 0) {
-	fprintf(stderr, "ERROR removeFile: unlink failed\n");
-	perror("ERROR removeTemp");
-	return -errno;
+        fprintf(stderr, "ERROR removeFile: unlink failed\n");
+        perror("ERROR removeTemp");
+        return -errno;
     }
 
     return RETURN_SUCCESS;
-
-}
-
-static int decryptFile(const char* encPath, const char* plainPath) {
-
-    int ret;
-    //int i;
-    FILE* encFP = NULL;
-    FILE* plainFP = NULL;
-    //custosKeyReq_t* req = NULL;
-    //custosKeyRes_t* res = NULL;
-    //uuid_t uuid;
-    char* key;
-
-    encFP = fopen(encPath, "r");
-    if(!encFP) {
-        fprintf(stderr, "ERROR decryptFile: fopen(encPath) failed\n");
-        perror("ERROR decryptFile");
-        ret = -errno;
-        goto ERROR_0;
-    }
-
-    plainFP = fopen(plainPath, "w");
-    if(!plainFP) {
-        fprintf(stderr, "ERROR decryptFile: fopen(plainPath) failed\n");
-        perror("ERROR decryptFile");
-        ret = -errno;
-        goto ERROR_1;
-    }
-
-    /* /\* Create a new Custos request *\/ */
-    /* uuid_generate(uuid); */
-    /* req = custos_createKeyReq(uuid, "http://test.com"); */
-    /* if(!req) { */
-	/* fprintf(stderr, "ERROR decryptFile: custos_createKeyReq failed\n"); */
-	/* ret = -errno; */
-	/* goto ERROR_2; */
-    /* } */
-
-    /* /\* Get Key - 1st Attempt *\/ */
-    /* res = custos_getKeyRes(req); */
-    /* if(!res) { */
-	/* fprintf(stderr, "ERROR decryptFile: custos_getKeyRes failed\n"); */
-	/* ret = -errno; */
-	/* goto ERROR_3; */
-    /* } */
-
-    /* if(res->resStat) { */
-	/* fprintf(stderr, "ERROR decryptFile: response error %d\n", res->resStat); */
-	/* ret = -errno; */
-	/* goto ERROR_4; */
-    /* } */
-
-    /* if(!(res->key)) { */
-
-    /*     /\* Update Request *\/ */
-    /*     for(i = 0; i < CUS_ATTRID_MAX; i++) { */
-    /*         if(res->attrStat[i] == CUS_ATTRSTAT_REQ) { */
-    /*             switch(i) { */
-    /*             case CUS_ATTRID_PSK: */
-    /*                 ret = custos_updateKeyReq(req, i, CUS_TEST_PSK, */
-    /*                                           (strlen(CUS_TEST_PSK) + 1)); */
-    /*                 if(ret < 0) { */
-    /*                     fprintf(stderr, "ERROR decryptFile: custos_updateKeyReq failed\n"); */
-    /*                     goto ERROR_4; */
-    /*                 } */
-    /*                 break; */
-    /*             default: */
-    /*                 fprintf(stderr, "ERROR decryptFile: Unknown Custos Attr %d required\n", i); */
-    /*                 goto ERROR_4; */
-    /*                 break; */
-    /*             } */
-    /*         } */
-    /*         else { */
-    /*             fprintf(stderr, "ERROR decryptFile: Custos Attr %d Error %d\n", */
-    /*                     i, res->attrStat[i]); */
-    /*             goto ERROR_4; */
-    /*         } */
-    /*     } */
-
-    /*     /\* Free Response *\/ */
-    /*     ret = custos_destroyKeyRes(&res); */
-    /*     if(ret < 0) { */
-    /*         fprintf(stderr, "ERROR decryptFile: custos_destroyKeyRes failed\n"); */
-    /*         goto ERROR_3; */
-    /*     } */
-
-    /*     /\* Get Key - 2nd Attempt *\/ */
-    /*     res = custos_getKeyRes(req); */
-    /*     if(!res) { */
-    /*         fprintf(stderr, "ERROR decryptFile: custos_getKeyRes failed\n"); */
-    /*         ret = -errno; */
-    /*         goto ERROR_3; */
-    /*     } */
-
-    /*     if(res->resStat) { */
-    /*         fprintf(stderr, "ERROR decryptFile: response error %d\n", res->resStat); */
-    /*         ret = -errno; */
-    /*         goto ERROR_4; */
-    /*     } */
-
-    /*     if(!(res->key)) { */
-    /*         fprintf(stderr, "ERROR decryptFile: request failed\n"); */
-    /*         ret = RETURN_FAILURE; */
-    /*         goto ERROR_4; */
-    /*     } */
-    /* } */
-
-    /* Decrypt */
-    //key = (char*)(res->key);
-    key = TESTKEY;
-    ret = crypt_decrypt(encFP, plainFP, key);
-    if(ret < 0) {
-        fprintf(stderr, "ERROR decryptFile: crypt_decrypt() failed\n");
-        goto ERROR_2;
-    }
-
-    /* /\* Free Response *\/ */
-    /* ret = custos_destroyKeyRes(&res); */
-    /* if(ret < 0) { */
-	/* fprintf(stderr, "ERROR decryptFile: custos_destroyKeyRes failed\n"); */
-	/* return EXIT_FAILURE; */
-    /* } */
-
-    /* /\* Free Request *\/ */
-    /* ret = custos_destroyKeyReq(&req); */
-    /* if(ret < 0) { */
-	/* fprintf(stderr, "ERROR decryptFile: custos_destroyKeyReq failed\n"); */
-	/* return EXIT_FAILURE; */
-    /* } */
-
-    if(fclose(plainFP)) {
-        fprintf(stderr, "ERROR decryptFile: fclose(plainFP) failed\n");
-        perror("ERROR decryptFile");
-        ret = -errno;
-        goto ERROR_1;
-    }
-
-    if(fclose(encFP)) {
-        fprintf(stderr, "ERROR decryptFile: fclose(encFP) failed\n");
-        perror("ERROR decryptFile");
-        ret = -errno;
-        goto ERROR_0;
-    }
-
-    return RETURN_SUCCESS;
-
-    /* ERROR_4: */
-    /*    ret = custos_destroyKeyRes(&res); */
-    /*    if(ret < 0) { */
-    /*    fprintf(stderr, "ERROR decryptFile: custos_destroyKeyRes failed\n"); */
-    /*    } */
-
-    /* ERROR_3: */
-    /*    ret = custos_destroyKeyReq(&req); */
-    /*    if(ret < 0) { */
-    /*    fprintf(stderr, "ERROR decryptFile: custos_destroyKeyReq failed\n"); */
-    /*    } */
-
- ERROR_2:
-
-    if(fclose(plainFP)) {
-        fprintf(stderr, "ERROR decryptFile: fclose(plainFP) failed\n");
-        perror("ERROR decryptFile");
-        ret = -errno;
-    }
-
- ERROR_1:
-
-    if(fclose(encFP)) {
-        fprintf(stderr, "ERROR decryptFile: fclose(encFP) failed\n");
-        perror("ERROR decryptFile");
-        ret = -errno;
-    }
-
- ERROR_0:
-
-    return ret;
 
 }
 
 static int decryptFH(const uint64_t encFH, const uint64_t clearFH) {
 
     int ret = RETURN_SUCCESS;
+    int encFD;
+    int clearFD;
     FILE* encFP = NULL;
     FILE* clearFP = NULL;
     char* key;
 
-    encFP = fdopen(dup(encFH), "r");
+    encFD = dup(encFH);
+    if(ret < 0) {
+        fprintf(stderr, "ERROR decryptFH: encFH dup(%"PRIu64") failed\n", encFH);
+        perror("ERROR decryptFH");
+        return -errno;
+    }
+
+    encFP = fdopen(encFD, "r");
     if(!encFP) {
-        fprintf(stderr, "ERROR decryptFH: encFH fdopen(%"PRIu64") failed\n", encFH);
+        fprintf(stderr, "ERROR decryptFH: encFH fdopen(%d) failed\n", encFD);
         perror("ERROR decryptFH");
         ret = -errno;
         goto ERROR_0;
     }
 
-    clearFP = fdopen(dup(clearFH), "w");
+    clearFD = dup(clearFH);
+    if(ret < 0) {
+        fprintf(stderr, "ERROR decryptFH: clearFH dup(%"PRIu64") failed\n", clearFH);
+        perror("ERROR decryptFH");
+        return -errno;
+    }
+
+    clearFP = fdopen(clearFD, "w");
     if(!clearFP) {
-        fprintf(stderr, "ERROR decryptFH: clearFH fdopen(%"PRIu64") failed\n", clearFH);
+        fprintf(stderr, "ERROR decryptFH: clearFH fdopen(%d) failed\n", clearFD);
         perror("ERROR decryptFH");
         ret = -errno;
         goto ERROR_1;
@@ -523,203 +385,42 @@ static int decryptFH(const uint64_t encFH, const uint64_t clearFH) {
 
 }
 
-static int encryptFile(const char* plainPath, const char* encPath) {
-
-    int ret;
-    //int i;
-    FILE* plainFP = NULL;
-    FILE* encFP = NULL;
-    //custosKeyReq_t* req = NULL;
-    //custosKeyRes_t* res = NULL;
-    //uuid_t uuid;
-    char* key;
-
-    plainFP = fopen(plainPath, "r");
-    if(!plainFP) {
-        fprintf(stderr, "ERROR encryptFile: fopen(%s) failed\n", plainPath);
-        perror("ERROR encryptFile");
-        ret = -errno;
-        goto ERROR_0;
-    }
-
-    encFP = fopen(encPath, "w");
-    if(!encFP) {
-        fprintf(stderr, "ERROR encryptFile: fopen(%s) failed\n", encPath);
-        perror("ERROR encryptFile");
-        ret = -errno;
-        goto ERROR_1;
-    }
-
-    /* /\* Create a new Custos request *\/ */
-    /* uuid_generate(uuid); */
-    /* req = custos_createKeyReq(uuid, "http://test.com"); */
-    /* if(!req) { */
-    /*     fprintf(stderr, "ERROR encryptFile: custos_createKeyReq failed\n"); */
-    /*     ret = -errno; */
-    /*     goto ERROR_2; */
-    /* } */
-
-    /* /\* Get Key - 1st Attempt *\/ */
-    /* res = custos_getKeyRes(req); */
-    /* if(!res) { */
-    /*     fprintf(stderr, "ERROR encryptFile: custos_getKeyRes failed\n"); */
-    /*     ret = -errno; */
-    /*     goto ERROR_3; */
-    /* } */
-
-    /* if(res->resStat) { */
-    /*     fprintf(stderr, "ERROR encryptFile: response error %d\n", res->resStat); */
-    /*     ret = -errno; */
-    /*     goto ERROR_4; */
-    /* } */
-
-    /* if(!(res->key)) { */
-
-    /*     /\* Update Request *\/ */
-    /*     for(i = 0; i < CUS_ATTRID_MAX; i++) { */
-    /*         if(res->attrStat[i] == CUS_ATTRSTAT_REQ) { */
-    /*             switch(i) { */
-    /*             case CUS_ATTRID_PSK: */
-    /*                 ret = custos_updateKeyReq(req, i, CUS_TEST_PSK, */
-    /*                                           (strlen(CUS_TEST_PSK) + 1)); */
-    /*                 if(ret < 0) { */
-    /*                     fprintf(stderr, "ERROR encryptFile: custos_updateKeyReq failed\n"); */
-    /*                     goto ERROR_4; */
-    /*                 } */
-    /*                 break; */
-    /*             default: */
-    /*                 fprintf(stderr, "ERROR encryptFile: Unknown Custos Attr %d required\n", i); */
-    /*                 goto ERROR_4; */
-    /*                 break; */
-    /*             } */
-    /*         } */
-    /*         else { */
-    /*             fprintf(stderr, "ERROR encryptFile: Custos Attr %d Error %d\n", */
-    /*                     i, res->attrStat[i]); */
-    /*             goto ERROR_4; */
-    /*         } */
-    /*     } */
-
-    /*     /\* Free Response *\/ */
-    /*     ret = custos_destroyKeyRes(&res); */
-    /*     if(ret < 0) { */
-    /*         fprintf(stderr, "ERROR encryptFile: custos_destroyKeyRes failed\n"); */
-    /*         goto ERROR_3; */
-    /*     } */
-
-    /*     /\* Get Key - 2nd Attempt *\/ */
-    /*     res = custos_getKeyRes(req); */
-    /*     if(!res) { */
-    /*         fprintf(stderr, "ERROR encryptFile: custos_getKeyRes failed\n"); */
-    /*         ret = -errno; */
-    /*         goto ERROR_3; */
-    /*     } */
-
-    /*     if(res->resStat) { */
-    /*         fprintf(stderr, "ERROR encryptFile: response error %d\n", res->resStat); */
-    /*         ret = -errno; */
-    /*         goto ERROR_4; */
-    /*     } */
-
-    /*     if(!(res->key)) { */
-    /*         fprintf(stderr, "ERROR encryptFile: request failed\n"); */
-    /*         ret = RETURN_FAILURE; */
-    /*         goto ERROR_4; */
-    /*     } */
-    /* } */
-
-    //key = (char*)(res->key);
-    key = TESTKEY;
-    ret = crypt_encrypt(plainFP, encFP, key);
-    if(ret < 0) {
-        fprintf(stderr, "ERROR encryptFile: crypt_encrypt() failed\n");
-        goto ERROR_2;
-    }
-
-    /* /\* Free Response *\/ */
-    /* ret = custos_destroyKeyRes(&res); */
-    /* if(ret < 0) { */
-    /*     fprintf(stderr, "ERROR encryptFile: custos_destroyKeyRes failed\n"); */
-    /*     return EXIT_FAILURE; */
-    /* } */
-
-    /* /\* Free Request *\/ */
-    /* ret = custos_destroyKeyReq(&req); */
-    /* if(ret < 0) { */
-    /*     fprintf(stderr, "ERROR encryptFile: custos_destroyKeyReq failed\n"); */
-    /*     return EXIT_FAILURE; */
-    /* } */
-
-    if(fclose(encFP)) {
-        fprintf(stderr, "ERROR encryptFile: fclose(encFP) failed\n");
-        perror("ERROR encryptFile");
-        ret = -errno;
-        goto ERROR_1;
-    }
-
-    if(fclose(plainFP)) {
-        fprintf(stderr, "ERROR encryptFile: fclose(plainFP) failed\n");
-        perror("ERROR encryptFile");
-        ret = -errno;
-        goto ERROR_0;
-    }
-
-    return RETURN_SUCCESS;
-
- /* ERROR_4: */
- /*    ret = custos_destroyKeyRes(&res); */
- /*    if(ret < 0) { */
- /*        fprintf(stderr, "ERROR encryptFile: custos_destroyKeyRes failed\n"); */
- /*    } */
-
- /* ERROR_3: */
- /*    ret = custos_destroyKeyReq(&req); */
- /*    if(ret < 0) { */
- /*        fprintf(stderr, "ERROR encryptFile: custos_destroyKeyReq failed\n"); */
- /*    } */
-
- ERROR_2:
-
-    if(fclose(encFP)) {
-        fprintf(stderr, "ERROR encryptFile: fclose(encFP) failed\n");
-        perror("ERROR encryptFile");
-        ret = -errno;
-    }
-
- ERROR_1:
-
-    if(fclose(plainFP)) {
-        fprintf(stderr, "ERROR encryptFile: fclose(plainFP) failed\n");
-        perror("ERROR encryptFile");
-        ret = -errno;
-    }
-
- ERROR_0:
-
-    return ret;
-
-}
-
 static int encryptFH(const uint64_t clearFH, const uint64_t encFH) {
 
     int ret = RETURN_SUCCESS;
+    int clearFD;
+    int encFD;
     FILE* clearFP = NULL;
     FILE* encFP = NULL;
     char* key;
 
-    clearFP = fdopen(dup(clearFH), "r");
-    if(!clearFP) {
-        fprintf(stderr, "ERROR encryptFH: clearFH fdopen(%"PRIu64") failed\n", clearFH);
+    clearFD = dup(clearFH);
+    if(ret < 0) {
+        fprintf(stderr, "ERROR encryptFH: clearFH dup(%"PRIu64") failed\n", clearFH);
         perror("ERROR encryptFH");
+        return -errno;
+    }
+
+    clearFP = fdopen(clearFD, "r");
+    if(!clearFP) {
         ret = -errno;
+        perror("ERROR encryptFH");
+        fprintf(stderr, "ERROR encryptFH: clearFH fdopen(%d) failed with error %d\n", clearFD, -ret);
         goto ERROR_0;
     }
 
-    encFP = fdopen(dup(encFH), "w");
-    if(!encFP) {
-        fprintf(stderr, "ERROR encryptFH: encFH fdopen(%"PRIu64") failed\n", encFH);
+    encFD = dup(encFH);
+    if(ret < 0) {
+        fprintf(stderr, "ERROR encryptFH: encFH dup(%"PRIu64") failed\n", encFH);
         perror("ERROR encryptFH");
+        return -errno;
+    }
+
+    encFP = fdopen(encFD, "w");
+    if(!encFP) {
         ret = -errno;
+        perror("ERROR encryptFH");
+        fprintf(stderr, "ERROR encryptFH: encFH fdopen(%d) failed with error %d\n", encFD, -ret);
         goto ERROR_1;
     }
 
@@ -756,67 +457,70 @@ static int encryptFH(const uint64_t clearFH, const uint64_t encFH) {
 static int enc_getattr(const char* path, stat_t* stbuf) {
 
     int ret;
-    int exists;
     char fullPath[PATHBUFSIZE];
     char tempPath[PATHBUFSIZE];
+    enc_fhs_t* fhs;
     stat_t stTemp;
 
     ret = buildPath(path, fullPath, sizeof(fullPath));
     if(ret < 0) {
-	fprintf(stderr, "ERROR enc_getattr: buildPath failed\n");
-	return ret;
+        fprintf(stderr, "ERROR enc_getattr: buildPath failed\n");
+        return ret;
     }
     path = NULL;
 
     ret = lstat(fullPath, stbuf);
     if(ret < 0) {
-	fprintf(stderr, "ERROR enc_getattr: lstat(fullPath) failed\n");
-	perror("ERROR enc_getattr");
-	return -errno;
+        fprintf(stderr, "ERROR enc_getattr: lstat(fullPath) failed\n");
+        perror("ERROR enc_getattr");
+        return -errno;
     }
 
     if(S_ISREG(stbuf->st_mode)) {
 
-	ret = buildTempPath(fullPath, tempPath, sizeof(tempPath));
-	if(ret < 0) {
-	    fprintf(stderr, "ERROR enc_getattr: buildTempPath failed\n");
-	    return ret;
-	}
+        ret = buildTempPath(fullPath, tempPath, sizeof(tempPath));
+        if(ret < 0) {
+            fprintf(stderr, "ERROR enc_getattr: buildTempPath failed\n");
+            return ret;
+        }
 
-	if(access(tempPath, F_OK) < 0) {
-	    exists = 0;
-	}
-	else {
-	    exists = 1;
-	}
+        // TODO:  Make re-entrant/parallel safe - currently overwrites/erases temp
 
-	if(!exists) {
-	    ret = decryptFile(fullPath, tempPath);
-	    if(ret < 0) {
-		fprintf(stderr, "ERROR enc_getattr: decryptFile failed\n");
-		return ret;
-	    }
-	}
+        fhs = openFilePair(fullPath, tempPath, O_RDONLY);
+        if(!fhs) {
+            fprintf(stderr, "ERROR enc_getattr: openFilePair failed\n");
+            return RETURN_FAILURE;
+        }
 
-	ret = lstat(tempPath, &stTemp);
-	if(ret < 0) {
-	    fprintf(stderr, "ERROR enc_getattr: lstat(tempPath) failed\n");
-	    perror("ERROR enc_getattr");
-	    return -errno;
-	}
+        ret = decryptFH(fhs->encFH, fhs->clearFH);
+        if(ret < 0) {
+            fprintf(stderr, "ERROR enc_getattr: decryptFH failed\n");
+            return ret;
+        }
 
-	/* Copy over select fields */
-	stbuf->st_size = stTemp.st_size;
-	stbuf->st_blksize = stTemp.st_blksize;
-	stbuf->st_blocks = stTemp.st_blocks;
+        ret = fstat(fhs->clearFH, &stTemp);
+        if(ret < 0) {
+            fprintf(stderr, "ERROR enc_getattr: lstat(tempPath) failed\n");
+            perror("ERROR enc_getattr");
+            return -errno;
+        }
 
-	if(!exists) {
-	    ret = removeFile(tempPath);
-	    if(ret < 0) {
-		fprintf(stderr, "ERROR enc_getattr: removeFile failed\n");
-		return ret;
-	    }
-	}
+        ret = closeFilePair(fhs);
+        if(ret < 0) {
+            fprintf(stderr, "ERROR enc_getattr: closeFilePair failed\n");
+            return ret;
+        }
+
+        /* Copy over select fields */
+        stbuf->st_size = stTemp.st_size;
+        stbuf->st_blksize = stTemp.st_blksize;
+        stbuf->st_blocks = stTemp.st_blocks;
+
+        ret = removeFile(tempPath);
+        if(ret < 0) {
+            fprintf(stderr, "ERROR enc_getattr: removeFile failed\n");
+            return ret;
+        }
     }
 
     return RETURN_SUCCESS;
@@ -824,7 +528,7 @@ static int enc_getattr(const char* path, stat_t* stbuf) {
 }
 
 static int enc_fgetattr(const char* path, stat_t* stbuf,
-			fuse_file_info_t* fi) {
+                        fuse_file_info_t* fi) {
 
     (void) path;
 
@@ -836,22 +540,26 @@ static int enc_fgetattr(const char* path, stat_t* stbuf,
 
     ret = fstat(fhs->encFH, stbuf);
     if(ret < 0) {
-	fprintf(stderr, "ERROR enc_fgetattr: fstat(encFH) failed");
-	perror("ERROR enc_fgetattr");
-	return -errno;
+        fprintf(stderr, "ERROR enc_fgetattr: fstat(encFH) failed");
+        perror("ERROR enc_fgetattr");
+        return -errno;
     }
 
-    ret = fstat(fhs->clearFH, &stTemp);
-    if(ret < 0) {
-	fprintf(stderr, "ERROR enc_fgetattr: fstat(clearFH) failed");
-	perror("ERROR enc_fgetattr");
-	return -errno;
-    }
+    if(S_ISREG(stbuf->st_mode)) {
 
-    /* Copy over select fields */
-    stbuf->st_size = stTemp.st_size;
-    stbuf->st_blksize = stTemp.st_blksize;
-    stbuf->st_blocks = stTemp.st_blocks;
+        ret = fstat(fhs->clearFH, &stTemp);
+        if(ret < 0) {
+            fprintf(stderr, "ERROR enc_fgetattr: fstat(clearFH) failed");
+            perror("ERROR enc_fgetattr");
+            return -errno;
+        }
+
+        /* Copy over select fields */
+        stbuf->st_size = stTemp.st_size;
+        stbuf->st_blksize = stTemp.st_blksize;
+        stbuf->st_blocks = stTemp.st_blocks;
+
+    }
 
     return RETURN_SUCCESS;
 
@@ -864,19 +572,16 @@ static int enc_access(const char* path, int mask) {
 
     ret = buildPath(path, fullPath, sizeof(fullPath));
     if(ret < 0){
-	fprintf(stderr, "ERROR enc_access: buildPath failed\n");
-	return ret;
+        fprintf(stderr, "ERROR enc_access: buildPath failed\n");
+        return ret;
     }
     path = NULL;
 
-    /* Operating on the encrypted file should be fine here since we
-       are only checking permissions */
-
     ret = access(fullPath, mask);
     if(ret < 0) {
-	fprintf(stderr, "ERROR enc_access: access failed\n");
-	perror("ERROR enc_access");
-	return -errno;
+        fprintf(stderr, "ERROR enc_access: access failed\n");
+        perror("ERROR enc_access");
+        return -errno;
     }
 
     return RETURN_SUCCESS;
@@ -890,8 +595,8 @@ static int enc_readlink(const char* path, char* buf, size_t size) {
 
     ret = buildPath(path, fullPath, sizeof(fullPath));
     if(ret < 0){
-	fprintf(stderr, "ERROR enc_readlink: buildPath failed\n");
-	return ret;
+        fprintf(stderr, "ERROR enc_readlink: buildPath failed\n");
+        return ret;
     }
     path = NULL;
 
@@ -899,9 +604,9 @@ static int enc_readlink(const char* path, char* buf, size_t size) {
 
     ret = readlink(fullPath, buf, (size-1));
     if(ret < 0) {
-	fprintf(stderr, "ERROR enc_readlink: readlink failed\n");
-	perror("ERROR enc_readlink");
-	return -errno;
+        fprintf(stderr, "ERROR enc_readlink: readlink failed\n");
+        perror("ERROR enc_readlink");
+        return -errno;
     }
 
     buf[ret] = '\0';
@@ -918,25 +623,25 @@ static int enc_opendir(const char* path, fuse_file_info_t* fi) {
 
     d = malloc(sizeof(*d));
     if(d == NULL) {
-	fprintf(stderr, "ERROR enc_opendir: malloc failed\n");
-	perror("ERROR enc_opendir");
-	return -errno;
+        fprintf(stderr, "ERROR enc_opendir: malloc failed\n");
+        perror("ERROR enc_opendir");
+        return -errno;
     }
 
     ret = buildPath(path, fullPath, sizeof(fullPath));
     if(ret < 0){
-	fprintf(stderr, "ERROR enc_opendir: buildPath failed\n");
-	return ret;
+        fprintf(stderr, "ERROR enc_opendir: buildPath failed\n");
+        return ret;
     }
     path = NULL;
 
     d->dp = opendir(fullPath);
     if(d->dp == NULL) {
-	fprintf(stderr, "ERROR enc_opendir: opendir failed\n");
-	perror("ERROR enc_opendir");
-	ret = -errno;
-	free(d);
-	return ret;
+        fprintf(stderr, "ERROR enc_opendir: opendir failed\n");
+        perror("ERROR enc_opendir");
+        ret = -errno;
+        free(d);
+        return ret;
     }
     d->offset = 0;
     d->entry = NULL;
@@ -948,7 +653,7 @@ static int enc_opendir(const char* path, fuse_file_info_t* fi) {
 }
 
 static int enc_readdir(const char* path, void* buf, fuse_fill_dir_t filler,
-		       off_t offset, fuse_file_info_t* fi) {
+                       off_t offset, fuse_file_info_t* fi) {
 
     (void) path;
 
@@ -957,29 +662,29 @@ static int enc_readdir(const char* path, void* buf, fuse_fill_dir_t filler,
     d = get_dirp(fi);
 
     if (offset != d->offset) {
-	seekdir(d->dp, offset);
-	d->entry = NULL;
-	d->offset = offset;
+        seekdir(d->dp, offset);
+        d->entry = NULL;
+        d->offset = offset;
     }
     while (1) {
-	stat_t st;
-	off_t nextoff;
+        stat_t st;
+        off_t nextoff;
 
-	if (!d->entry) {
-	    d->entry = readdir(d->dp);
-	    if (!d->entry)
-		break;
-	}
+        if (!d->entry) {
+            d->entry = readdir(d->dp);
+            if (!d->entry)
+                break;
+        }
 
-	memset(&st, 0, sizeof(st));
-	st.st_ino = d->entry->d_ino;
-	st.st_mode = d->entry->d_type << 12;
-	nextoff = telldir(d->dp);
-	if (filler(buf, d->entry->d_name, &st, nextoff))
-	    break;
+        memset(&st, 0, sizeof(st));
+        st.st_ino = d->entry->d_ino;
+        st.st_mode = d->entry->d_type << 12;
+        nextoff = telldir(d->dp);
+        if (filler(buf, d->entry->d_name, &st, nextoff))
+            break;
 
-	d->entry = NULL;
-	d->offset = nextoff;
+        d->entry = NULL;
+        d->offset = nextoff;
     }
 
     return RETURN_SUCCESS;
@@ -1007,21 +712,21 @@ static int enc_mknod(const char* path, mode_t mode, dev_t rdev) {
 
     ret = buildPath(path, fullPath, sizeof(fullPath));
     if(ret < 0){
-	fprintf(stderr, "ERROR enc_mknod: buildPath failed\n");
-	return ret;
+        fprintf(stderr, "ERROR enc_mknod: buildPath failed\n");
+        return ret;
     }
     path = NULL;
 
     if(S_ISFIFO(mode)) {
-	ret = mkfifo(fullPath, mode);
+        ret = mkfifo(fullPath, mode);
     }
     else {
-	ret = mknod(fullPath, mode, rdev);
+        ret = mknod(fullPath, mode, rdev);
     }
     if(ret < 0) {
-	fprintf(stderr, "ERROR enc_mknod: mkfifo/mknode failed\n");
-	perror("ERROR enc_mknod");
-	return -errno;
+        fprintf(stderr, "ERROR enc_mknod: mkfifo/mknode failed\n");
+        perror("ERROR enc_mknod");
+        return -errno;
     }
 
     return RETURN_SUCCESS;
@@ -1035,16 +740,16 @@ static int enc_mkdir(const char* path, mode_t mode) {
 
     ret = buildPath(path, fullPath, sizeof(fullPath));
     if(ret < 0){
-	fprintf(stderr, "ERROR enc_mkdir: buildPath failed\n");
-	return ret;
+        fprintf(stderr, "ERROR enc_mkdir: buildPath failed\n");
+        return ret;
     }
     path = NULL;
 
     ret = mkdir(fullPath, mode);
     if(ret < 0) {
-	fprintf(stderr, "ERROR enc_mkdir: mkdir failed\n");
-	perror("ERROR enc_mkdir");
-	return -errno;
+        fprintf(stderr, "ERROR enc_mkdir: mkdir failed\n");
+        perror("ERROR enc_mkdir");
+        return -errno;
     }
 
     return RETURN_SUCCESS;
@@ -1056,22 +761,18 @@ static int enc_unlink(const char* path) {
     int ret;
     char fullPath[PATHBUFSIZE];
 
-#ifdef DEBUG
-    fprintf(stderr, "INFO enc_unlink: function called on %s\n", path);
-#endif
-
     ret = buildPath(path, fullPath, sizeof(fullPath));
     if(ret < 0){
-	fprintf(stderr, "ERROR enc_unlink: buildPath failed\n");
-	return ret;
+        fprintf(stderr, "ERROR enc_unlink: buildPath failed\n");
+        return ret;
     }
     path = NULL;
 
     ret = unlink(fullPath);
     if(ret < 0){
-	fprintf(stderr, "ERROR enc_unlink: unlink failed\n");
-	perror("ERROR enc_unlink");
-	return -errno;
+        fprintf(stderr, "ERROR enc_unlink: unlink failed\n");
+        perror("ERROR enc_unlink");
+        return -errno;
     }
 
     return RETURN_SUCCESS;
@@ -1085,16 +786,16 @@ static int enc_rmdir(const char* path) {
 
     ret = buildPath(path, fullPath, sizeof(fullPath));
     if(ret < 0){
-	fprintf(stderr, "ERROR enc_rmdir: buildPath failed\n");
-	return ret;
+        fprintf(stderr, "ERROR enc_rmdir: buildPath failed\n");
+        return ret;
     }
     path = NULL;
 
     ret = rmdir(fullPath);
     if(ret < 0) {
-	fprintf(stderr, "ERROR enc_rmdir: rmdir failed\n");
-	perror("ERROR enc_rmdir");
-	return -errno;
+        fprintf(stderr, "ERROR enc_rmdir: rmdir failed\n");
+        perror("ERROR enc_rmdir");
+        return -errno;
     }
 
     return RETURN_SUCCESS;
@@ -1109,19 +810,19 @@ static int enc_symlink(const char* from, const char* to) {
     char fullTo[PATHBUFSIZE];
 
     if(buildPath(from, fullFrom, sizeof(fullFrom)) < 0){
-	fprintf(stderr, "ERROR enc_symlink: buildPath failed on from\n");
-	return RETURN_FAILURE;
+        fprintf(stderr, "ERROR enc_symlink: buildPath failed on from\n");
+        return RETURN_FAILURE;
     }
     from = NULL;
 
     if(buildPath(to, fullTo, sizeof(fullTo)) < 0){
-	fprintf(stderr, "ERROR enc_symlink: buildPath failed on to\n");
-	return RETURN_FAILURE;
+        fprintf(stderr, "ERROR enc_symlink: buildPath failed on to\n");
+        return RETURN_FAILURE;
     }
     to = NULL;
 
     if(symlink(fullFrom, fullTo)) {
-	return -errno;
+        return -errno;
     }
 
     return RETURN_SUCCESS;
@@ -1136,19 +837,19 @@ static int enc_link(const char* from, const char* to) {
     char fullTo[PATHBUFSIZE];
 
     if(buildPath(from, fullFrom, sizeof(fullFrom)) < 0){
-	fprintf(stderr, "ERROR enc_link: buildPath failed on from\n");
-	return RETURN_FAILURE;
+        fprintf(stderr, "ERROR enc_link: buildPath failed on from\n");
+        return RETURN_FAILURE;
     }
     from = NULL;
 
     if(buildPath(to, fullTo, sizeof(fullTo)) < 0){
-	fprintf(stderr, "ERROR enc_link: buildPath failed on to\n");
-	return RETURN_FAILURE;
+        fprintf(stderr, "ERROR enc_link: buildPath failed on to\n");
+        return RETURN_FAILURE;
     }
     to = NULL;
 
     if(link(fullFrom, fullTo) < 0) {
-	return -errno;
+        return -errno;
     }
 
     return RETURN_SUCCESS;
@@ -1163,23 +864,23 @@ static int enc_rename(const char* from, const char* to) {
 
     ret = buildPath(from, fullFrom, sizeof(fullFrom));
     if(ret < 0){
-	fprintf(stderr, "ERROR enc_rename: buildPath(from) failed\n");
-	return ret;
+        fprintf(stderr, "ERROR enc_rename: buildPath(from) failed\n");
+        return ret;
     }
     from = NULL;
 
     ret = buildPath(to, fullTo, sizeof(fullTo));
     if(ret < 0){
-	fprintf(stderr, "ERROR enc_rename: buildPath(to) failed\n");
-	return ret;
+        fprintf(stderr, "ERROR enc_rename: buildPath(to) failed\n");
+        return ret;
     }
     to = NULL;
 
     ret = rename(fullFrom, fullTo);
     if(ret < 0) {
-	fprintf(stderr, "ERROR enc_rename: rename failed\n");
-	perror("ERROR enc_rename");
-	return -errno;
+        fprintf(stderr, "ERROR enc_rename: rename failed\n");
+        perror("ERROR enc_rename");
+        return -errno;
     }
 
     return RETURN_SUCCESS;
@@ -1193,16 +894,16 @@ static int enc_chmod(const char* path, mode_t mode) {
 
     ret = buildPath(path, fullPath, sizeof(fullPath));
     if(ret < 0){
-	fprintf(stderr, "ERROR enc_chmod: buildPath failed\n");
-	return ret;
+        fprintf(stderr, "ERROR enc_chmod: buildPath failed\n");
+        return ret;
     }
     path = NULL;
 
     ret = chmod(fullPath, mode);
     if(ret < 0) {
-	fprintf(stderr, "ERROR enc_chmod: chmod failed\n");
-	perror("ERROR enc_chmod");
-	return -errno;
+        fprintf(stderr, "ERROR enc_chmod: chmod failed\n");
+        perror("ERROR enc_chmod");
+        return -errno;
     }
 
     return RETURN_SUCCESS;
@@ -1216,16 +917,16 @@ static int enc_chown(const char* path, uid_t uid, gid_t gid) {
 
     ret = buildPath(path, fullPath, sizeof(fullPath));
     if(ret < 0){
-	fprintf(stderr, "ERROR enc_chown: buildPath failed\n");
-	return ret;
+        fprintf(stderr, "ERROR enc_chown: buildPath failed\n");
+        return ret;
     }
     path = NULL;
 
     ret = lchown(fullPath, uid, gid);
     if(ret < 0) {
-	fprintf(stderr, "ERROR enc_chown: lchown failed\n");
-	perror("ERROR enc_chown");
-	return -errno;
+        fprintf(stderr, "ERROR enc_chown: lchown failed\n");
+        perror("ERROR enc_chown");
+        return -errno;
     }
 
     return RETURN_SUCCESS;
@@ -1235,79 +936,60 @@ static int enc_chown(const char* path, uid_t uid, gid_t gid) {
 static int enc_truncate(const char* path, off_t size) {
 
     int ret;
-    int exists;
     char fullPath[PATHBUFSIZE];
     char tempPath[PATHBUFSIZE];
-
-#ifdef DEBUG
-    fprintf(stderr, "INFO enc_truncate: funcation called\n");
-#endif
+    enc_fhs_t* fhs;
 
     ret = buildPath(path, fullPath, sizeof(fullPath));
     if(ret < 0){
-	fprintf(stderr, "ERROR enc_truncate: buildPath failed\n");
-	return ret;
+        fprintf(stderr, "ERROR enc_truncate: buildPath failed\n");
+        return ret;
     }
     path = NULL;
 
     ret = buildTempPath(fullPath, tempPath, sizeof(tempPath));
     if(ret < 0){
-	fprintf(stderr, "ERROR enc_truncate: buildTempPath failed\n");
-	return ret;
+        fprintf(stderr, "ERROR enc_truncate: buildTempPath failed\n");
+        return ret;
     }
 
-    if(access(tempPath, F_OK) < 0) {
-	exists = 0;
-    }
-    else {
-	exists = 1;
-    }
-
-    if(!exists) {
-
-	ret = decryptFile(fullPath, tempPath);
-	if(ret < 0) {
-	    fprintf(stderr, "ERROR enc_getattr: decryptFile failed\n");
-	    return ret;
-
-	}
-
+    fhs = openFilePair(fullPath, tempPath, O_RDWR);
+    if(!fhs) {
+        fprintf(stderr, "ERROR enc_truncate: openFilePair failed\n");
+        return RETURN_FAILURE;
     }
 
-    ret = truncate(tempPath, size);
+    ret = ftruncate(fhs->clearFH, size);
     if(ret < 0) {
-	fprintf(stderr, "ERROR enc_truncate: truncate(tempPath) failed\n");
-	perror("ERROR enc_truncate");
-	return -errno;
+        fprintf(stderr, "ERROR enc_truncate: ftruncate failed\n");
+        perror("ERROR enc_truncate");
+        return -errno;
     }
 
-    ret = encryptFile(tempPath, fullPath);
+    ret = encryptFH(fhs->clearFH, fhs->encFH);
     if(ret < 0) {
-	fprintf(stderr, "ERROR enc_truncate: decryptFile failed\n");
-	return ret;
+        fprintf(stderr, "ERROR enc_turncate: encryptFH failed\n");
+        return ret;
     }
 
-    if(!exists) {
-
-	ret = removeFile(tempPath);
-	if(ret < 0) {
-	    fprintf(stderr, "ERROR enc_truncate: removeFile failed\n");
-	    return ret;
-
-	}
-
+    ret = closeFilePair(fhs);
+    if(ret < 0) {
+        fprintf(stderr, "ERROR enc_getattr: closeFilePair failed\n");
+        return ret;
     }
 
-#ifdef DEBUG
-    fprintf(stderr, "INFO enc_truncate: funcation completed\n");
-#endif
+    ret = removeFile(tempPath);
+    if(ret < 0) {
+        fprintf(stderr, "ERROR enc_truncate: removeFile failed\n");
+        return ret;
+    }
 
     return RETURN_SUCCESS;
 
 }
 
 static int enc_ftruncate(const char* path, off_t size,
-			 fuse_file_info_t* fi) {
+                         fuse_file_info_t* fi) {
 
     (void) path;
 
@@ -1318,9 +1000,9 @@ static int enc_ftruncate(const char* path, off_t size,
 
     ret = ftruncate(fhs->clearFH, size);
     if(ret < 0) {
-	fprintf(stderr, "ERROR enc_ftruncate: ftruncate failed\n");
-	perror("ERROR enc_ftruncate");
-	return -errno;
+        fprintf(stderr, "ERROR enc_truncate: ftruncate failed\n");
+        perror("ERROR enc_truncate");
+        return -errno;
     }
 
     return RETURN_SUCCESS;
@@ -1334,17 +1016,17 @@ static int enc_utimens(const char* path, const timespec_t ts[2]) {
 
     ret = buildPath(path, fullPath, sizeof(fullPath));
     if(ret < 0){
-	fprintf(stderr, "ERROR enc_utimens: buildPath failed\n");
-	return ret;
+        fprintf(stderr, "ERROR enc_utimens: buildPath failed\n");
+        return ret;
     }
     path = NULL;
 
     /* don't use utime/utimes since they follow symlinks */
     ret = utimensat(0, fullPath, ts, AT_SYMLINK_NOFOLLOW);
     if(ret < 0) {
-	fprintf(stderr, "ERROR enc_utimens: utimensat failed\n");
-	perror("ERROR enc_utimens");
-	return -errno;
+        fprintf(stderr, "ERROR enc_utimens: utimensat failed\n");
+        perror("ERROR enc_utimens");
+        return -errno;
     }
 
     return RETURN_SUCCESS;
@@ -1354,71 +1036,37 @@ static int enc_utimens(const char* path, const timespec_t ts[2]) {
 static int enc_create(const char* path, mode_t mode, fuse_file_info_t* fi) {
 
     int ret;
-    int newFlags;
     enc_fhs_t* fhs;
     char fullPath[PATHBUFSIZE];
     char tempPath[PATHBUFSIZE];
 
-#ifdef DEBUG
-    fprintf(stderr, "INFO enc_create: function called\n");
-#endif
-
     ret = buildPath(path, fullPath, sizeof(fullPath));
     if(ret < 0){
-	fprintf(stderr, "ERROR enc_create: buildPath failed\n");
-	return ret;
+        fprintf(stderr, "ERROR enc_create: buildPath failed\n");
+        return ret;
     }
     path = NULL;
 
     ret = buildTempPath(fullPath, tempPath, sizeof(tempPath));
     if(ret < 0){
-	fprintf(stderr, "ERROR enc_create: buildTempPath failed\n");
-	return ret;
+        fprintf(stderr, "ERROR enc_create: buildTempPath failed\n");
+        return ret;
     }
 
     fhs = createFilePair(fullPath, tempPath, fi->flags, mode);
     if(!fhs) {
-	fprintf(stderr, "ERROR enc_create: createFilePair failed\n");
-	return RETURN_FAILURE;
+        fprintf(stderr, "ERROR enc_create: createFilePair failed\n");
+        return RETURN_FAILURE;
     }
 
-    ret = closeFilePair(fhs);
+    ret = encryptFH(fhs->clearFH, fhs->encFH);
     if(ret < 0) {
-	fprintf(stderr, "ERROR enc_create: closeFilePair failed\n");
-	return ret;
-    }
-
-    ret = encryptFile(tempPath, fullPath);
-    if(ret < 0) {
-	fprintf(stderr, "ERROR enc_create: encryptFile failed\n");
-	return ret;
-    }
-
-    ret = removeFile(tempPath);
-    if(ret < 0) {
-	fprintf(stderr, "ERROR enc_create: removeFile failed\n");
-	return ret;
-    }
-
-    ret = decryptFile(fullPath, tempPath);
-    if(ret < 0) {
-	fprintf(stderr, "ERROR enc_create: decryptFile failed\n");
-	return ret;
-    }
-
-    newFlags = fi->flags & (~O_CREAT & ~O_EXCL);
-    fhs = openFilePair(fullPath, tempPath, newFlags);
-    if(!fhs) {
-	fprintf(stderr, "ERROR enc_create: openFilePair failed\n");
-	return RETURN_FAILURE;
+        fprintf(stderr, "ERROR enc_create: encryptFH failed\n");
+        return ret;
     }
 
     fhs->dirty = FHS_CLEAN;
     fi->fh = put_fhs(fhs);
-
-#ifdef DEBUG
-    fprintf(stderr, "INFO enc_create: returning successfully\n");
-#endif
 
     return RETURN_SUCCESS;
 
@@ -1433,27 +1081,27 @@ static int enc_open(const char* path, fuse_file_info_t* fi) {
 
     ret = buildPath(path, fullPath, sizeof(fullPath));
     if(ret < 0){
-	fprintf(stderr, "ERROR enc_open: buildPath failed\n");
-	return ret;
+        fprintf(stderr, "ERROR enc_open: buildPath failed\n");
+        return ret;
     }
     path = NULL;
 
     ret = buildTempPath(fullPath, tempPath, sizeof(tempPath));
     if(ret < 0){
-	fprintf(stderr, "ERROR enc_open: buildTempPath failed\n");
-	return ret;
-    }
-
-    ret = decryptFile(fullPath, tempPath);
-    if(ret < 0) {
-	fprintf(stderr, "ERROR enc_open: decryptFile failed\n");
-	return ret;
+        fprintf(stderr, "ERROR enc_open: buildTempPath failed\n");
+        return ret;
     }
 
     fhs = openFilePair(fullPath, tempPath, fi->flags);
     if(!fhs) {
-	fprintf(stderr, "ERROR enc_open: openFilePair failed\n");
-	return RETURN_FAILURE;
+        fprintf(stderr, "ERROR enc_open: openFilePair failed\n");
+        return RETURN_FAILURE;
+    }
+
+    ret = decryptFH(fhs->encFH, fhs->clearFH);
+    if(ret < 0) {
+        fprintf(stderr, "ERROR enc_open: decryptFH failed\n");
+        return ret;
     }
 
     fhs->dirty = FHS_CLEAN;
@@ -1464,7 +1112,7 @@ static int enc_open(const char* path, fuse_file_info_t* fi) {
 }
 
 static int enc_read(const char* path, char* buf, size_t size, off_t offset,
-		    fuse_file_info_t* fi) {
+                    fuse_file_info_t* fi) {
 
     (void) path;
 
@@ -1475,9 +1123,9 @@ static int enc_read(const char* path, char* buf, size_t size, off_t offset,
 
     ret = pread(fhs->clearFH, buf, size, offset);
     if(ret < 0) {
-	fprintf(stderr, "ERROR enc_read: pread failed\n");
-	perror("ERROR enc_read");
-	ret = -errno;
+        fprintf(stderr, "ERROR enc_read: pread failed\n");
+        perror("ERROR enc_read");
+        ret = -errno;
     }
 
     return ret;
@@ -1497,9 +1145,9 @@ static int enc_write(const char* path, const char* buf, size_t size,
 
     ret = pwrite(fhs->clearFH, buf, size, offset);
     if(ret < 0) {
-	fprintf(stderr, "ERROR enc_write: pwrite failed\n");
-	perror("ERROR enc_write");
-	ret = -errno;
+        fprintf(stderr, "ERROR enc_write: pwrite failed\n");
+        perror("ERROR enc_write");
+        ret = -errno;
     }
 
     return ret;
@@ -1513,16 +1161,16 @@ static int enc_statfs(const char* path, statvfs_t* stbuf) {
 
     ret = buildPath(path, fullPath, sizeof(fullPath));
     if(ret < 0){
-	fprintf(stderr, "ERROR enc_statfs: buildPath failed\n");
-	return ret;
+        fprintf(stderr, "ERROR enc_statfs: buildPath failed\n");
+        return ret;
     }
     path = NULL;
 
     ret = statvfs(fullPath, stbuf);
     if(ret < 0) {
-	fprintf(stderr, "ERROR enc_statfs: statvfs failed\n");
-	perror("ERROR enc_statfs");
-	return -errno;
+        fprintf(stderr, "ERROR enc_statfs: statvfs failed\n");
+        perror("ERROR enc_statfs");
+        return -errno;
     }
 
     return RETURN_SUCCESS;
@@ -1549,6 +1197,18 @@ static int enc_flush(const char* path, fuse_file_info_t* fi) {
 
     fhs = get_fhs(fi->fh);
 
+
+    if(fhs->dirty == FHS_DIRTY) {
+
+        ret = encryptFH(fhs->clearFH, fhs->encFH);
+        if(ret < 0) {
+            fprintf(stderr, "ERROR enc_flush: encryptFH failed\n");
+            return ret;
+        }
+        fhs->dirty = FHS_CLEAN;
+
+    }
+
     ret = dup(fhs->clearFH);
     if(ret < 0) {
         fprintf(stderr, "ERROR enc_flush: dup(clearFH) failed\n");
@@ -1573,18 +1233,6 @@ static int enc_flush(const char* path, fuse_file_info_t* fi) {
         fprintf(stderr, "ERROR enc_flush: close(dup(encFH)) failed\n");
         perror("ERROR enc_flush");
         return -errno;
-    }
-
-    if(fhs->dirty == FHS_DIRTY) {
-
-        ret = encryptFH(fhs->clearFH, fhs->encFH);
-        if(ret < 0) {
-            fprintf(stderr, "ERROR enc_flush: encryptFH failed\n");
-            return ret;
-        }
-
-        fhs->dirty = FHS_CLEAN;
-
     }
 
     return RETURN_SUCCESS;
@@ -1613,7 +1261,6 @@ static int enc_fsync(const char* path, int isdatasync,
             fprintf(stderr, "ERROR enc_fsync: encryptFH failed\n");
             return ret;
         }
-
         fhs->dirty = FHS_CLEAN;
 
     }
@@ -1642,10 +1289,6 @@ static int enc_release(const char* path, fuse_file_info_t* fi) {
     int ret;
     enc_fhs_t* fhs;
 
-#ifdef DEBUG
-    fprintf(stderr, "INFO enc_release: function called\n");
-#endif
-
     if(!fi) {
         fprintf(stderr, "ERROR enc_release: fi is NULL");
         return -EINVAL;
@@ -1663,29 +1306,24 @@ static int enc_release(const char* path, fuse_file_info_t* fi) {
 
     }
 
+    ret = removeFile(fhs->clearPath);
+    if(ret < 0) {
+        fprintf(stderr, "ERROR enc_release: removeFile failed\n");
+        return ret;
+    }
+
     ret = closeFilePair(fhs);
     if(ret < 0) {
         fprintf(stderr, "ERROR enc_release: closeFilePair failed\n");
         return ret;
     }
 
-    // TODO save temp path to fhs
-    /* ret = removeFile(tempPath); */
-    /* if(ret < 0) { */
-    /*     fprintf(stderr, "ERROR enc_release: removeFile failed\n"); */
-    /*     return ret; */
-    /* } */
-
-#ifdef DEBUG
-    fprintf(stderr, "INFO enc_release: returning successfully\n");
-#endif
-
     return RETURN_SUCCESS;
 
 }
 
 static int enc_lock(const char* path, fuse_file_info_t* fi, int cmd,
-		    flock_t* lock) {
+                    flock_t* lock) {
 
     (void) path;
 
@@ -1695,10 +1333,10 @@ static int enc_lock(const char* path, fuse_file_info_t* fi, int cmd,
     fhs = get_fhs(fi->fh);
 
     ret = ulockmgr_op(fhs->clearFH, cmd, lock, &fi->lock_owner,
-		      sizeof(fi->lock_owner));
+                      sizeof(fi->lock_owner));
     if(ret < 0) {
-	fprintf(stderr, "ERROR enc_lock: ulockmgr_op failed\n");
-	return ret;
+        fprintf(stderr, "ERROR enc_lock: ulockmgr_op failed\n");
+        return ret;
     }
 
     return ret;
@@ -1716,8 +1354,8 @@ static int enc_flock(const char* path, fuse_file_info_t* fi, int op) {
 
     ret = flock(fhs->clearFH, op);
     if(ret < 0) {
-	fprintf(stderr, "ERROR enc_flock: flock failed\n");
-	perror("ERROR enc_flock");
+        fprintf(stderr, "ERROR enc_flock: flock failed\n");
+        perror("ERROR enc_flock");
         return -errno;
     }
 
