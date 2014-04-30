@@ -94,7 +94,7 @@ typedef struct fsState {
 
 #define GOOD_PSK "It's A Trap!"
 #define UUID "1b4e28ba-2fa1-11d2-883f-b9a761bde3fb"
-#define SERVER_URL "http://localhost:5000"
+#define SERVER_URL "http://custos:5000"
 
 static int getCustosKey(char* buf, size_t bufSize) {
 
