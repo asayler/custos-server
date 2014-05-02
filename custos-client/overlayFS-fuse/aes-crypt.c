@@ -54,7 +54,7 @@ extern int do_crypt(FILE* in, FILE* out, cryptAction_t action, char* key_str){
     unsigned char key[32];
     unsigned char iv[32];
     int nrounds = 5;
-    
+
     /* tmp vars */
     int i;
 
@@ -64,76 +64,83 @@ extern int do_crypt(FILE* in, FILE* out, cryptAction_t action, char* key_str){
 
     /* Setup Encryption Key and Cipher Engine if in cipher mode */
     if(action >= 0){
-	if(!key_str){
-	    /* Error */
-	    fprintf(stderr, "Key_str must not be NULL\n");
-	    return RETURN_FAILURE;
-	}
-	/* Build Key from String */
-	i = EVP_BytesToKey(EVP_aes_256_cbc(), EVP_sha1(), NULL,
-			   (unsigned char*)key_str, strlen(key_str), nrounds, key, iv);
-	if (i != 32) {
-	    /* Error */
-	    fprintf(stderr, "Key size is %d bits - should be 256 bits\n", i*8);
-	    return RETURN_FAILURE;
-	}
-	/* Init Engine */
-	EVP_CIPHER_CTX_init(&ctx);
-	EVP_CipherInit_ex(&ctx, EVP_aes_256_cbc(), NULL, key, iv, action);
-    }    
+        if(!key_str){
+            /* Error */
+            fprintf(stderr, "ERROR Key_str must not be NULL\n");
+            return RETURN_FAILURE;
+        }
+        /* Build Key from String */
+        i = EVP_BytesToKey(EVP_aes_256_cbc(), EVP_sha1(), NULL,
+                           (unsigned char*)key_str, strlen(key_str), nrounds, key, iv);
+        if (i != 32) {
+            /* Error */
+            fprintf(stderr, "ERROR Key size is %d bits - should be 256 bits\n", i*8);
+            return RETURN_FAILURE;
+        }
+        /* Init Engine */
+        EVP_CIPHER_CTX_init(&ctx);
+        EVP_CipherInit_ex(&ctx, EVP_aes_256_cbc(), NULL, key, iv, action);
+    }
 
     /* Loop through Input File*/
     for(;;){
-	/* Read Block */
-	inlen = fread(inbuf, sizeof(*inbuf), BLOCKSIZE, in);
-	if(inlen <= 0){
-	    /* EOF -> Break Loop */
-	    break;
-	}
-	
-	/* If in cipher mode, perform cipher transform on block */
-	if(action >= 0){
-	    if(!EVP_CipherUpdate(&ctx, outbuf, &outlen, inbuf, inlen))
-		{
-		    /* Error */
-		    EVP_CIPHER_CTX_cleanup(&ctx);
-		    return RETURN_FAILURE;
-		}
-	}
-	/* If in pass-through mode, copy block as is */
-	else{
-	    memcpy(outbuf, inbuf, inlen);
-	    outlen = inlen;
-	}
+        /* Read Block */
+        inlen = fread(inbuf, sizeof(*inbuf), BLOCKSIZE, in);
+        if(inlen <= 0){
+            /* EOF -> Break Loop */
+            break;
+        }
 
-	/* Write Block */
-	writelen = fwrite(outbuf, sizeof(*outbuf), outlen, out);
-	if(writelen != outlen){
-	    /* Error */
-	    perror("fwrite error");
-	    EVP_CIPHER_CTX_cleanup(&ctx);
-	    return RETURN_FAILURE;
-	}
+        /* If in cipher mode, perform cipher transform on block */
+        if(action >= 0){
+            if(!EVP_CipherUpdate(&ctx, outbuf, &outlen, inbuf, inlen)){
+                /* Error */
+                fprintf(stderr, "ERROR EVP_CipherUpdate failed\n");
+                EVP_CIPHER_CTX_cleanup(&ctx);
+                return RETURN_FAILURE;
+            }
+        }
+        /* If in pass-through mode, copy block as is */
+        else{
+            memcpy(outbuf, inbuf, inlen);
+            outlen = inlen;
+        }
+
+        /* Write Block */
+        writelen = fwrite(outbuf, sizeof(*outbuf), outlen, out);
+        if(writelen != outlen){
+            /* Error */
+            perror("ERROR fwrite body error");
+            EVP_CIPHER_CTX_cleanup(&ctx);
+            return RETURN_FAILURE;
+        }
     }
-    
+
     /* If in cipher mode, handle necessary padding */
     if(action >= 0){
-	/* Handle remaining cipher block + padding */
-	if(!EVP_CipherFinal_ex(&ctx, outbuf, &outlen))
-	    {
-		/* Error */
-		EVP_CIPHER_CTX_cleanup(&ctx);
-		return RETURN_FAILURE;
-	    }
-	/* Write remainign cipher block + padding*/
-	fwrite(outbuf, sizeof(*inbuf), outlen, out);
-	EVP_CIPHER_CTX_cleanup(&ctx);
+        /* Handle remaining cipher block + padding */
+        if(!EVP_CipherFinal_ex(&ctx, outbuf, &outlen))
+            {
+                /* Error */
+                fprintf(stderr, "ERROR EVP_CipherFinal failed\n");
+                EVP_CIPHER_CTX_cleanup(&ctx);
+                return RETURN_FAILURE;
+            }
+        /* Write remainign cipher block + padding*/
+        writelen = fwrite(outbuf, sizeof(*inbuf), outlen, out);
+        if(writelen != outlen){
+            /* Error */
+            perror("ERROR fwrite padding error");
+            EVP_CIPHER_CTX_cleanup(&ctx);
+            return RETURN_FAILURE;
+        }
+        EVP_CIPHER_CTX_cleanup(&ctx);
     }
 
     /* Rewind Files */
     rewind(in);
-    rewind(out);    
-    
+    rewind(out);
+
     /* Success */
     return RETURN_SUCCESS;
 }

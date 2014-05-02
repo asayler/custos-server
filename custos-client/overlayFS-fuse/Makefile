@@ -5,8 +5,8 @@
 AR = ar
 CC = gcc
 
-CFLAGS  = -c -g -Wall -Wextra -Werror
-LFLAGS  = -g -Wall -Wextra -Werror
+CFLAGS  = -c -g -Wall -Wextra #-Werror
+LFLAGS  = -g -Wall -Wextra #-Werror
 ARFLAGS = rcsv
 
 # Executables
@@ -18,22 +18,26 @@ OPENSSL_EXAMPLES   = aes-crypt-util
 CURL_EXAMPLES      = curl_example
 CUSTOS_TESTS       = custos_client_test custos_http_test custos_json_test custos_decode_test
 
-CUSTOS_LIB         = ../../libcustos/libcustos.a
+CUSTOS_LIB         = ./libcustos/libcustos.a
 
+CFLAGSUUID    = `pkg-config uuid --cflags`
+LLIBSUUID     = `pkg-config uuid --libs`
+CFLAGSCURL    = `pkg-config libcurl --cflags`
+LLIBSCURL     = `pkg-config libcurl --libs`
+CFLAGSJSON    = `pkg-config json --cflags`
+LLIBSJSON     = `pkg-config json --libs`
+CFLAGSMHASH   =
+LLIBSMHASH    = -lmhash
 CFLAGSFUSE    = `pkg-config fuse --cflags`
 LLIBSFUSE     = `pkg-config fuse --libs`
 CFLAGSULOCK   =
 LLIBSULOCK    = -lulockmgr
 CFLAGSOPENSSL = `pkg-config openssl --cflags`
 LLIBSOPENSSL  = `pkg-config openssl --libs`
-CFLAGSUUID    = `pkg-config uuid --cflags`
-LLIBSUUID     = `pkg-config uuid --libs`
 
-.PHONY: all clean encfs mirfs \
-	fuse-examples xattr-examples openssl-examples
+.PHONY: all clean encfs mirfs fuse-examples xattr-examples openssl-examples
 
-all:    encfs mirfs \
-	fuse-examples xattr-examples openssl-examples
+all: encfs mirfs fuse-examples xattr-examples openssl-examples
 
 encfs: $(ENCFS)
 mirfs: $(MIRFS)
@@ -54,7 +58,8 @@ fuseenc: fuseenc.o aes-crypt.o
 	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSFUSE) $(LLIBSOPENSSL)
 
 fuseenc_fh: fuseenc_fh.o aes-crypt.o $(CUSTOS_LIB)
-	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSFUSE) $(LLIBSULOCK) $(LLIBSOPENSSL) $(LLIBSUUID)
+	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSFUSE) $(LLIBSULOCK) $(LLIBSOPENSSL) \
+							 $(LLIBSCURL) $(LLIBSJSON) $(LLIBSUUID) $(LLIBSMHASH)
 
 fusemir_fh: fusemir_fh.o
 	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSFUSE) $(LLIBSULOCK)
